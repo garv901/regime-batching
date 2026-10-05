@@ -6,5 +6,6 @@
   - `03_straggler_inside_one_layer` - SM-over-time view, 407 us vs 85 us per layer
   - `04_steps_default_vs_shaping` - step timeline and measured results
 
-Each folder holds the source `.html` (open it in a browser) and an exported `.svg` (diagram only, without the page
-header and cards). The SVG loads its fonts from Google Fonts; offline tools substitute other fonts.
+Each folder holds the source `.html` (open it in a browser), an exported `.svg` and a `.png` (2x, transparent
+background). The exports hold the diagram only, without the page header and cards. The SVG loads its fonts from
+Google Fonts, so offline tools substitute other fonts; the PNG has the correct fonts.

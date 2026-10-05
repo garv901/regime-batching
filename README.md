@@ -10,6 +10,48 @@ production is a separate problem. This study measures the upper bound: the gain 
 
 All runs use vLLM 0.30.0 on one NVIDIA H100-80GB, with Qwen3-8B, Llama-3.1-8B-Instruct and Qwen3-4B.
 
+## The two main workloads
+
+### X steps and the X-heavy workload
+
+Our telemetry gives each engine step a *regime* label (see [docs/01_onboarding.md](docs/01_onboarding.md)). The
+regime **X** costs the most time. A step is an X step when all three conditions are true:
+
+1. **The step has more than 512 tokens.** 512 is the largest CUDA-graph capture size, so the step runs without a
+   CUDA graph. The CPU launches every kernel (about 16.5 ms per step on our node).
+2. **The step holds a prefill chunk of 417 tokens or more.** Above 512 tokens, vLLM lets the FlashAttention-3
+   heuristic select the number of KV splits. The heuristic counts query tiles: 8 KV heads x ceil(chunk / 32).
+   A 416-token chunk gives 8 x 13 = 104 tiles, below 0.8 x 132 SMs = 105.6, so the heuristic splits. A 417-token
+   chunk gives 8 x 14 = 112 tiles. The heuristic then decides that the GPU is full and selects 1 split for every
+   sequence in the step. The limit is 417 tokens for all three models, because all three have 8 KV heads and 4
+   query heads per KV head.
+3. **The step also holds a decode with a long context**, for example 24,000 tokens.
+
+In an X step, one thread block per KV head reads the long context alone: 8 of the 132 SMs work, and the other
+SMs wait for them. One attention layer takes 407 us in place of 85 us (4.8x), and the step takes about 36 ms.
+[reports/diagrams/flaw2_512_step_boundary/](reports/diagrams/flaw2_512_step_boundary/) shows this in four
+diagrams.
+
+The **X-heavy** workload (`data/workloads/xheavy_lc24k.jsonl`) makes many X steps on purpose:
+
+| Part | Requests | Prompt | Output |
+|---|---|---|---|
+| Long-context requests | 4, all at t = 0 | 24,000 tokens | 4,000 tokens |
+| Short requests | 24 per second for about 99 s (2,400 in total) | 450-1,000 tokens | 16-64 tokens |
+
+The four long requests decode during the full run. vLLM puts each new short prompt into a step together with
+these decodes, so most of these steps become X steps. With the vLLM default, X steps use 56% of the GPU time.
+`xheavy_lc16k.jsonl` is the same workload with 16,000-token contexts.
+
+The workload is synthetic, and it isolates one mechanism. Real traffic has the same pattern when long chats or
+long documents decode while new prompts arrive, but X steps are then less frequent. For example, in our
+`xstress` workload (1 long request in 64), X steps use only 5% of the GPU time.
+
+### Memory-pressure burst
+
+`lburst80_8k.jsonl`: 16 short requests per second for 300 s. At t = 30 s, 80 long requests arrive, each with
+8,000 output tokens. At the end of their outputs, the long requests need 681,000 KV slots. Qwen3-8B has 451,000.
+
 ## Results in one table
 
 Speedups compare against the vLLM default configuration in the same job. "Best static" is the best vLLM flag
