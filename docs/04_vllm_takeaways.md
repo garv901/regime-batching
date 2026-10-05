@@ -20,7 +20,7 @@ Source paths refer to vLLM v0.30.0.
 - **Mechanism.** When a running request needs a new block and none is free, vLLM preempts the most recently
   admitted request (`scheduler.py:753`, `self.running[-1]`). It frees the request's blocks and puts it at the front
   of the waiting queue (`scheduler.py:1517`). Later, vLLM computes the request's tokens again.
-- **Effect.** 38 preemptions, about 209k tokens computed a second time, and 319 steps longer than 100 ms. Every
+- **Effect.** 52 preemptions, about 219k tokens computed a second time, and 319 steps longer than 100 ms. Every
   running decode waits during those steps: short TPOT 76.8 ms against 21.7 ms with the KV plan.
 
 ### 1.3 The waiting queue blocks at its head
@@ -33,7 +33,7 @@ Source paths refer to vLLM v0.30.0.
 
 `--max-num-seqs` trades one class against the other. With 32 or 64 seats, the long requests keep the seats and
 short requests wait 79-148 s. With 128 or 256 seats, the overcommit stays. Ordering the queue by oracle length
-(shortest first) gives only 1.43x, because the long requests that are already admitted still fill the cache.
+(shortest first) gives only 1.40x, because the long requests that are already admitted still fill the cache.
 
 ### 1.5 What helps
 

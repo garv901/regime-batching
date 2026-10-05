@@ -14,17 +14,24 @@ t = 30 s.
 
 | Configuration | Short TTFT mean | Short TTFT p99 | Short E2E mean | Short E2E p99 | Short TPOT | Long TPOT | Long E2E (s) | Output tok/s | Preemptions |
 |---|---|---|---|---|---|---|---|---|---|
-| B0 (vLLM default) | 26,691.5 | 99,228.7 | 29,657.9 | 105,107.9 | 76.8 | 29.3 | 235.0 | 2,487 | 38 |
-| mns32 | 147,888.0 | 217,827.7 | 148,485.8 | 218,404.1 | 15.4 | 14.1 | 200.5 | 2,061 | |
-| mns64 | 78,216.6 | 160,318.8 | 79,194.9 | 161,364.9 | 25.3 | 20.9 | 199.9 | 2,362 | |
-| mns128 | 28,808.6 | 99,216.2 | 30,486.5 | 101,542.0 | 43.5 | 28.8 | 230.7 | 2,518 | |
-| mns256 (best static) | 26,855.4 | 99,367.5 | 29,565.8 | 104,829.0 | 70.0 | 29.0 | 232.3 | 2,507 | |
-| sjf (oracle order, no memory plan) | 17,128.6 | | 20,799.3 | 129,858.1 | | 30.0 | 240.2 | 2,495 | |
+| B0 (vLLM default) | 26,691.5 | 99,228.7 | 29,657.9 | 105,107.9 | 76.8 | 29.3 | 235.0 | 2,487 | 52 |
+| mns32 | 147,888.0 | 217,827.7 | 148,485.8 | 218,404.1 | 15.4 | 14.1 | 200.5 | 2,061 | 0 |
+| mns64 | 78,216.6 | 160,318.8 | 79,194.9 | 161,364.9 | 25.3 | 20.9 | 199.9 | 2,362 | 18 |
+| mns128 | 28,808.6 | 99,216.2 | 30,486.5 | 101,542.0 | 43.5 | 28.8 | 230.7 | 2,518 | 56 |
+| mns256 (best static) | 26,855.4 | 99,367.5 | 29,565.8 | 104,829.0 | 70.0 | 29.0 | 232.3 | 2,507 | 53 |
+| sjf (oracle order, no memory plan) | 17,128.6 | 118,361.0 | 20,799.3 | 129,858.1 | 86.8 | 30.0 | 240.2 | 2,495 | 306 |
 | **peak (oracle KV plan)** | **197.0** | **3,603.4** | **1,029.5** | **5,999.7** | **21.7** | **20.5** | 240.1 | 2,351 | **0** |
 | full (peak + C3 + shape) | 225.7 | 4,026.1 | 1,022.1 | 5,957.7 | 20.6 | 20.1 | 234.7 | 2,389 | 0 |
 
+Preemptions are counted from the step telemetry: a request that starts a step below the context length it had
+already reached was preempted. For RegimeScheduler runs, vLLM's own preemption list agrees (sjf 307, peak and
+full 0). Tokens lost to preemption and computed again: B0 219k, mns64 123k, mns128 221k, mns256 222k, sjf 339k.
+
+sjf ran in job 1043. Against the B0 of that job (29,111.2 ms), sjf gives 1.40x short E2E and 1.53x short TTFT. Its
+short TPOT and p99 values are worse than B0, because it preempts six times as often.
+
 Repeat (job 1043): B0 short E2E 29,111.2 ms, peak 986.7 ms (29.5x); short TTFT 26,259.9 ms against 177.5 ms
-(148x); output 2,512 against 2,377 tok/s.
+(148x); output 2,512 against 2,377 tok/s; preemptions 49 against 0.
 
 Difference, peak minus B0 (job 1033):
 
@@ -62,17 +69,19 @@ Step-level evidence from telemetry (job 1033):
 
 ### 1.2 Other models (single runs, jobs 1040 and 1041)
 
-| Model | Configuration | Short TTFT mean | Short E2E mean | Long TPOT | Long E2E (s) | Output tok/s | Short E2E x | Short E2E p99 x |
-|---|---|---|---|---|---|---|---|---|
-| Llama-3.1-8B | B0 | 16,814.3 | 19,809.5 | 26.87 | 215.3 | 2,732 | 1.00 | 1.00 |
-| Llama-3.1-8B | peak | 183.1 | 988.7 | 19.85 | 221.4 | 2,529 | **20.0** | 14.7 |
-| Qwen3-4B | B0 | 13,801.9 | 15,657.5 | 24.15 | 193.3 | 2,784 | 1.00 | 1.00 |
-| Qwen3-4B | peak | 141.8 | 807.9 | 17.57 | 194.5 | 2,786 | **19.4** | 19.3 |
+| Model | Configuration | Short TTFT mean | Short E2E mean | Long TPOT | Long E2E (s) | Output tok/s | Preemptions | Short E2E x | Short E2E p99 x |
+|---|---|---|---|---|---|---|---|---|---|
+| Llama-3.1-8B | B0 | 16,814.3 | 19,809.5 | 26.87 | 215.3 | 2,732 | 44 | 1.00 | 1.00 |
+| Llama-3.1-8B | peak | 183.1 | 988.7 | 19.85 | 221.4 | 2,529 | 0 | **20.0** | 14.7 |
+| Qwen3-4B | B0 | 13,801.9 | 15,657.5 | 24.15 | 193.3 | 2,784 | 47 | 1.00 | 1.00 |
+| Qwen3-4B | peak | 141.8 | 807.9 | 17.57 | 194.5 | 2,786 | 0 | **19.4** | 19.3 |
 
 ## 2. X-heavy long-context workload: step shaping and C3
 
 Workload `xheavy_lc24k`: 4 decodes with 24k-token contexts, plus 24 new requests per second with 450-1,000-token
-prompts.
+prompts. The name means "many X steps". An X step has more than 512 tokens, holds a prefill chunk of 417 tokens or
+more and also holds a long-context decode. In such a step, FA3 does not split the long decode, so one thread block
+per KV head reads 24k tokens alone. In B0, X steps use 56% of GPU time on this workload.
 
 ### 2.1 Qwen3-8B, 3 repeats (jobs 1015/1017, 1034)
 
@@ -87,7 +96,9 @@ B0 run of the same job.
 | C3 | 3 | 169.9 | 902.4 | 5,169.7 | 19.0 | 19.2 | 1.18 +- 0.03 | 1.03 +- 0.01 | 1.15 +- 0.02 | 1.11 |
 | **shape** | 3 | 193.0 | **839.0** | 4,637.4 | 16.7 | 17.5 | **1.26 +- 0.03** | 1.13 +- 0.02 | 1.26 +- 0.02 | 0.96 |
 | full | 3 | 191.9 | 831.9 | 4,711.1 | 16.5 | 17.4 | 1.27 +- 0.03 | 1.11 +- 0.04 | 1.26 +- 0.01 | 0.96 |
-| shape, reactive (no oracle) | 1 | | 828.8 | | | 17.3 | 1.29 | 1.11 | 1.29 | 0.95 |
+| shape, reactive (no oracle) | 1 | 194.6 | 828.8 | 4,734.1 | 16.4 | 17.3 | 1.27 | 1.11 | 1.27 | 0.95 |
+
+The reactive run (job 1041) has no B0 in the same job. Its speedups use the mean of the four B0 runs.
 
 Difference against B0 (means): shape cuts short E2E by 217 ms and long TPOT by 4.5 ms per token (about 18 s over
 a 4,000-token output). mnbt512 adds 204 ms to short TTFT.
@@ -107,9 +118,9 @@ prefill, which shaping does not limit). In a 3-second window, B0 completes 132 s
 | Llama-3.1-8B | full | 160.9 | 730.7 | 15.82 | 1.25 | 1.14 | 1.26 | 1.01 |
 | Qwen3-4B | B0 | 85.3 | 519.1 | 14.20 | 1.00 | 1.00 | 1.00 | 1.00 |
 | Qwen3-4B | **cap2048** | 76.3 | **443.4** | 12.45 | **1.17** | 0.98 | 1.14 | 1.12 |
-| Qwen3-4B | mnbt512 | | 503.3 | 11.80 | 1.03 | 0.74 | 1.20 | 0.55 |
-| Qwen3-4B | shape | | 457.2 | 12.05 | 1.14 | 1.07 | 1.18 | 0.97 |
-| Qwen3-4B | full | | 452.2 | 11.93 | 1.15 | 1.06 | 1.19 | 0.97 |
+| Qwen3-4B | mnbt512 | 153.9 | 503.3 | 11.80 | 1.03 | 0.74 | 1.20 | 0.55 |
+| Qwen3-4B | shape | 88.1 | 457.2 | 12.05 | 1.14 | 1.07 | 1.18 | 0.97 |
+| Qwen3-4B | full | 87.6 | 452.2 | 11.93 | 1.15 | 1.06 | 1.19 | 0.97 |
 
 On Qwen3-4B, cap2048 is better than shape on mean short E2E. Shape is still better on p99 and long TPOT.
 

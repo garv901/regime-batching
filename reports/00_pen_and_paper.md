@@ -33,8 +33,8 @@ max 512, max_num_batched_tokens 8192), one H100-80GB, oracle output lengths (`ig
    cannot do this: they do not know which admitted request will grow to 8-32k tokens. **Real H100 burst**
    (Qwen3-8B, 16 req/s shorts + 80 x 8000-token outputs at t = 30 s, job 1033) vs vLLM default: short TTFT
    26.7 s -> 0.20 s (135x), short E2E 29.7 s -> 1.03 s (28.8x; p99 105 s -> 6.0 s, 17.5x), long TPOT 1.43x,
-   0 preemptions vs 38 (125k recomputed tokens), at -5% output throughput; repeat (job 1043): 29.5x short E2E, 148x
-   TTFT. Replicated on Llama-3.1-8B (20.0x) and Qwen3-4B (19.4x). Oracle SJF ordering without KV planning: 1.43x. **No static config comes close:**
+   0 preemptions vs 52 (219k recomputed tokens), at -5% output throughput; repeat (job 1043): 29.5x short E2E, 148x
+   TTFT. Replicated on Llama-3.1-8B (20.0x) and Qwen3-4B (19.4x). Oracle SJF ordering without KV planning: 1.40x (306 preemptions). **No static config comes close:**
    capping concurrency (`--max-num-seqs` 32/64/128/256, job 1039) either starves shorts behind the longs'
    seats (short E2E 148 s / 79 s at 32/64) or changes nothing (30.5 s / 29.6 s at 128/256).
 4. **Where there is little to gain:** the user's literal example (waves of 31 x 30-token + 1 x 4000-token
@@ -128,13 +128,13 @@ prompt, 8000-token output) arriving at t = 30 s; final KV of the longs ~681k tok
 
 | case | short TTFT mean / p99 | short E2E mean / p99 | short TPOT | long TPOT | long E2E | out tok/s | preemptions |
 |---|---|---|---|---|---|---|---|
-| B0 (vLLM default) | 26.7 s / 99.2 s | 29.7 s / 105 s | 76.8 ms | 29.3 ms | 235 s | 2487 | 38 (125k tokens recomputed) |
+| B0 (vLLM default) | 26.7 s / 99.2 s | 29.7 s / 105 s | 76.8 ms | 29.3 ms | 235 s | 2487 | 52 (219k tokens recomputed) |
 | peak (oracle admission only) | 0.20 s / 3.6 s | 1.03 s / 6.0 s | 21.7 ms | 20.5 ms | 240 s | 2351 | 0 |
 | full (peak + C3 + cg_cap) | 0.23 s / 4.0 s | 1.02 s / 5.96 s | 20.6 ms | 20.1 ms | 235 s | 2389 | 0 |
-| static `--max-num-seqs 32` | 148 s / 218 s | 148 s / 218 s | 15.4 ms | 14.1 ms | 201 s | 2061 | |
-| static `--max-num-seqs 64` | 78.2 s / 160 s | 79.2 s / 161 s | 25.3 ms | 20.9 ms | 200 s | 2362 | |
-| static `--max-num-seqs 128` | 28.8 s / 99.2 s | 30.5 s / 102 s | 43.5 ms | 28.8 ms | 231 s | 2518 | |
-| static `--max-num-seqs 256` | 26.9 s / 99.4 s | 29.6 s / 105 s | 70.0 ms | 29.0 ms | 232 s | 2507 | |
+| static `--max-num-seqs 32` | 148 s / 218 s | 148 s / 218 s | 15.4 ms | 14.1 ms | 201 s | 2061 | 0 |
+| static `--max-num-seqs 64` | 78.2 s / 160 s | 79.2 s / 161 s | 25.3 ms | 20.9 ms | 200 s | 2362 | 18 |
+| static `--max-num-seqs 128` | 28.8 s / 99.2 s | 30.5 s / 102 s | 43.5 ms | 28.8 ms | 231 s | 2518 | 56 |
+| static `--max-num-seqs 256` | 26.9 s / 99.4 s | 29.6 s / 105 s | 70.0 ms | 29.0 ms | 232 s | 2507 | 53 |
 
 Best static on short E2E is `--max-num-seqs 256` (~= default): the oracle planner is **28.7x** better on short
 E2E mean, 17.5x on p99, 136x on TTFT, and 1.41x on long TPOT. Static seat caps trade the classes against each
@@ -153,14 +153,14 @@ fewer longs decode concurrently early on. Shaping/C3 add little here (X is 1.4% 
 
 ### 5c. Ablations and cross-model replication (jobs 1040, 1041, 1043)
 **Does shaping need the oracle?** No, not on this workload. Reactive shaping (cap whenever a >= 4k-KV decode
-runs, ignoring remaining tokens; `REGIME_SHAPE_MIN_REMAIN=0`) gives 1.29x short E2E, 1.29x long TPOT on Qwen3-8B
+runs, ignoring remaining tokens; `REGIME_SHAPE_MIN_REMAIN=0`) gives 1.27x short E2E, 1.27x long TPOT on Qwen3-8B
 X-heavy 24k, inside the oracle variant's 1.22-1.33x range. The long requests have thousands of tokens left for
 almost their whole life, so the remaining-length check rarely changes a decision. Shaping is a *regime-aware*
 win, not an *oracle* win.
 
 **Does the burst win need peak-KV planning, or just short-first ordering?** Peak-KV planning. Oracle
 shortest-remaining-first ordering without KV planning (`REGIME_SCHED_ADMIT=sjf`, what SSJF/LTR-style
-schedulers do given perfect lengths): short E2E 20.8 s (1.43x vs default) vs 1.03 s (28.8x) for the peak
+schedulers do given perfect lengths): short E2E 20.8 s (1.40x vs the same-job default) vs 1.03 s (28.8x) for the peak
 planner; its ITL p99 gets worse (1.4 s vs 0.44 s) because preemptions continue. Ordering cannot stop the
 already-admitted longs from growing into the cache; only planning their future peak can.
 
@@ -230,7 +230,7 @@ larger graphed size per step) is the natural fix.
 - **Supported:** given oracle output lengths, *planning admission against each request's future KV peak* is a
   large, robust win under memory pressure (20-30x short E2E, 90-150x TTFT, 1.35-1.43x long TPOT, 3 models,
   repeat within 3%), at a 5-7% throughput cost. Neither static knobs (`--max-num-seqs`) nor oracle-length
-  ordering (SJF, 1.43x) reproduce it. This is the part that needs the oracle.
+  ordering (SJF, 1.40x) reproduce it. This is the part that needs the oracle.
 - **Supported, but not oracle-dependent:** regime-aware step shaping at the CUDA-graph / split boundary (1.25x
   short E2E on two 8B models, above every static config). A reactive rule does equally well here.
 - **Small:** per-step kernel dispatch. C3 gives 1.15-1.18x alone on X-heavy workloads, nothing on top of shaping;

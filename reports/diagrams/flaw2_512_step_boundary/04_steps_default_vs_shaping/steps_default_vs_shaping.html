@@ -94,20 +94,20 @@
         </g>
         <rect x="240" y="496" width="180" height="16" fill="#c9d0de" stroke="#4f5d75"/><text x="428" y="508" class="s" style="fill:#2d3142">1.00x</text>
         <rect x="240" y="522" width="205" height="16" fill="#c9d0de" stroke="#4f5d75"/><text x="453" y="534" class="s" style="fill:#2d3142">1.14x (1 run)</text>
-        <rect x="240" y="548" width="194" height="16" fill="#c9d0de" stroke="#4f5d75"/><text x="442" y="560" class="s" style="fill:#2d3142">1.08 ± 0.01x</text><text x="530" y="560" class="s" style="fill:#eb6c36;font-weight:600">but time to first token 0.47x (2x worse)</text>
+        <rect x="240" y="548" width="194" height="16" fill="#c9d0de" stroke="#4f5d75"/><text x="442" y="560" class="s" style="fill:#2d3142">1.08 ± 0.01x</text><text x="530" y="560" class="s" style="fill:#eb6c36;font-weight:600">TTFT 0.47x (2x worse)</text>
         <rect x="240" y="574" width="212" height="16" fill="#c9d0de" stroke="#4f5d75"/><text x="460" y="586" class="s" style="fill:#2d3142">1.18 ± 0.03x</text>
-        <rect x="240" y="600" width="227" height="16" fill="#2e5aa8" stroke="#2e5aa8"/><text x="475" y="612" class="s" style="fill:#2e5aa8;font-weight:600">1.26 ± 0.03x</text><text x="560" y="612" class="s">long-request time per output token 1.26x, TTFT 0.96x</text>
-        <rect x="240" y="626" width="229" height="16" fill="#2e5aa8" stroke="#2e5aa8"/><text x="477" y="638" class="s">1.27 ± 0.03x (C3 adds nothing once X steps are gone)</text>
+        <rect x="240" y="600" width="227" height="16" fill="#2e5aa8" stroke="#2e5aa8"/><text x="475" y="612" class="s" style="fill:#2e5aa8;font-weight:600">1.26 ± 0.03x</text><text x="553" y="612" class="s">long TPOT 1.26x, TTFT 0.96x</text>
+        <rect x="240" y="626" width="229" height="16" fill="#2e5aa8" stroke="#2e5aa8"/><text x="477" y="638" class="s">1.27 ± 0.03x</text><text x="553" y="638" class="s">C3 adds nothing here</text>
 
         <!-- right-hand stat blocks -->
-        <rect x="720" y="496" width="240" height="68" rx="6" fill="#fdece4" stroke="#eb6c36"/>
-        <text x="840" y="518" text-anchor="middle" class="s" style="fill:#2d3142">X steps' share of GPU time</text>
-        <text x="840" y="544" text-anchor="middle" class="n" style="font-size:20px">56% → 7%</text>
-        <text x="840" y="558" text-anchor="middle" class="s">default → shaping</text>
-        <rect x="720" y="574" width="240" height="68" rx="6" fill="#e6edf8" stroke="#2e5aa8"/>
-        <text x="840" y="596" text-anchor="middle" class="s" style="fill:#2d3142">Steps in a 3 s window</text>
-        <text x="840" y="622" text-anchor="middle" class="n" style="font-size:20px">132 → 177</text>
-        <text x="840" y="636" text-anchor="middle" class="s">default → shaping</text>
+        <rect x="760" y="496" width="200" height="68" rx="6" fill="#fdece4" stroke="#eb6c36"/>
+        <text x="860" y="518" text-anchor="middle" class="s" style="fill:#2d3142">X steps' share of GPU time</text>
+        <text x="860" y="544" text-anchor="middle" class="n" style="font-size:20px">56% → 7%</text>
+        <text x="860" y="558" text-anchor="middle" class="s">default → shaping</text>
+        <rect x="760" y="574" width="200" height="68" rx="6" fill="#e6edf8" stroke="#2e5aa8"/>
+        <text x="860" y="596" text-anchor="middle" class="s" style="fill:#2d3142">Steps in a 3 s window</text>
+        <text x="860" y="622" text-anchor="middle" class="n" style="font-size:20px">132 → 177</text>
+        <text x="860" y="636" text-anchor="middle" class="s">default → shaping</text>
         <text x="40" y="670" class="s">Default: X steps average 36 ms; 61.6% of GPU time is eager with 1 split. Shaping: eager falls to 20.4%.</text>
         <text x="40" y="686" class="s">Other models (1 run each): Llama-3.1-8B shaping 1.25x vs capture-2048 1.16x; Qwen3-4B shaping 1.14x vs capture-2048 1.17x.</text>
         <text x="40" y="702" class="s">Workload: 4 requests with 24k-token contexts decode; 24 new requests/s arrive with 450-1000-token prompts.</text>

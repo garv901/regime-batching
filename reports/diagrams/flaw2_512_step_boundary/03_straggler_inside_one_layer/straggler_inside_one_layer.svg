@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="strag-title strag-desc" id="straggler_inside_one_layer-root">
+        <title id="strag-title">Straggler inside one attention layer</title>
+        <desc id="strag-desc">SM-over-time view of one attention layer: with 1 split (407 microseconds) 8 SMs stream the long decode while 124 idle; with splitting (85 microseconds) the 32k KV is shared across many SMs plus a small combine step.</desc>
+        <defs>
+      <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Noto+Serif:ital@0;1&amp;family=Noto+Sans+KR:wght@400;500;600&amp;family=Noto+Serif+KR:wght@400&amp;family=Noto+Sans+TC:wght@400;500;600&amp;family=Noto+Serif+TC:wght@400&amp;display=swap');
+      #straggler_inside_one_layer-root { --color-paper:#f5f5f5; --color-ink:#2d3142; --color-muted:#4f5d75;
+      --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+      #straggler_inside_one_layer-root { font-family: var(--font-sans); color: var(--color-ink); }
+      #straggler_inside_one_layer-root .diagram-container { width:100%; overflow-x:auto; }
+      #straggler_inside_one_layer-root .n { font:600 13px 'Geist',sans-serif;fill:#2d3142 }
+      #straggler_inside_one_layer-root .s { font:400 10px 'Geist Mono',monospace;fill:#4f5d75 }
+      #straggler_inside_one_layer-root .l { font:500 10px 'Geist Mono',monospace;fill:#4f5d75;letter-spacing:.06em }
+      #straggler_inside_one_layer-root .h { font:600 11px 'Geist Mono',monospace;fill:#4f5d75;letter-spacing:.14em }
+      #straggler_inside_one_layer-root .t { font:italic 400 16px 'Instrument Serif',serif;fill:#2d3142 }
+      #straggler_inside_one_layer-root .diagram-container { overflow-x:visible }</style>
+          <pattern id="straggler_inside_one_layer-strag-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#b8bdcb" stroke-width="1.5"/></pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+        <text x="30" y="26" class="s" style="font-size:11px">Step: one 512-token prefill chunk + 15 short decodes + one 32k-context decode. One attention layer, Qwen3-8B, H100 (132 SMs). Time axis is to scale for the totals only.</text>
+
+        <!-- TOP PANEL -->
+        <rect x="20" y="44" width="960" height="250" rx="6" fill="#fff" stroke="#c9ccd6"/>
+        <text x="40" y="70" class="h" style="fill:#eb6c36">1 SPLIT (DEFAULT ABOVE 512 TOKENS): 407 µs PER LAYER</text>
+
+        <text x="40" y="106" class="n" style="font-size:12px">124 SMs</text>
+        <text x="40" y="120" class="s">no work left</text>
+        <rect x="230" y="92" width="60" height="36" fill="#c9d0de" stroke="#4f5d75"/>
+        <text x="260" y="114" text-anchor="middle" class="s">short tiles</text>
+        <rect x="290" y="92" width="550" height="36" fill="url(#straggler_inside_one_layer-strag-hatch)" stroke="#b8bdcb"/>
+        <rect x="470" y="102" width="190" height="16" fill="#fff"/>
+        <text x="565" y="114" text-anchor="middle" class="s" style="fill:#2d3142">idle (124 of 132 SMs wait)</text>
+
+        <text x="40" y="164" class="n" style="font-size:12px">8 SMs</text>
+        <text x="40" y="178" class="s">1 CTA per KV head</text>
+        <rect x="230" y="150" width="60" height="36" fill="#c9d0de" stroke="#4f5d75"/>
+        <text x="260" y="172" text-anchor="middle" class="s">short tiles</text>
+        <rect x="290" y="150" width="550" height="36" fill="#fdece4" stroke="#eb6c36" stroke-width="1.6"/>
+        <text x="565" y="166" text-anchor="middle" class="n" style="font-size:12px">streams the 32k decode's whole KV</text>
+        <text x="565" y="180" text-anchor="middle" class="s" style="fill:#2d3142">~16.8 MB per KV head at ~58 GB/s</text>
+        <line x1="840" y1="84" x2="840" y2="206" stroke="#eb6c36" stroke-width="1.4" stroke-dasharray="4,3"/>
+        <text x="848" y="98" class="s" style="fill:#eb6c36">step ends</text>
+
+        <!-- axis -->
+        <line x1="230" y1="214" x2="840" y2="214" stroke="#4f5d75" stroke-width="1"/>
+        <line x1="230" y1="209" x2="230" y2="219" stroke="#4f5d75"/><line x1="840" y1="209" x2="840" y2="219" stroke="#4f5d75"/>
+        <text x="230" y="232" text-anchor="middle" class="s">0 µs</text>
+        <text x="840" y="232" text-anchor="middle" class="s">407 µs</text>
+        <text x="40" y="262" class="s">Calculation: 16.8 MB (32,768 tokens × 128 dims × 2 for K and V × 2 bytes) ÷ ~58 GB/s ≈ 0.29 ms for one CTA.</text>
+        <text x="40" y="278" class="s">The step waits for this straggler. Phase widths are illustrative; only the 407 µs total is measured.</text>
+
+        <!-- BOTTOM PANEL -->
+        <rect x="20" y="314" width="960" height="250" rx="6" fill="#fff" stroke="#c9ccd6"/>
+        <text x="40" y="340" class="h" style="fill:#2e5aa8">SPLIT (BEST SPLIT): 85 µs PER LAYER</text>
+
+        <text x="40" y="376" class="n" style="font-size:12px">SMs with short tiles</text>
+        <rect x="230" y="362" width="60" height="30" fill="#c9d0de" stroke="#4f5d75"/>
+        <text x="260" y="381" text-anchor="middle" class="s">short tiles</text>
+
+        <text x="40" y="430" class="n" style="font-size:12px">Many other SMs</text>
+        <text x="40" y="444" class="s">slices of the 32k KV</text>
+        <g fill="#e6edf8" stroke="#2e5aa8" stroke-width="1.2">
+          <rect x="230" y="406" width="105" height="12"/><rect x="230" y="421" width="105" height="12"/><rect x="230" y="436" width="105" height="12"/><rect x="230" y="451" width="105" height="12"/>
+        </g>
+        <rect x="335" y="362" width="22" height="101" fill="#2e5aa8" stroke="#2e5aa8"/>
+        <text x="367" y="388" class="s" style="fill:#2e5aa8">small combine step</text>
+        <text x="367" y="402" class="s">merges partial results</text>
+        <text x="282" y="500" text-anchor="middle" class="s" style="fill:#2d3142">KV slices run in parallel on many SMs</text>
+        <line x1="357" y1="355" x2="357" y2="470" stroke="#2e5aa8" stroke-width="1.4" stroke-dasharray="4,3"/>
+        <text x="365" y="350" class="s" style="fill:#2e5aa8">step ends</text>
+
+        <!-- axis -->
+        <line x1="230" y1="516" x2="840" y2="516" stroke="#4f5d75" stroke-width="1"/>
+        <line x1="230" y1="511" x2="230" y2="521" stroke="#4f5d75"/><line x1="357" y1="511" x2="357" y2="521" stroke="#4f5d75"/>
+        <text x="230" y="534" text-anchor="middle" class="s">0 µs</text>
+        <text x="357" y="534" text-anchor="middle" class="s">85 µs</text>
+        <text x="840" y="534" text-anchor="middle" class="s" style="fill:#b8bdcb">407 µs (same scale as above)</text>
+
+        <rect x="560" y="396" width="340" height="52" rx="6" fill="#f5f5f5" stroke="#2d3142"/>
+        <text x="730" y="418" text-anchor="middle" class="n">4.8x shorter: 407 µs → 85 µs</text>
+        <text x="730" y="436" text-anchor="middle" class="s">same step, same layer, only the split differs</text>
+
+        <!-- legend -->
+        <rect x="20" y="588" width="12" height="12" fill="#c9d0de" stroke="#4f5d75"/>
+        <text x="40" y="598" class="s">short prefill / decode tiles</text>
+        <rect x="250" y="588" width="12" height="12" fill="#fdece4" stroke="#eb6c36"/>
+        <text x="270" y="598" class="s">long decode, 1 split (slow path)</text>
+        <rect x="500" y="588" width="12" height="12" fill="#e6edf8" stroke="#2e5aa8"/>
+        <text x="520" y="598" class="s">long decode, split (fast path)</text>
+        <rect x="750" y="588" width="12" height="12" fill="url(#straggler_inside_one_layer-strag-hatch)" stroke="#b8bdcb"/>
+        <text x="770" y="598" class="s">idle SMs</text>
+      </svg>
