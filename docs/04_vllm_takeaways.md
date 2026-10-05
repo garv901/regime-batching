@@ -106,6 +106,39 @@ The static flag is the simplest choice for users. For vLLM itself, two changes f
 KV split available above the capture size for steps with long-context decodes, and let the scheduler know the
 capture size.
 
+### 3.6 An output-length oracle does not improve the split decision
+
+- **Mechanism.** FA3 already chooses the number of KV splits for each sequence. In vllm-project/flash-attention
+  (commit `506341a143fcabd4bb79052a7605ada727d6b3f5`), `hopper/flash_prepare_scheduler.cu:161` sets the split count
+  of a sequence from the KV block count of that sequence. A step-level upper bound (`num_splits_static`) caps it.
+  With an upper bound above 1, long-context decodes get many splits and short ones get 1. With an upper bound of 1,
+  every sequence gets 1 split. So the question "enable the split for a request that will become long" becomes
+  "keep the upper bound above 1 while a long-context decode is in the step".
+- **Why the oracle does not help.** The split decision depends only on the context length at the current step.
+  The engine knows this length without an oracle: it is the prompt length plus the tokens generated so far (vLLM
+  keeps it in `seq_lens`). A request that will become long is still short now, and a split of a short context adds
+  a combine step and gives no gain. The split count is also metadata that vLLM rebuilds on the CPU at every step.
+  A change costs nothing, so foresight has no setup cost to plan around.
+- **Evidence.** C3 (`regime_batching/attn/backend.py`) makes the decision reactively. It reads only CPU-side
+  metadata of the current step (`seq_lens_cpu_upper_bound`, `query_start_loc_cpu`) and raises the upper bound on
+  predicted X steps. It has a minimum-gain gate of 8 us per layer, and the decision costs about 23 us per step.
+  Result on X-heavy Qwen3-8B: 1.18x +- 0.03 short-request E2E (3 repeats). An oracle version would make the same
+  choice at every step. C3 still loses to step shaping (1.26x +- 0.03), because a correct split does not restore the
+  CUDA graph of steps above 512 tokens. Step size also needs no oracle: step shaping with the oracle check gives
+  1.26x, and a reactive version gives 1.27x (single run, compared with the mean of four B0 runs).
+- **Rule.** The oracle helps decisions that are expensive to undo. It does not help decisions that can change at
+  every step.
+
+| Decision | Can it change at the next step? | Does the output-length oracle help? |
+|---|---|---|
+| Admission (KV memory) | No: undoing it needs preemption and recompute | Yes: 19-29x short-request E2E |
+| Placement on an instance or lane | No: moving KV is expensive | Probably; not tested |
+| Kernel KV-split count | Yes, at no cost | No (C3 reactive: 1.18x) |
+| Step size (step shaping) | Yes | No (1.27x without, 1.26x with) |
+
+Placement is the one case where "know in advance that a request will become long" applies. A request with a short
+prompt and a long output looks short at arrival. See [future work item 6](06_limitations_and_future_work.md).
+
 ## 4. Summary
 
 | Area | Practice today | Consequence | Fix that worked | Needs output lengths? |

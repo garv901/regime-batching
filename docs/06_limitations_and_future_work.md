@@ -34,6 +34,8 @@
    available above the capture size for steps with long-context decodes, or base the FA3 split decision on the
    decode context lengths.
 6. **Across instances.** Route requests by their future KV peak and compare with length-grouped multi-instance
-   systems such as CascadeInfer.
+   systems such as CascadeInfer. The oracle matters for placement, because a request with a short prompt and a
+   long output looks short at arrival. Route it to a long lane or instance at arrival, so that short-only
+   instances never see X steps. We did not test this.
 7. **Kernels.** Revisit regime-specific kernels for MoE models and very long contexts, where attention and GEMM
    shapes change more between steps.

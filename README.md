@@ -80,7 +80,10 @@ E2E = mean end-to-end latency of the short requests. Full tables in milliseconds
    the FlashAttention-3 KV split. A long-context decode in such a step becomes a straggler. A scheduler that keeps
    these steps at 512 tokens gains 1.25x on the 8B models. This fix does not need the oracle.
 3. **Regime-specific kernels are a small lever on these models.** Outside the 512-token boundary, the vLLM default
-   FA3 path is close to the hardware limit. Decode on an 8B model is limited by weight reads.
+   FA3 path is close to the hardware limit. Decode on an 8B model is limited by weight reads. An output-length
+   oracle does not change this. The split decision needs only the current context length, which the engine
+   already knows at each step. The oracle helps decisions that cannot be undone, such as admission
+   ([why](docs/04_vllm_takeaways.md#36-an-output-length-oracle-does-not-improve-the-split-decision)).
 
 Details: [docs/04_vllm_takeaways.md](docs/04_vllm_takeaways.md).
 
