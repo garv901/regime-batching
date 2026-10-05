@@ -1,0 +1,27 @@
+# secrets: HF token, API keys
+.env
+.env.*
+
+# environments and builds
+.venv/
+__pycache__/
+*.egg-info/
+build/
+.pytest_cache/
+
+# vendored sources (clone them as described in docs/05_reproduce.md)
+third_party/
+
+# third-party traces (download them; see data/traces/TRACES.md)
+data/traces/*
+!data/traces/TRACES.md
+
+# large or machine-specific run outputs
+logs/*
+!logs/.gitkeep
+results/runs/**/bench.json
+results/runs/**/telemetry/
+results/runs/**/server.log
+results/runs/**/*.parquet
+results/runs/**/trace.json.gz
+reports/figures/**/trace.json.gz

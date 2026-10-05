@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One Boundary, Two Optimizations</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --color-paper:#f5f5f5; --color-ink:#2d3142; --color-muted:#4f5d75;
+      --font-sans:'Geist',system-ui,sans-serif; --font-serif:'Instrument Serif',serif; --font-mono:'Geist Mono',ui-monospace,monospace; }
+    body { font-family:var(--font-sans); background:var(--color-paper); color:var(--color-ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:3rem 2rem; }
+    .frame { max-width:1200px; width:100%; }
+    .diagram-container { width:100%; overflow-x:auto; }
+    .eyebrow { font-family:var(--font-mono); font-size:.66rem; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--color-muted); margin-bottom:.5rem; }
+    h1 { font-family:var(--font-serif); font-size:clamp(1.5rem,2.4vw + .75rem,2rem); font-weight:400; letter-spacing:-.02em; line-height:1.15; margin-bottom:1.5rem; }
+    svg { width:100%; min-width:1000px; display:block; }
+    .n{font:600 13px 'Geist',sans-serif;fill:#2d3142}
+    .s{font:400 10px 'Geist Mono',monospace;fill:#4f5d75}
+    .l{font:500 10px 'Geist Mono',monospace;fill:#4f5d75;letter-spacing:.06em}
+    .t{font:italic 400 16px 'Instrument Serif',serif;fill:#2d3142}
+    @media print { .diagram-container{overflow-x:visible} svg{min-width:0} }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Flowchart · Flaw 2 · the 512-token step boundary</p>
+    <h1>One boundary at 512 tokens switches off two optimizations at once</h1>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="two-paths-title two-paths-desc">
+        <title id="two-paths-title">One boundary, two optimizations</title>
+        <desc id="two-paths-desc">A step with T tokens takes the fast path (CUDA graph plus KV splits) when T is at most 512, and the slow path (eager launch plus FA3 heuristic that picks 1 split) above 512.</desc>
+        <defs>
+          <marker id="tp-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <marker id="tp-fast" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+          <marker id="tp-slow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        </defs>
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+        <!-- arrows first -->
+        <line x1="500" y1="72" x2="500" y2="112" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#tp-arrow)"/>
+        <path d="M400 136 H238 A8 8 0 0 0 230 144 V212" fill="none" stroke="#2e5aa8" stroke-width="1.6" marker-end="url(#tp-fast)"/>
+        <path d="M600 136 H762 A8 8 0 0 1 770 144 V212" fill="none" stroke="#eb6c36" stroke-width="1.6" marker-end="url(#tp-slow)"/>
+        <!-- fast column -->
+        <line x1="230" y1="268" x2="230" y2="300" stroke="#2e5aa8" stroke-width="1.6" marker-end="url(#tp-fast)"/>
+        <line x1="230" y1="356" x2="230" y2="388" stroke="#2e5aa8" stroke-width="1.6" marker-end="url(#tp-fast)"/>
+        <!-- slow column -->
+        <line x1="770" y1="268" x2="770" y2="300" stroke="#eb6c36" stroke-width="1.6" marker-end="url(#tp-slow)"/>
+        <line x1="770" y1="356" x2="770" y2="388" stroke="#eb6c36" stroke-width="1.6" marker-end="url(#tp-slow)"/>
+        <line x1="770" y1="444" x2="770" y2="476" stroke="#eb6c36" stroke-width="1.6" marker-end="url(#tp-slow)"/>
+
+        <!-- arrow label masks -->
+        <rect x="288" y="108" width="96" height="16" fill="#f5f5f5"/>
+        <text x="336" y="120" text-anchor="middle" class="l" style="fill:#2e5aa8">YES  T ≤ 512</text>
+        <rect x="616" y="108" width="96" height="16" fill="#f5f5f5"/>
+        <text x="664" y="120" text-anchor="middle" class="l" style="fill:#eb6c36">NO  T &gt; 512</text>
+        <rect x="778" y="452" width="130" height="16" fill="#f5f5f5"/>
+        <text x="784" y="464" class="l" style="fill:#eb6c36">YES (≥ 417 tok)</text>
+
+        <!-- input + decision -->
+        <rect x="400" y="24" width="200" height="48" rx="6" fill="#fff" stroke="#2d3142" stroke-width="1"/>
+        <text x="500" y="46" text-anchor="middle" class="n">One scheduler step</text>
+        <text x="500" y="62" text-anchor="middle" class="s">T = new tokens in step</text>
+        <rect x="400" y="112" width="200" height="48" rx="6" fill="#fff" stroke="#2d3142" stroke-width="1.4"/>
+        <text x="500" y="134" text-anchor="middle" class="n">Is T ≤ 512 ?</text>
+        <text x="500" y="150" text-anchor="middle" class="s">max_cudagraph_capture_size</text>
+
+        <!-- column headers -->
+        <text x="230" y="196" text-anchor="middle" class="l" style="fill:#2e5aa8;font-weight:600">FAST PATH</text>
+        <text x="770" y="196" text-anchor="middle" class="l" style="fill:#eb6c36;font-weight:600">SLOW PATH  (default vLLM above 512)</text>
+
+        <!-- fast nodes -->
+        <rect x="70" y="212" width="320" height="56" rx="6" fill="#e6edf8" stroke="#2e5aa8" stroke-width="1.4"/>
+        <text x="230" y="234" text-anchor="middle" class="n">Optimization 1: CUDA graph replay</text>
+        <text x="230" y="250" text-anchor="middle" class="s">full graph (pure decode) / piecewise (mixed)</text>
+        <text x="230" y="262" text-anchor="middle" class="s">no per-kernel CPU launch</text>
+        <rect x="70" y="300" width="320" height="56" rx="6" fill="#e6edf8" stroke="#2e5aa8" stroke-width="1.4"/>
+        <text x="230" y="322" text-anchor="middle" class="n">Optimization 2: max_num_splits = 32</text>
+        <text x="230" y="338" text-anchor="middle" class="s">set only if full graphs on AND T ≤ 512</text>
+        <rect x="70" y="388" width="320" height="56" rx="6" fill="#e6edf8" stroke="#2e5aa8" stroke-width="2"/>
+        <text x="230" y="410" text-anchor="middle" class="n">Long decode split across many SMs</text>
+        <text x="230" y="426" text-anchor="middle" class="s">KV divided over CTAs, small combine step</text>
+
+        <!-- slow nodes -->
+        <rect x="610" y="212" width="320" height="56" rx="6" fill="#fdece4" stroke="#eb6c36" stroke-width="1.4"/>
+        <text x="770" y="234" text-anchor="middle" class="n">Eager execution (no graph)</text>
+        <text x="770" y="250" text-anchor="middle" class="s">CPU launches every kernel: ~16.5 ms/step</text>
+        <text x="770" y="262" text-anchor="middle" class="s">on this node, about equal to GPU time</text>
+        <rect x="610" y="300" width="320" height="56" rx="6" fill="#fdece4" stroke="#eb6c36" stroke-width="1.4"/>
+        <text x="770" y="322" text-anchor="middle" class="n">max_num_splits = 0</text>
+        <text x="770" y="338" text-anchor="middle" class="s">"use FA3's heuristics"</text>
+        <rect x="610" y="388" width="320" height="56" rx="6" fill="#fff" stroke="#eb6c36" stroke-width="1.4"/>
+        <text x="770" y="410" text-anchor="middle" class="n">FA3 split heuristic</text>
+        <text x="770" y="426" text-anchor="middle" class="s">prefill chunk ≥ 417 tokens in the step?</text>
+        <rect x="610" y="476" width="320" height="56" rx="6" fill="#fdece4" stroke="#eb6c36" stroke-width="2"/>
+        <text x="770" y="498" text-anchor="middle" class="n">1 split for every sequence: straggler</text>
+        <text x="770" y="514" text-anchor="middle" class="s">one CTA per KV head streams the long decode</text>
+
+        <!-- boundary banner -->
+        <rect x="70" y="560" width="860" height="52" rx="6" fill="#fff" stroke="#2d3142" stroke-width="1"/>
+        <text x="500" y="583" text-anchor="middle" class="t">One number, T = 512, turns off the CUDA graph AND the KV split together.</text>
+        <text x="500" y="601" text-anchor="middle" class="s">Both were tied to the same threshold, so a prompt that pushes T past 512 loses both in that step.</text>
+
+        <!-- source note -->
+        <text x="70" y="640" class="s" style="font-weight:600">Source: vllm/v1/attention/backends/flash_attn.py:805-815</text>
+        <text x="70" y="656" class="s">Splits are enabled only in the CUDA-graph range because they allocate intermediate buffers of size</text>
+        <text x="70" y="670" class="s">[num_splits, num_heads, num_tokens, head_size]; the memory cost grows with T.</text>
+
+        <!-- legend -->
+        <rect x="70" y="692" width="12" height="12" rx="2" fill="#e6edf8" stroke="#2e5aa8"/>
+        <text x="90" y="702" class="s">fast path (T ≤ 512)</text>
+        <rect x="260" y="692" width="12" height="12" rx="2" fill="#fdece4" stroke="#eb6c36"/>
+        <text x="280" y="702" class="s">slow path (default vLLM, T &gt; 512)</text>
+        <text x="560" y="702" class="s">Qwen3-8B, 1x H100, vLLM 0.30.0, FA3</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>
