@@ -27,6 +27,24 @@ Preemptions are counted from the step telemetry: a request that starts a step be
 already reached was preempted. For RegimeScheduler runs, vLLM's own preemption list agrees (sjf 307, peak and
 full 0). Tokens lost to preemption and computed again: B0 219k, mns64 123k, mns128 221k, mns256 222k, sjf 339k.
 
+Prefix caching was on in all runs (the vLLM default). A preempted request can find its own blocks in the prefix
+cache when it is admitted again. The tokens that it skips at the restart show how much the cache returned:
+
+| Run | Preemptions | KV tokens held when preempted | Returned by the prefix cache | Computed again |
+|---|---|---|---|---|
+| B0 (job 1033) | 52 | 224,842 | 6,000 (3%) | 218,842 |
+| B0 repeat (job 1043) | 49 | 223,913 | 5,328 (2%) | 218,585 |
+| mns128 | 56 | 232,472 | 11,392 (5%) | 221,080 |
+| mns256 | 53 | 230,779 | 9,232 (4%) | 221,547 |
+| sjf | 306 | 403,478 | 64,336 (16%) | 339,142 |
+| Llama-3.1-8B B0 | 44 | 196,991 | 6,368 (3%) | 190,623 |
+| Qwen3-4B B0 | 47 | 201,145 | 13,776 (7%) | 187,369 |
+
+The cache returns little because vLLM puts the freed blocks at the end of the free queue
+(`vllm/v1/core/block_pool.py:770-798`) and takes new blocks from the front (`block_pool.py:678`). Preemption occurs
+only when the cache is full. The free queue is then almost empty, so the long requests that continue to grow take
+the freed blocks at once.
+
 sjf ran in job 1043. Against the B0 of that job (29,111.2 ms), sjf gives 1.40x short E2E and 1.53x short TTFT. Its
 short TPOT and p99 values are worse than B0, because it preempts six times as often.
 

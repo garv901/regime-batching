@@ -18,6 +18,10 @@
 7. **One GPU, dense models.** All results are on one H100 with dense 8B and 4B models.
 8. **Scheduler overhead.** The C4 wrapper measured 76 us per call before the planner was vectorized. We did not
    measure it again inside a running server.
+9. **No shared prefixes.** Prefix caching was on, but the prompts are random tokens, so no two requests share a
+   prefix. The study gives no result for shared system prompts, multi-turn chat or retrieval prompts. The KV
+   planner counts the full prompt of each request (`regime_batching/oracle.py:66`). With shared prefixes, it
+   counts a shared block once for each request that uses it, so it reserves too much memory.
 
 ## Future work, in order of priority
 
@@ -39,3 +43,10 @@
    instances never see X steps. We did not test this.
 7. **Kernels.** Revisit regime-specific kernels for MoE models and very long contexts, where attention and GEMM
    shapes change more between steps.
+8. **Prefix caching.** Make the KV planner count each shared block once, while at least one request uses it. The
+   oracle gives the finish time of each of these requests, so the planner knows when the shared block becomes
+   free. Test it on the burst with a shared 2,000-token system prompt and on a multi-turn workload. Compare B0, B0
+   with `--no-enable-prefix-caching`, the current planner and the prefix-aware planner. Measure the cache hit
+   rate, the recomputed tokens, short-request E2E and throughput. Note: the output-length oracle does not help the
+   eviction choice. The best eviction needs the time when a future prompt uses a block again, which output lengths
+   do not give.

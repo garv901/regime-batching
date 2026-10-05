@@ -22,6 +22,9 @@ Source paths refer to vLLM v0.30.0.
   of the waiting queue (`scheduler.py:1517`). Later, vLLM computes the request's tokens again.
 - **Effect.** 52 preemptions, about 219k tokens computed a second time, and 319 steps longer than 100 ms. Every
   running decode waits during those steps: short TPOT 76.8 ms against 21.7 ms with the KV plan.
+- **The prefix cache does not save the work.** The preempted requests held 225k tokens of KV. When they came back,
+  the prefix cache returned only 6k (3%). Preemption occurs when the cache is full, so the growing requests take
+  the freed blocks at once (details in [03_results.md](03_results.md), section 1.1).
 
 ### 1.3 The waiting queue blocks at its head
 
