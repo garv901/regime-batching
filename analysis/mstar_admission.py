@@ -4,18 +4,22 @@
       --out reports/figures/mstar_admission/<tag>
 
 Input layout (experiments/mstar/admission_matrix.sbatch), one run = one case dir:
-  <results_root>/<slurmjob>_<config>/<workload>_r<rep>/{bench.json, client.log, server.log, telemetry/}
-  <results_root>/<slurmjob>_<config>/server_<k>/{server.log, startup_s.txt, telemetry/steps_rank*_pid*.jsonl,
-      telemetry/admission_*.jsonl (bench-peak configs)}
-  <results_root>/<slurmjob>_<config>/{meta.txt, gpu_mem.csv}
+  <results_root>/<slurmjob>_<label>[_rq<N>]/<workload>_r<rep>/{bench.json, client.log, server.log, telemetry/}
+  <results_root>/<slurmjob>_<label>[_rq<N>]/server_<k>/{server.log, startup_s.txt, telemetry/steps_rank*_pid*.jsonl,
+      telemetry/admission_*.jsonl (bench-peak worktrees)}
+  <results_root>/<slurmjob>_<label>[_rq<N>]/{meta.txt, gpu_mem.csv}
 One server serves several runs: each case's telemetry/ and server.log are symlinks into its server_<k>/, so cases
 share them and everything read from them is cut to the run's window [trace start, last request end + DRAIN_S].
 The older layout (real telemetry/, server.log, startup_s.txt, gpu_mem.csv in every case dir) still works.
 Every file may be missing; a missing file is reported (flags in the table, notes in compare.md and summary.json),
-never an error. Job dirs of the same config are pooled as extra reps.
+never an error. Job dirs of the same label (the "config" below; a requeued job's _rq<N> suffix is dropped) are pooled as
+extra reps. A warmup_<workload>[_s<k>]/ dir (the sbatch's throwaway replay on a fresh server) is never a case.
+--exclude GLOB (repeatable) drops cases whose name `<jobdir>/<case>` matches, e.g. '*/bagel_burst_v2_r1'.
 
 Writes <out>/compare.md, <out>/summary.json and, per workload, <workload>_{completions,free_kv,short_e2e_cdf,
-long_e2e}.png.
+long_e2e}.png. compare.md gives each config's mean over reps, then its `mean [min-max]` over reps for the key metrics, and
+marks a ratio "within noise" when the two configs' min-max ranges overlap. Host time per decode step (median ms, overall and
+by waiting-queue depth) comes from the step telemetry: see host_time_metrics.
 
 Joins (verified in the producers):
   client <-> server telemetry: bench `request_ids[i]` is the id the client pinned ("{run_id}-{index:06d}"); the API
@@ -33,6 +37,7 @@ Request class: bench `cls`; else intended output length (>= 1024 -> long); else 
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import glob
 import json
 import math
@@ -88,8 +93,14 @@ INK, INK2, GRID = "#0b0b0b", "#52514e", "#e1e0d9"
 REP_STYLES = ["-", "--", ":", "-."]
 
 CASE_RE = re.compile(r"^(?P<wl>.+)_r(?P<rep>\d+)$")
-JOB_RE = re.compile(r"^(?P<job>\d+)_(?P<cfg>.+)$")
+JOB_RE = re.compile(r"^(?P<job>\d+)_(?P<cfg>.+?)(?:_rq\d+)?$")  # _rq<N>: a requeued job's dir (admission_matrix.sbatch)
 CASE_FILES = ("bench.json", "bench.json.gz", "client.log", "server.log", "gpu_mem.csv", "startup_s.txt", "telemetry")
+WARMUP_PREFIX = "warmup_"  # the sbatch's warmup replays: warmup_<workload> would parse as a case when the workload ends in _r<N>
+
+
+def case_match(name: str):
+    """CASE_RE match of a dir name, None for a warmup dir."""
+    return None if name.startswith(WARMUP_PREFIX) else CASE_RE.match(name)
 
 
 # ----------------------------------------------------------------------------------------------- discovery
@@ -101,6 +112,10 @@ class CaseRef:
     workload: str
     rep: int
     meta: list[str] = field(default_factory=list)
+
+    @property
+    def name(self) -> str:  # <jobdir>/<case dir>, what --exclude matches (the job dir keeps a requeued job's _rq<N>)
+        return f"{os.path.basename(os.path.dirname(self.path))}/{os.path.basename(self.path)}"
 
 
 def _read_meta(job_dir: str) -> tuple[list[str], str | None]:
@@ -122,7 +137,7 @@ def _job_cases(job_dir: str) -> list[CaseRef]:
     job, cfg = (jm.group("job"), jm.group("cfg")) if jm else (base, meta_cfg or base)
     out = []
     for name in sorted(os.listdir(job_dir)):
-        cm = CASE_RE.match(name)
+        cm = case_match(name)
         if cm and os.path.isdir(os.path.join(job_dir, name)):
             out.append(CaseRef(os.path.join(job_dir, name), job, cfg, cm.group("wl"), int(cm.group("rep")), meta))
     return out
@@ -144,11 +159,11 @@ def discover(paths: list[str]) -> tuple[list[CaseRef], list[str]]:
             continue
         kids = [k for k in sorted(os.listdir(p)) if os.path.isdir(os.path.join(p, k))]
         base = os.path.basename(p)
-        if any(CASE_RE.match(k) for k in kids):  # a job dir
+        if any(case_match(k) for k in kids):  # a job dir
             add(_job_cases(p))
-        elif CASE_RE.match(base) and (any(os.path.exists(os.path.join(p, f)) for f in CASE_FILES) or not kids):
+        elif case_match(base) and (any(os.path.exists(os.path.join(p, f)) for f in CASE_FILES) or not kids):
             parent = os.path.dirname(p)  # a single case dir; its job dir names the config
-            cm = CASE_RE.match(base)
+            cm = case_match(base)
             jm = JOB_RE.match(os.path.basename(parent))
             meta, meta_cfg = _read_meta(parent)
             job, cfg = (jm.group("job"), jm.group("cfg")) if jm else (os.path.basename(parent), meta_cfg or "?")
@@ -201,19 +216,25 @@ def load_telemetry(tdir: str, notes: list[str]) -> Telemetry | None:
         notes.append(f"no telemetry/steps_rank*_pid*.jsonl under {tdir}")
         return None
     steps, events, pools, marks = [], [], {}, []
-    dropped = 0
+    dropped, saw_rids = 0, False
     for path in files:
         pid = _pid_of(path)
         bad = [0]
         saw_end, saw_step, file_dropped = False, False, 0
+        pending: set = set()  # handles with a new_request and no step yet (handles are per worker process, so per file)
         for r in iter_jsonl(path, bad):
             kind = r.get("kind")
             if kind == "step":
                 saw_step = True
-                if "tm" in r:  # keep only what the metrics read; the per-row rids/q/kv lists are dropped here
+                rids = r.get("rids")
+                saw_rids = saw_rids or rids is not None
+                pending.difference_update(rids or ())  # a handle leaves the queue at the first step that carries it
+                if "tm" in r:  # keep only what the metrics read; the per-row rids/q/kv lists are dropped (rids -> `waiting`)
                     steps.append((r["tm"], pid, r.get("node"), r.get("walk"), r.get("bs"), r.get("ok"),
-                                  r.get("gpu_ms"), r.get("free")))
+                                  r.get("gpu_ms"), r.get("free"), len(pending)))
             elif kind == "event":
+                if r.get("ev") == "new_request" and r.get("h") is not None:
+                    pending.add(r["h"])  # a recycled handle is re-added, so a leaked one never counts twice
                 if "tm" in r:
                     r["pid"] = pid
                     events.append(r)
@@ -231,7 +252,9 @@ def load_telemetry(tdir: str, notes: list[str]) -> Telemetry | None:
         dropped += file_dropped
         if saw_step and not saw_end:
             notes.append(f"{os.path.basename(path)}: no `end` row (server killed before its atexit flush; tail may be missing)")
-    df = pd.DataFrame(steps, columns=["tm", "pid", "node", "walk", "bs", "ok", "gpu_ms", "free"])
+    df = pd.DataFrame(steps, columns=["tm", "pid", "node", "walk", "bs", "ok", "gpu_ms", "free", "waiting"])
+    if not saw_rids:  # telemetry without per-step rids cannot say who is still queued
+        df["waiting"] = np.nan
     # `free` is {resource_key: free pages} for nodes that own a KV pool, {} otherwise
     keys = Counter(k for f in df["free"] if f for k in f)
     kv_key = next((k for k in pools if k in keys), None) or ("kv" if "kv" in keys else (keys.most_common(1)[0][0] if keys else None))
@@ -360,7 +383,7 @@ def server_of(case: str) -> tuple[int | None, int]:
     if k is None:
         return None, 1
     job = os.path.dirname(case)
-    return k, sum(1 for x in os.listdir(job) if CASE_RE.match(x) and index(os.path.join(job, x)) == k)
+    return k, sum(1 for x in os.listdir(job) if case_match(x) and index(os.path.join(job, x)) == k)
 
 
 # ----------------------------------------------------------------------------------------------- per request
@@ -459,6 +482,34 @@ def bench_metrics(rt: pd.DataFrame, b: dict, stall_s: float) -> dict:
 
 
 # ----------------------------------------------------------------------------------------------- telemetry metrics
+# Host time per decode step by waiting-queue depth. The depth bins are [lo, hi); the key suffix names them.
+HOST_BINS = [("w0_50", 0, 50), ("w50_200", 50, 200), ("w200_400", 200, 400), ("w400p", 400, math.inf)]
+HOST_BIN_LABELS = {"host_ms_p50": "all", "host_ms_w0_50": "[0,50)", "host_ms_w50_200": "[50,200)",
+                   "host_ms_w200_400": "[200,400)", "host_ms_w400p": "[400,inf)"}
+HOST_MS_MAX = 500.0  # a gap this long is a pause between bursts, not host work
+HOST_BIN_MIN_N = 30  # a bin with fewer steps reports no median (NaN)
+
+
+def host_time_metrics(st: pd.DataFrame, t0: float, t_end: float) -> dict:
+    """Median host ms per decode step, overall and by waiting depth.
+
+    host ms of a step = (the next step's `tm` - this step's `tm`) x 1000 - this step's `gpu_ms`: the time between two steps
+    that the GPU was not busy with the first. The next step is the next row of the same process (any walk, `st` is sorted
+    by tm), so the last step of the window still has a successor. Kept: `walk == "decode"` rows in [t0, t_end] with
+    0 < host < HOST_MS_MAX (a step without gpu_ms has no host time). `waiting` = requests with a new_request and no step
+    yet, at that step (load_telemetry); the step that first carries a handle no longer counts it.
+    """
+    host = (st.groupby("pid").tm.shift(-1) - st.tm) * 1e3 - st.gpu_ms
+    keep = (st.walk == "decode") & (st.tm >= t0) & (st.tm <= t_end) & (host > 0) & (host < HOST_MS_MAX)
+    h, w = host[keep], st.waiting[keep]
+    m = dict(host_steps=int(len(h)), host_ms_p50=float(h.median()) if len(h) else math.nan)
+    for key, lo, hi in HOST_BINS:
+        x = h[(w >= lo) & (w < hi)]
+        m[f"host_n_{key}"] = int(len(x))
+        m[f"host_ms_{key}"] = float(x.median()) if len(x) >= HOST_BIN_MIN_N else math.nan
+    return m
+
+
 def telemetry_metrics(tel: Telemetry, t0: float, t_end: float) -> dict:
     st, ev = tel.steps, _window(tel.events, t0, t_end)
     win = st[(st.tm >= t0) & (st.tm <= t_end)]  # busy share, decode bs and n_steps stop at the last request end
@@ -478,6 +529,7 @@ def telemetry_metrics(tel: Telemetry, t0: float, t_end: float) -> dict:
         gpu_ms_unresolved=int(win.gpu_ms.isna().sum()), decode_bs_mean=_mean(pd.to_numeric(dec.bs, errors="coerce").dropna()),
         n_steps=int(len(win)), telemetry_dropped=_dropped_by(tel, t_end + DRAIN_S) - _dropped_by(tel, t0),
     )
+    m.update(host_time_metrics(st, t0, t_end))
     return m
 
 
@@ -560,7 +612,7 @@ class Case:
 
     @property
     def name(self) -> str:
-        return f"{self.ref.job}_{self.ref.config}/{self.ref.workload}_r{self.ref.rep}"
+        return self.ref.name
 
 
 def analyze_case(ref: CaseRef, stall_s: float = STALL_S) -> Case:
@@ -680,13 +732,15 @@ def analyze_case(ref: CaseRef, stall_s: float = STALL_S) -> Case:
     if dropped:
         c.flags.add("TEL_DROPS")
         c.notes.append(f"telemetry dropped {dropped} row(s) (bounded writer queue full)")
-    if ref.config in ADMISSION_LOG_CONFIGS:
-        adm = load_admission(tdir, c.notes) if os.path.isdir(tdir) else None
-        if adm is None:
+    # any label that has the files is read (an arm on bench-peak-fast or bench-next has a free-form label); only the
+    # bench-peak configs are flagged when they lack one
+    adm = load_admission(tdir, c.notes) if os.path.isdir(tdir) else None
+    if adm is None:
+        if ref.config in ADMISSION_LOG_CONFIGS:
             c.flags.add("NO_ADMLOG")
             c.notes.append("admission_*.jsonl missing (expected for a bench-peak config)")
-        elif t0 is not None:
-            c.m.update(admission_metrics(adm, tel, rt if b is not None else None, t0, t_end))
+    elif t0 is not None:
+        c.m.update(admission_metrics(adm, tel, rt if b is not None else None, t0, t_end))
     return c
 
 
@@ -698,6 +752,13 @@ SCALARS = [
     "grant_deferred_log", "min_free_kv_pages", "gpu_busy_share", "decode_bs_mean", "planner_us_p50", "planner_us_p99",
     "offloads", "startup_s", "gpu_util_mean_pct", "gpu_mem_peak_mib", "adm_wait_mean_short_s", "adm_wait_mean_long_s",
     "adm_reserved_mean_short_s", "adm_reserved_mean_long_s", "completed_server_side",
+    "host_ms_p50", "host_ms_w0_50", "host_ms_w50_200", "host_ms_w200_400", "host_ms_w400p",
+]
+# (key, column header, decimals) of the spread table: the metrics a decision rests on, each as mean [min-max] over reps
+SPREAD_COLS = [
+    ("short_e2e_mean_s", "short E2E mean (s)", 2), ("short_e2e_p50_s", "short E2E p50 (s)", 2), ("short_e2e_p99_s", "short E2E p99 (s)", 2),
+    ("short_ttft_p99_s", "short TTFT p99 (s)", 3), ("long_e2e_mean_s", "long E2E mean (s)", 1), ("out_tok_s", "out tok/s", 1),
+    *[(k, f"host ms/step {lab}", 2) for k, lab in HOST_BIN_LABELS.items()],
 ]
 KEY_RATIOS = [("short_e2e_mean_s", "short E2E mean"), ("long_e2e_mean_s", "long E2E mean"), ("out_tok_s", "out tok/s")]
 
@@ -707,11 +768,15 @@ def _finite(v) -> bool:
 
 
 def aggregate(cases: list[Case]) -> dict:
-    """Mean over reps of each metric over the reps that have it (NaN if none); n = reps found."""
-    agg: dict = {"n": len(cases)}
+    """Mean over reps of each metric over the reps that have it (NaN if none); n = reps found.
+
+    `spread[k]` = {min, max, n} over the same reps: the rep-to-rep range the tables show and the noise rule reads.
+    """
+    agg: dict = {"n": len(cases), "spread": {}}
     for k in SCALARS:
         vals = [c.m[k] for c in cases if _finite(c.m.get(k))]
         agg[k] = float(np.mean(vals)) if vals else math.nan
+        agg["spread"][k] = dict(min=float(min(vals)) if vals else math.nan, max=float(max(vals)) if vals else math.nan, n=len(vals))
     with_tel = [c for c in cases if "admit_fail" in c.m]
     reasons = sorted({r for c in with_tel for r in c.m["admit_fail"]})
     agg["admit_fail"] = {r: float(np.mean([c.m["admit_fail"].get(r, 0) for c in with_tel])) for r in reasons} if with_tel else {}
@@ -729,15 +794,29 @@ def workload_sort_key(wl: str):
     return (WORKLOAD_ORDER.index(wl), wl) if wl in WORKLOAD_ORDER else (len(WORKLOAD_ORDER), wl)
 
 
+def ranges_overlap(a: dict, b: dict) -> bool | None:
+    """Do two configs' [min, max] rep ranges of one metric overlap? None if either has no value.
+
+    The noise rule: overlapping ranges mean the rep-to-rep spread alone could give the difference between the two means.
+    It is a min-max overlap, not a test: with n reps the range misses the tails, and with n = 1 it is a single point.
+    """
+    if not (_finite(a["min"]) and _finite(b["min"])):
+        return None
+    return max(a["min"], b["min"]) <= min(a["max"], b["max"])
+
+
 def ratios(aggs: dict[str, dict], ref: str) -> dict[str, dict]:
+    """Per config: the ratio of means for each KEY_RATIOS metric, and `within_noise[k]` (ranges overlap) / `single_rep[k]`."""
     out = {}
     for cfg, a in aggs.items():
         if cfg == ref or ref not in aggs:
             continue
-        r = {}
+        r: dict = {"within_noise": {}, "single_rep": {}}
         for k, _ in KEY_RATIOS:
             num, den = a[k], aggs[ref][k]
             r[k] = num / den if _finite(num) and _finite(den) and den != 0 else math.nan
+            r["within_noise"][k] = ranges_overlap(a["spread"][k], aggs[ref]["spread"][k])
+            r["single_rep"][k] = min(a["spread"][k]["n"], aggs[ref]["spread"][k]["n"]) == 1
         out[cfg] = r
     return out
 
@@ -789,14 +868,38 @@ def workload_table(aggs: dict[str, dict], reasons: list[str]) -> str:
         for cfg, r in ratios(aggs, ref).items():
             row = [""] * len(headers)
             row[0], row[1] = f"*{cfg} / {ref}*", ""
-            row[col["short E2E mean (s)"]] = f(r["short_e2e_mean_s"], 2)
-            row[col["long E2E mean (s)"]] = f(r["long_e2e_mean_s"], 2)
-            row[col["out tok/s"]] = f(r["out_tok_s"], 2)
+            row[col["short E2E mean (s)"]] = ratio_cell(r, "short_e2e_mean_s", 2)
+            row[col["long E2E mean (s)"]] = ratio_cell(r, "long_e2e_mean_s", 2)
+            row[col["out tok/s"]] = ratio_cell(r, "out_tok_s", 2)
             rows.append(row)
     return md_table(headers, rows)
 
 
-def render_md(groups: dict, aggs: dict, problems: list[str], figs: dict) -> str:
+def ratio_cell(r: dict, k: str, nd: int) -> str:
+    """The ratio, then ' ≈ (within noise)' if the two configs' rep ranges overlap, or ' (1 rep)' if either side has no spread."""
+    cell = f(r[k], nd)
+    if r["within_noise"][k]:
+        return cell + " ≈ (within noise)"
+    return cell + (" (1 rep)" if r["single_rep"][k] and cell != "-" else "")
+
+
+def spread_cell(a: dict, k: str, nd: int) -> str:
+    """mean [min–max] over the reps that have the metric, '(n=k)' when that is fewer than the config's reps."""
+    sp = a["spread"][k]
+    if sp["n"] == 0:
+        return "-"
+    cell = f(a[k], nd) if sp["n"] == 1 else f"{f(a[k], nd)} [{f(sp['min'], nd)}–{f(sp['max'], nd)}]"
+    return cell + (f" (n={sp['n']})" if sp["n"] != a["n"] else "")
+
+
+def spread_table(aggs: dict[str, dict]) -> str:
+    headers = ["config", "n"] + [h for _, h, _ in SPREAD_COLS]
+    rows = [[cfg, str(aggs[cfg]["n"])] + [spread_cell(aggs[cfg], k, nd) for k, _, nd in SPREAD_COLS]
+            for cfg in sorted(aggs, key=config_sort_key)]
+    return md_table(headers, rows)
+
+
+def render_md(groups: dict, aggs: dict, problems: list[str], figs: dict, excluded: list[str] = ()) -> str:
     L = ["# mstar KV-admission A/B (BAGEL text-to-text)", ""]
     L += [
         "Each config row is the mean over its reps (`n` = reps found; a metric a rep lacks is left out of that mean, "
@@ -816,13 +919,24 @@ def render_md(groups: dict, aggs: dict, problems: list[str], figs: dict) -> str:
         "GPU busy = sum of step `gpu_ms` / (trace start to last request end). decode bs = mean `bs` of ok `decode` steps. "
         "fail: columns count `admit_fail` events by `reason`.",
         "- grant_deferred (adm log), planner_us: admission log, bench-peak configs only (`-` for main/ac).",
-        "- Ratio rows `X / ref` = X's mean divided by the reference's mean (E2E < 1 and tok/s > 1 favour X).",
+        "- Ratio rows `X / ref` = X's mean divided by the reference's mean (E2E < 1 and tok/s > 1 favour X). "
+        "**≈ (within noise)**: X's and the reference's [min–max] rep ranges of that metric overlap, so the spread between reps "
+        "alone could give the difference (a min–max overlap, not a significance test; no mark means the ranges are apart, "
+        "which with few reps is weak evidence). **(1 rep)**: either side has one rep, so the ranges are points.",
+        "- `reps` tables: per config, `mean [min–max]` over the reps (`n` = reps found; `(n=k)` = only k reps have that metric; "
+        "one rep shows the mean alone). **host ms/step** = median over decode steps in the run window of "
+        "(next step's tm - this step's tm) x 1000 - this step's gpu_ms, 0 < host < 500, split by the waiting depth at the step: "
+        "requests with a `new_request` event whose handle has not yet appeared in a step's rids (`all` = every depth). "
+        "A depth bin with fewer than 30 steps shows `-`.",
+        "- Cases dropped by `--exclude` and `warmup_*` dirs (the sbatch's warmup replay) are not in any table.",
         "",
     ]
+    if excluded:
+        L += [f"Excluded by `--exclude`: {', '.join(f'`{n}`' for n in excluded)}.", ""]
     # one set of fail: columns for every workload, so the tables line up
     reasons = sorted({r for w in aggs.values() for a in w.values() for r in a["admit_fail"]} | {"GrantDeferred"})
     for wl in sorted(aggs, key=workload_sort_key):
-        L += [f"## {wl}", "", workload_table(aggs[wl], reasons), ""]
+        L += [f"## {wl}", "", workload_table(aggs[wl], reasons), "", "**reps: mean [min–max]**", "", spread_table(aggs[wl]), ""]
         for tag, title in (("completions", "completions over time"), ("free_kv", "free KV pages"),
                            ("short_e2e_cdf", "short E2E CDF"), ("long_e2e", "long E2E")):
             if figs.get(wl, {}).get(tag):
@@ -975,7 +1089,7 @@ def _clean(o):
     return o
 
 
-def build_summary(inputs, groups, aggs, problems) -> dict:
+def build_summary(inputs, groups, aggs, problems, excluded=()) -> dict:
     wls = {}
     for wl in sorted(aggs, key=workload_sort_key):
         cfgs = {}
@@ -986,11 +1100,13 @@ def build_summary(inputs, groups, aggs, problems) -> dict:
                            notes=c.notes, meta=c.ref.meta, metrics=c.m) for c in groups[wl][cfg]],
             )
         wls[wl] = dict(configs=cfgs, ratios={f"vs_{ref}": ratios(aggs[wl], ref) for ref in ("ac", "main")})
-    return _clean(dict(inputs=inputs, problems=problems, stall_threshold_s=STALL_S, workloads=wls))
+    return _clean(dict(inputs=inputs, problems=problems, excluded=list(excluded), stall_threshold_s=STALL_S, workloads=wls))
 
 
-def run(paths: list[str], out_dir: str, stall_s: float = STALL_S) -> dict:
+def run(paths: list[str], out_dir: str, stall_s: float = STALL_S, exclude: list[str] = ()) -> dict:
     refs, problems = discover(paths)
+    excluded = [r.name for r in refs if any(fnmatch.fnmatchcase(r.name, g) for g in exclude)]
+    refs = [r for r in refs if r.name not in excluded]
     os.makedirs(out_dir, exist_ok=True)
     groups: dict[str, dict[str, list[Case]]] = {}
     for ref in refs:
@@ -1001,8 +1117,8 @@ def run(paths: list[str], out_dir: str, stall_s: float = STALL_S) -> dict:
         figs[wl] = dict(completions=fig_completions(wl, g, out_dir), free_kv=fig_free_kv(wl, g, out_dir),
                         short_e2e_cdf=fig_short_cdf(wl, g, out_dir), long_e2e=fig_long_e2e(wl, g, out_dir))
     with open(os.path.join(out_dir, "compare.md"), "w") as fh:
-        fh.write(render_md(groups, aggs, problems, figs))
-    summary = build_summary(paths, groups, aggs, problems)
+        fh.write(render_md(groups, aggs, problems, figs, excluded))
+    summary = build_summary(paths, groups, aggs, problems, excluded)
     with open(os.path.join(out_dir, "summary.json"), "w") as fh:
         json.dump(summary, fh, indent=1, allow_nan=False)
     return summary
@@ -1013,9 +1129,12 @@ def main(argv=None):
     ap.add_argument("paths", nargs="+", help="job dir(s), results root(s) or case dir(s)")
     ap.add_argument("--out", default=None, help="output dir (default reports/figures/mstar_admission/<first input name>)")
     ap.add_argument("--stall-s", type=float, default=STALL_S, help="STALLED if no completion for this long with requests outstanding")
+    ap.add_argument("--exclude", action="append", default=[], metavar="GLOB",
+                    help="drop cases whose name <jobdir>/<case> matches (repeatable), e.g. '*/bagel_burst_v2_r1' for jobs that "
+                         "used an explicit first-run warmup; warmup_* dirs are always ignored")
     a = ap.parse_args(argv)
     out = a.out or os.path.join(ROOT, "reports", "figures", "mstar_admission", os.path.basename(os.path.normpath(a.paths[0])))
-    s = run(a.paths, out, a.stall_s)
+    s = run(a.paths, out, a.stall_s, a.exclude)
     n = sum(len(c["reps"]) for w in s["workloads"].values() for c in w["configs"].values())
     print(f"{n} case(s), {len(s['workloads'])} workload(s) -> {out}/compare.md, summary.json, *.png")
     for p in s["problems"]:

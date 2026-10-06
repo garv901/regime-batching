@@ -22,6 +22,7 @@ server.log hold two runs 1000 s apart, symlinked into both case dirs (plus a thi
 second server for a fourth).
 """
 import json
+import math
 import os
 import sys
 from datetime import datetime, timezone
@@ -416,7 +417,7 @@ def test_compare_md(result):
     out, _ = result
     md = open(os.path.join(out, "compare.md")).read()
     assert "## bagel_burst" in md and "## bagel_control" in md
-    sec = md.split("## bagel_burst")[1].split("\n## ")[0]  # the bagel_burst table only
+    sec = md.split("## bagel_burst")[1].split("\n## ")[0].split("**reps:")[0]  # the bagel_burst main table only
     table = [ln for ln in sec.splitlines() if ln.startswith("| ")]
     split = lambda ln: [c.strip() for c in ln.strip("|").split("|")]  # noqa: E731
     head = split(table[0])
@@ -727,3 +728,219 @@ def test_an_aborted_stream_counts_as_a_server_timeout():
     err = "Response payload is not completed: <TransferEncodingError: 400, message='Not enough data to satisfy transfer length header.'>"
     assert ma.TIMEOUT_RE.search(err)
     assert not ma.TIMEOUT_RE.search("[Errno 104] Connection reset by peer")
+
+
+# ------------------------------------------------------------------------------------------------ reps, warmup, exclude, host time
+def _job(root, name, label=None):
+    j = os.path.join(root, name)
+    os.makedirs(j)
+    open(os.path.join(j, "meta.txt"), "w").write(f"job={name.split('_')[0]} config={label or name.split('_', 1)[1]}\n")
+    return j
+
+
+def test_reps_pool_across_jobs_and_requeued_dirs(tmp_path):
+    root = str(tmp_path)
+    for name in ("30_ac", "31_ac", "32_ac_rq1"):  # three jobs of one label; the last is a requeued attempt (dir suffix _rq1)
+        make_case(_job(root, name), "bagel_burst", 1, config="ac", telemetry=False)
+    refs, _ = ma.discover([root])
+    assert {r.config for r in refs} == {"ac"} and len(refs) == 3
+    assert sorted(r.name for r in refs) == ["30_ac/bagel_burst_r1", "31_ac/bagel_burst_r1", "32_ac_rq1/bagel_burst_r1"]
+    s = ma.run([root], str(tmp_path / "out"))
+    assert list(s["workloads"]["bagel_burst"]["configs"]) == ["ac"]
+    assert s["workloads"]["bagel_burst"]["configs"]["ac"]["mean"]["n"] == 3
+
+
+def test_warmup_dirs_are_never_cases(tmp_path):
+    root = str(tmp_path)
+    job = _job(root, "33_ac")
+    make_case(job, "bagel_stag_v2_r3", 1, config="ac", telemetry=False)
+    # the sbatch's warmup replay: warmup_<workload>[_s<k>]; for this workload the name parses like a case (workload
+    # "warmup_bagel_stag_v2", rep 3), so it has to be skipped by name
+    make_case(job, "warmup_bagel_stag_v2", 3, config="ac", telemetry=False)
+    os.makedirs(os.path.join(job, "warmup_bagel_burst_v2_s2"))
+    assert ma.case_match("warmup_bagel_stag_v2_r3") is None and ma.case_match("bagel_stag_v2_r3_r1")
+    for target in (root, job):
+        refs, probs = ma.discover([target])
+        assert [(r.workload, r.rep) for r in refs] == [("bagel_stag_v2_r3", 1)] and not probs, target
+    assert ma.discover([os.path.join(job, "warmup_bagel_stag_v2_r3")])[0] == []  # not even when named directly
+    assert list(ma.run([root], str(tmp_path / "out"))["workloads"]) == ["bagel_stag_v2_r3"]
+    # a warmup dir that links to the server's telemetry does not count as a case sharing that server
+    os.makedirs(os.path.join(job, "server_1", "telemetry"))
+    for name in ("bagel_stag_v2_r3_r1", "warmup_bagel_stag_v2_r3"):
+        os.makedirs(os.path.join(job, name), exist_ok=True)
+        os.symlink(os.path.join(job, "server_1", "telemetry"), os.path.join(job, name, "telemetry"))
+    assert ma.server_of(os.path.join(job, "bagel_stag_v2_r3_r1")) == (1, 1)
+
+
+def test_exclude_drops_cases_by_name(tmp_path):
+    root = str(tmp_path)
+    for job, label in (("34_ac", "ac"), ("35_peak_bf", "peak_bf")):
+        j = _job(root, job)
+        for r in (1, 2):
+            make_case(j, "bagel_burst", r, config=label, telemetry=False)
+    out = str(tmp_path / "o1")
+    s = ma.run([root], out, exclude=["*/bagel_burst_r1"])
+    assert sorted(s["excluded"]) == ["34_ac/bagel_burst_r1", "35_peak_bf/bagel_burst_r1"]
+    ac = s["workloads"]["bagel_burst"]["configs"]["ac"]
+    assert [r["rep"] for r in ac["reps"]] == [2] and ac["mean"]["n"] == 1
+    md = open(os.path.join(out, "compare.md")).read()
+    assert "Excluded by `--exclude`: `34_ac/bagel_burst_r1`, `35_peak_bf/bagel_burst_r1`." in md
+    s = ma.run([root], str(tmp_path / "o2"), exclude=["34_*", "nothing_matches"])  # a whole job by pattern; a miss is fine
+    assert s["excluded"] == ["34_ac/bagel_burst_r1", "34_ac/bagel_burst_r2"] and list(s["workloads"]["bagel_burst"]["configs"]) == ["peak_bf"]
+    ma.main([root, "--out", str(tmp_path / "o3"), "--exclude", "34_*", "--exclude", "*_r2"])  # the flag repeats
+    s3 = json.load(open(tmp_path / "o3" / "summary.json"))
+    assert s3["excluded"] == ["34_ac/bagel_burst_r1", "34_ac/bagel_burst_r2", "35_peak_bf/bagel_burst_r2"]
+    assert s3["workloads"]["bagel_burst"]["configs"]["peak_bf"]["mean"]["n"] == 1
+    assert ma.run([root], str(tmp_path / "o4"))["excluded"] == []
+
+
+def _spread_fixture(root):
+    # short E2E mean = 2.5 x scale, long E2E mean = 70 x scale, out tok/s = 4040 / (82 x scale): the scale is the noise knob
+    for job, label, scale in (("40_ac", "ac", 1.0), ("41_ac", "ac", 1.2),                       # ac: short E2E [2.5, 3.0]
+                              ("42_peak_bf", "peak_bf", 0.5), ("43_peak_bf", "peak_bf", 0.55),  # [1.25, 1.375]: apart from ac
+                              ("44_noisy", "noisy", 1.1), ("45_noisy", "noisy", 1.3),           # [2.75, 3.25]: overlaps ac
+                              ("46_solo", "solo", 0.2)):                                        # one rep, apart from ac
+        make_case(_job(root, job), "bagel_burst", 1, config=label, scale=scale, telemetry=False)
+
+
+def test_spread_and_noise_rule(tmp_path):
+    root = str(tmp_path / "r")
+    os.makedirs(root)
+    _spread_fixture(root)
+    out = str(tmp_path / "out")
+    s = ma.run([root], out)
+    cfgs = s["workloads"]["bagel_burst"]["configs"]
+    ac = cfgs["ac"]["mean"]
+    assert ac["spread"]["short_e2e_mean_s"] == dict(min=2.5, max=3.0, n=2) and ac["short_e2e_mean_s"] == pytest.approx(2.75)
+    assert cfgs["solo"]["mean"]["spread"]["out_tok_s"]["n"] == 1
+    rt = s["workloads"]["bagel_burst"]["ratios"]["vs_ac"]
+    for k in ("short_e2e_mean_s", "long_e2e_mean_s", "out_tok_s"):
+        assert rt["noisy"]["within_noise"][k] is True and rt["peak_bf"]["within_noise"][k] is False, k
+        assert rt["solo"]["within_noise"][k] is False and rt["solo"]["single_rep"][k] is True
+        assert rt["peak_bf"]["single_rep"][k] is False
+    assert rt["peak_bf"]["short_e2e_mean_s"] == pytest.approx((2.5 * 0.525) / 2.75)
+    # touching ranges overlap (the rule is <=), a gap does not, a missing metric says nothing
+    assert ma.ranges_overlap(dict(min=1, max=2), dict(min=2, max=3)) and not ma.ranges_overlap(dict(min=1, max=2), dict(min=2.01, max=3))
+    assert ma.ranges_overlap(dict(min=math.nan, max=math.nan), dict(min=1, max=2)) is None
+    full = open(os.path.join(out, "compare.md")).read()
+    assert "min–max" in full.split("## bagel_burst")[0] and "within noise" in full.split("## bagel_burst")[0]  # the header explains the rule
+    main_tbl, spread_tbl = full.split("## bagel_burst")[1].split("**reps: mean [min–max]**")
+    rows = lambda txt: [[c.strip() for c in ln.strip("|").split("|")] for ln in txt.splitlines() if ln.startswith("| ")]  # noqa: E731
+    mh, mrows = rows(main_tbl)[0], {r[0]: r for r in rows(main_tbl)[1:]}
+    cell = lambda row, h: row[mh.index(h)]  # noqa: E731
+    assert cell(mrows["*noisy / ac*"], "short E2E mean (s)").endswith("≈ (within noise)")
+    assert cell(mrows["*noisy / ac*"], "out tok/s").endswith("≈ (within noise)")
+    assert cell(mrows["*peak_bf / ac*"], "short E2E mean (s)") == "0.48" and cell(mrows["*peak_bf / ac*"], "long E2E mean (s)") == "0.48"
+    assert cell(mrows["*solo / ac*"], "short E2E mean (s)") == "0.18 (1 rep)"
+    # spread table: mean [min–max], the lone rep without a bracket
+    sh, srows = rows(spread_tbl)[0], {r[0]: r for r in rows(spread_tbl)[1:]}
+    sc = lambda cfg, h: srows[cfg][sh.index(h)]  # noqa: E731
+    assert sc("ac", "n") == "2" and sc("ac", "short E2E mean (s)") == "2.75 [2.50–3.00]"
+    assert sc("ac", "out tok/s") == "45.2 [41.2–49.3]" and sc("ac", "long E2E mean (s)") == "77.0 [70.0–84.0]"
+    assert sc("solo", "n") == "1" and sc("solo", "short E2E mean (s)") == "0.50"
+    assert sc("ac", "host ms/step all") == "-"  # no telemetry in this fixture
+    for head in ("short E2E p50 (s)", "short E2E p99 (s)", "short TTFT p99 (s)", "host ms/step [0,50)", "host ms/step [400,inf)"):
+        assert head in sh, head
+
+
+# Host ms per decode step by waiting depth. A phase is (waiting depth, decode steps, gap to the next step in ms); gpu_ms = 2,
+# so a phase's host ms is its gap - 2. Depths must not increase from one phase to the next (a queue only drains here).
+GPU_MS = 2.0
+
+
+def host_telemetry(path, phases, *, rids=True, tail=()):
+    """steps_rank0 file: 400 requests arrive at t = 0.5 s (handles 1000-1399), then each phase pops handles from the queue
+    (its first step carries them in its rids) down to its depth and runs its decode steps. `tail` = (walk, gpu_ms, ok) rows
+    after the last phase, 5 ms apart. 40 steps 20 s before the trace start have a host time of 98 ms."""
+    queue = list(range(1000, 1400))
+    rows = [{"kind": "meta", "phase": "process", "schema": 1, "rank": 0, "pid": PID, "detail": True, "ts": 1.78e9, "tm": T0 - 60, "env": {}}]
+    rows += [event("new_request", 0.5, rid=f"x-{h}", h=h, partition="p0", walk="prefill_text") for h in queue]
+    seq, t = 0, 1.0
+    for i in range(40):
+        rows.append(step_row(seq := seq + 1, -20.0 + 0.1 * i, "decode", 1, GPU_MS, {"kv": 1000}))
+    rows.sort(key=lambda r: r["tm"])
+    if not rids:
+        for r in rows:
+            r.pop("rids", None)
+
+    def add(walk, gpu_ms, ok, pop=()):
+        nonlocal seq
+        r = step_row(seq := seq + 1, t, walk, 1, gpu_ms, {"kv": 1000}, ok=ok)
+        if rids:
+            r["rids"] = [0, *pop]
+        else:
+            del r["rids"]
+        rows.append(r)
+
+    for depth, count, gap_ms in phases:
+        pop, queue = queue[:len(queue) - depth], queue[len(queue) - depth:]
+        for i in range(count):
+            add("decode", GPU_MS, True, pop if i == 0 else ())
+            t += gap_ms / 1e3
+    for walk, gpu_ms, ok in tail:
+        add(walk, gpu_ms, ok)
+        t += 0.005
+    rows.append({"kind": "end", "rows": len(rows), "dropped": 0, "ts": 1.78e9, "tm": T0 + 90})
+    write_jsonl(path, rows)
+
+
+def host_case(tmp_path, name, phases, **kw):
+    job = str(tmp_path / name)
+    d = make_case(job, "bagel_burst", 1, config="ac", telemetry=False)
+    os.makedirs(os.path.join(d, "telemetry"))
+    host_telemetry(os.path.join(d, "telemetry", f"steps_rank0_pid{PID}.jsonl"), phases, **kw)
+    return ma.analyze_case(ma.discover([job])[0][0])
+
+
+FULL_PHASES = [(400, 31, 14.0), (399, 31, 11.0), (200, 31, 11.0), (199, 31, 8.0), (50, 31, 8.0), (49, 31, 5.0), (0, 31, 5.0)]
+
+
+def test_host_time_by_waiting_depth(tmp_path):
+    # depths 400 / 399 / 200 / 199 / 50 / 49 / 0 straddle the bin edges 400, 200, 50 (host ms 12 / 9 / 9 / 6 / 6 / 3 / 3)
+    # Not counted: the last step of the first phase (its successor is 0.8 s away: host ~798 ms >= 500), a prefill step, a
+    # refused decode step (no gpu_ms), a decode step whose gpu_ms (9) exceeds the 5 ms to its successor (host < 0) and the
+    # last row (no successor)
+    phases = [(400, 30, 14.0), (400, 1, 800.0)] + FULL_PHASES[1:]
+    tail = [("prefill_text", 5.0, True), ("decode", None, False), ("decode", 9.0, True), ("decode", GPU_MS, True)]
+    c = host_case(tmp_path, "50_ac", phases, tail=tail)
+    m = c.m
+    assert (m["host_n_w400p"], m["host_n_w200_400"], m["host_n_w50_200"], m["host_n_w0_50"]) == (30, 62, 62, 62)
+    assert m["host_ms_w400p"] == pytest.approx(12.0)    # 30 steps: the fewest that still report a median
+    assert m["host_ms_w200_400"] == pytest.approx(9.0)  # depths 399 and 200: 200 belongs to [200, 400)
+    assert m["host_ms_w50_200"] == pytest.approx(6.0)   # depths 199 and 50: 50 belongs to [50, 200)
+    assert m["host_ms_w0_50"] == pytest.approx(3.0)     # depths 49 and 0
+    # 62 x 3, 62 x 6, 62 x 9 and 30 x 12 ms: the median of the 216 is their 108th value, 6
+    assert m["host_steps"] == 216 and m["host_ms_p50"] == pytest.approx(6.0)
+    assert m["n_steps"] == 7 * 31 + 4  # the 40 steps before the trace start are outside the window, host time or not
+    # fewer than 30 steps in a bin: no median (the count stays); the overall median still has them
+    c2 = host_case(tmp_path, "51_ac", [(60, 29, 11.0), (0, 40, 5.0)])
+    assert c2.m["host_n_w50_200"] == 29 and math.isnan(c2.m["host_ms_w50_200"])
+    assert c2.m["host_ms_w0_50"] == pytest.approx(3.0) and c2.m["host_steps"] == 68  # the last step has no successor
+    assert c2.m["host_ms_p50"] == pytest.approx(np.median([9.0] * 29 + [3.0] * 39))
+    # telemetry without per-step rids gives no queue depth: the overall median stays, the bins are empty
+    c3 = host_case(tmp_path, "52_ac", [(0, 40, 5.0)], rids=False)
+    assert c3.m["host_ms_p50"] == pytest.approx(3.0) and c3.m["host_n_w0_50"] == 0
+    assert all(math.isnan(c3.m[k]) for k in ("host_ms_w0_50", "host_ms_w50_200", "host_ms_w200_400", "host_ms_w400p"))
+    # no decode step in the window: NaN, not an error
+    c4 = host_case(tmp_path, "53_ac", [])
+    assert c4.m["host_steps"] == 0 and math.isnan(c4.m["host_ms_p50"])
+
+
+def test_host_time_in_the_tables(tmp_path):
+    root = str(tmp_path / "r")
+    os.makedirs(root)
+    for job, phases in (("60_hostcfg", FULL_PHASES), ("61_hostcfg", [(0, 40, 5.0)])):  # the second rep never has a queue
+        d = make_case(_job(root, job), "bagel_burst", 1, config="hostcfg", telemetry=False)
+        os.makedirs(os.path.join(d, "telemetry"))
+        host_telemetry(os.path.join(d, "telemetry", f"steps_rank0_pid{PID}.jsonl"), phases)
+    out = str(tmp_path / "out")
+    mean = ma.run([root], out)["workloads"]["bagel_burst"]["configs"]["hostcfg"]["mean"]
+    # rep 1: 7 x 31 steps, the last has no successor -> median over 216 is 6; rep 2: 40 steps -> 39 of 3 ms
+    assert mean["host_ms_p50"] == pytest.approx(4.5) and mean["spread"]["host_ms_p50"] == pytest.approx(dict(min=3.0, max=6.0, n=2))
+    assert mean["spread"]["host_ms_w400p"]["n"] == 1 and mean["spread"]["host_ms_w0_50"]["n"] == 2
+    md = open(os.path.join(out, "compare.md")).read().split("**reps: mean [min–max]**")[1]
+    rows = [[c.strip() for c in ln.strip("|").split("|")] for ln in md.splitlines() if ln.startswith("| ")]
+    head, row = rows[0], rows[1]
+    assert row[head.index("host ms/step [400,inf)")] == "12.00 (n=1)"  # only one rep has the bin: shown alone, with its n
+    assert row[head.index("host ms/step [0,50)")] == "3.00 [3.00–3.00]"
+    assert row[head.index("host ms/step all")] == "4.50 [3.00–6.00]"
