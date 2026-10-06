@@ -64,7 +64,7 @@ except ImportError:
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_ORDER = ["main", "ac", "sum_bf", "peak_fifo", "peak_bf"]
 ADMISSION_LOG_CONFIGS = {"sum_bf", "peak_fifo", "peak_bf"}  # bench-peak worktree: the only one with admission_*.jsonl
-WORKLOAD_ORDER = ["bagel_control", "bagel_burst", "bagel_stag_r0.5", "bagel_stag_r1", "bagel_stag_r2"]
+WORKLOAD_ORDER = ["bagel_control", "bagel_burst", "bagel_stag_r0.5", "bagel_stag_r1", "bagel_stag_r1.5", "bagel_stag_r2", "bagel_stag_r3"]
 LONG_OUT = 1024  # output tokens: long class (make_workload / trace_replay.LONG_OUTPUT_TOKENS)
 STALL_S = 60.0
 DRAIN_S = 5.0  # rows (events, admission, log lines, gpu samples) still belong to a run this long after its last request ends
