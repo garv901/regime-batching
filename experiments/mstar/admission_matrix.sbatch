@@ -42,11 +42,13 @@ esac
 CLIENT_DIR=$WT/regime-harness
 EXTRA_ENV="$ADM_ENV ${EXTRA_ENV:-}"
 PORT=$((20000 + SLURM_JOB_ID % 10000))
-OUT=${OUT:-/data/garv901-55613a/results/mstar/${SLURM_JOB_ID}_$CONFIG}
+# LABEL names the arm in the results dir and meta.txt (default CONFIG); set it when only EXTRA_ENV differs
+LABEL=${LABEL:-$CONFIG}
+OUT=${OUT:-/data/garv901-55613a/results/mstar/${SLURM_JOB_ID}_$LABEL}
 source experiments/mstar/lib_mstar.sh
 mkdir -p "$OUT"
 {
-    echo "job=$SLURM_JOB_ID host=$(hostname) gpu=${CUDA_VISIBLE_DEVICES:-?} config=$CONFIG"
+    echo "job=$SLURM_JOB_ID host=$(hostname) gpu=${CUDA_VISIBLE_DEVICES:-?} config=$LABEL"
     echo "server=$MSTAR_DIR @ $(git -C "$MSTAR_DIR" rev-parse --short HEAD) ($(git -C "$MSTAR_DIR" rev-parse --abbrev-ref HEAD))"
     echo "client=$CLIENT_DIR @ $(git -C "$CLIENT_DIR" rev-parse --short HEAD)"
     echo "extra_env=$EXTRA_ENV workloads=$WORKLOADS req_timeout=$REQ_TIMEOUT"
@@ -80,11 +82,11 @@ for wl in $WORKLOADS; do
         echo "$SERVER_STARTUP_S" > "$sdir/startup_s.txt"
     fi
     ln -sfn "$sdir/telemetry" "$case_dir/telemetry"; ln -sf "$sdir/server.log" "$case_dir/server.log"
-    echo "=== [$(date +%T)] $CONFIG $wl rep $rep -> $case_dir (server $nsrv)"
+    echo "=== [$(date +%T)] $LABEL $wl rep $rep -> $case_dir (server $nsrv)"
     timeout "$RUN_LIMIT" env -C "$CLIENT_DIR" HF_HUB_OFFLINE=1 "$CLIENT_DIR/.venv/bin/python" -m benchmark.runner \
         --url "http://127.0.0.1:$PORT" --model bagel --trace "$PWD/data/workloads/$wl.jsonl" \
         --bench-json "$case_dir/bench.json" --request-timeout "$REQ_TIMEOUT" --num-warmup 2 \
-        --trace-run-id "${CONFIG}-${wl}-r$rep" --local-cache "$case_dir/cache" > "$case_dir/client.log" 2>&1
+        --trace-run-id "${LABEL}-${wl}-r$rep" --local-cache "$case_dir/cache" > "$case_dir/client.log" 2>&1
     echo "client rc=$? ($(date +%T))"; tail -6 "$case_dir/client.log"
     rm -rf "$case_dir/cache"
     if run_timed_out "$case_dir/bench.json"; then
