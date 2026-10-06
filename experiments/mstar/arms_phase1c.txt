@@ -1,0 +1,10 @@
+# Phase 1c ablation on bench-next (admission-peak + plan cache + park + S8, with telemetry and the evictable fix).
+# Every toggle is set explicitly, so a later change of a default cannot move an arm.
+# Cumulative: peak_bf -> +plan cache -> +park -> +S8; ac (summed fit, strict FIFO) with and without the park; main as reference.
+ac              next MSTAR_KV_ADMISSION_FIT=sum  MSTAR_KV_ADMISSION_ORDER=fifo     MSTAR_KV_PLAN_CACHE=0 MSTAR_SCHED_PARK=0 MSTAR_KV_RELEASE_AT_COMPLETION=0
+ac_park         next MSTAR_KV_ADMISSION_FIT=sum  MSTAR_KV_ADMISSION_ORDER=fifo     MSTAR_KV_PLAN_CACHE=0 MSTAR_SCHED_PARK=1 MSTAR_KV_RELEASE_AT_COMPLETION=0
+peak_bf         next MSTAR_KV_ADMISSION_FIT=peak MSTAR_KV_ADMISSION_ORDER=backfill MSTAR_KV_PLAN_CACHE=0 MSTAR_SCHED_PARK=0 MSTAR_KV_RELEASE_AT_COMPLETION=0
+peak_bf_pc      next MSTAR_KV_ADMISSION_FIT=peak MSTAR_KV_ADMISSION_ORDER=backfill MSTAR_KV_PLAN_CACHE=1 MSTAR_SCHED_PARK=0 MSTAR_KV_RELEASE_AT_COMPLETION=0
+peak_bf_pc_park next MSTAR_KV_ADMISSION_FIT=peak MSTAR_KV_ADMISSION_ORDER=backfill MSTAR_KV_PLAN_CACHE=1 MSTAR_SCHED_PARK=1 MSTAR_KV_RELEASE_AT_COMPLETION=0
+peak_bf_all     next MSTAR_KV_ADMISSION_FIT=peak MSTAR_KV_ADMISSION_ORDER=backfill MSTAR_KV_PLAN_CACHE=1 MSTAR_SCHED_PARK=1 MSTAR_KV_RELEASE_AT_COMPLETION=1
+main            main

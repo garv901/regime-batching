@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -J mstar_adm
-#SBATCH -p team1,guest
+#SBATCH -p team1
 #SBATCH --gres=gpu:1
 #SBATCH --time=03:00:00
 #SBATCH -o /data/garv901-55613a/logs/mstar/%x_%j.out
@@ -17,7 +17,8 @@
 #   ac_fast, peak_bf_fast  ac / peak_bf plus the incremental evictable set (bench-ac-fast / bench-peak-fast): same
 #              decisions, less host time per admission check; kept apart so the policy A/B stays clean
 #   next       worktree bench-next, no admission env of its own: an arm on it differs only by EXTRA_ENV (+ LABEL)
-# Partitions: -p team1,guest starts the job on whichever of them can run it first (team1 = node1; guest = node1,2,4,5, and a
+# Partitions: team1 (node1) only by default: a guest node (2, 4, 5) cannot run this until it is staged (see below).
+# With -p team1,guest (sbatch -p, or SBATCH_OPTS in submit_matrix.sh) the job starts on whichever can run it first (guest = node1,2,4,5, and a
 # guest job can be preempted and REQUEUED). A requeued job restarts this script from the top: with the default OUT it writes a
 # new dir <job>_<label>_rq<SLURM_RESTART_COUNT>, so it never overwrites its earlier one (the analysis pools it with its label),
 # and --open-mode=append keeps both attempts in the slurm log. A guest node (2, 4, 5) has no /data of its own to match node1's
