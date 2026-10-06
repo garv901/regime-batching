@@ -33,6 +33,9 @@ def main() -> int:
     ap.add_argument("dst")
     ap.add_argument("--mode", required=True, help="x<k> (e.g. x2) or fixed")
     ap.add_argument("--cap", type=int, default=2048)
+    ap.add_argument("--id-offset", type=int, default=0,
+                    help="add this to every hash_id, so a variant replayed on the same server as its base (or another variant) "
+                         "builds different prompt tokens and cannot hit the prefix cache the other run left behind")
     a = ap.parse_args()
     n = over = 0
     with open(a.src) as f, open(a.dst, "w") as g:
@@ -44,6 +47,8 @@ def main() -> int:
             if out > a.cap:
                 sys.exit(f"{a.src}: output_length {out} > cap {a.cap}; the server could not generate it")
             row["max_tokens"] = declared(out, a.mode, a.cap)
+            if a.id_offset and row.get("hash_ids"):
+                row["hash_ids"] = [h + a.id_offset for h in row["hash_ids"]]
             n += 1
             over += row["max_tokens"] > out
             g.write(json.dumps(row) + "\n")
