@@ -28,6 +28,7 @@ import sys
 from datetime import datetime, timezone
 
 import numpy as np
+import pandas as pd
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "analysis"))
@@ -944,3 +945,46 @@ def test_host_time_in_the_tables(tmp_path):
     assert row[head.index("host ms/step [400,inf)")] == "12.00 (n=1)"  # only one rep has the bin: shown alone, with its n
     assert row[head.index("host ms/step [0,50)")] == "3.00 [3.00–3.00]"
     assert row[head.index("host ms/step all")] == "4.50 [3.00–6.00]"
+
+
+def test_kv_free_lag(tmp_path):
+    # a: loop_stop at 1.0 and again at 2.0 (a later walk), pages back at 2.010 by remove_done: 10 ms from the last stop
+    # b: loop_stop 3.0, kv_release 3.002, remove_done 3.5: the release frees first, 2 ms
+    # c: loop_stop 4.0, its pages back only after it (a remove_done at 3.9 belongs to an earlier life): no stop before -> left out
+    # d: loop_stop with no free in the window: left out. The client's warmup request is left out.
+    ev = pd.DataFrame([
+        dict(ev="loop_stop", tm=1.0, rid=["a"]), dict(ev="loop_stop", tm=2.0, rid=["a", "warmup0"]),
+        dict(ev="remove_done", tm=2.010, rid="a"), dict(ev="remove_done", tm=2.5, rid="warmup0"),
+        dict(ev="loop_stop", tm=3.0, rid=["b"]), dict(ev="kv_release", tm=3.002, rid="b"), dict(ev="remove_done", tm=3.5, rid="b"),
+        dict(ev="remove_done", tm=3.9, rid="c"), dict(ev="loop_stop", tm=4.0, rid=["c", "d"]),
+        dict(ev="new_request", tm=0.5, rid="a"),
+    ])
+    m = ma.kv_free_lag_metrics(ev)
+    assert m["kv_release_n"] == 1 and m["kv_free_lag_n"] == 2
+    assert m["kv_free_lag_ms_max"] == pytest.approx(10.0)
+    assert m["kv_free_lag_ms_p50"] == pytest.approx(6.0) and m["kv_free_lag_ms_p99"] == pytest.approx(2 + 8 * 0.99)
+    # no events, or events without rids: zeros and NaN, not an error
+    empty = ma.kv_free_lag_metrics(pd.DataFrame(columns=["ev", "tm", "pid"]))
+    assert empty["kv_free_lag_n"] == 0 and math.isnan(empty["kv_free_lag_ms_p50"])
+
+
+def test_step_gains_table():
+    import mstar_step_gains as sg
+
+    def cfg(vals, n=3):  # vals: {metric: (mean, min, max)}
+        mean = {k: v[0] for k, v in vals.items()}
+        mean["spread"] = {k: dict(min=v[1], max=v[2], n=n) for k, v in vals.items()}
+        return dict(mean=mean, reps=[{}] * n)
+
+    s = {"workloads": {"bagel_burst_v2": {"configs": {
+        "old": cfg({"short_e2e_mean_s": (2.0, 1.8, 2.2), "out_tok_s": (100.0, 90.0, 110.0)}),
+        "new": cfg({"short_e2e_mean_s": (1.0, 0.9, 1.1), "out_tok_s": (105.0, 100.0, 108.0)}),
+        "one": cfg({"short_e2e_mean_s": (1.0, 1.0, 1.0)}, n=1),
+    }}}}
+    t = sg.tables(s, [("new", "old"), ("one", "old"), ("new", "missing")])
+    row = next(ln for ln in t.splitlines() if ln.startswith("| new / old"))
+    cells = [c.strip() for c in row.strip("|").split("|")]
+    assert cells[:3] == ["new / old", "3/3", "0.50"]       # ranges apart: no mark
+    assert cells[2 + 4] == "1.05 ≈"                         # out tok/s: ranges overlap
+    assert cells[2 + 1] == "-"                              # short E2E p99: neither side has it
+    assert "| one / old | 1/3 | 0.50 (1 rep)" in t and "missing" not in t

@@ -67,7 +67,7 @@ except ImportError:
     _loads = json.loads
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONFIG_ORDER = ["main", "ac", "sum_bf", "peak_fifo", "peak_bf"]
+CONFIG_ORDER = ["main", "ac", "ac_park", "sum_bf", "peak_fifo", "peak_bf", "peak_bf_pc", "peak_bf_pc_park", "peak_bf_all"]
 ADMISSION_LOG_CONFIGS = {"sum_bf", "peak_fifo", "peak_bf"}  # bench-peak worktree: the only one with admission_*.jsonl
 WORKLOAD_ORDER = ["bagel_control", "bagel_burst", "bagel_stag_r0.5", "bagel_stag_r1", "bagel_stag_r1.5", "bagel_stag_r2", "bagel_stag_r3",
                   "bagel_burst_v2", "bagel_stag_v2_r1.5", "bagel_stag_v2_r2.5", "bagel_stag_v2_r3",
@@ -531,6 +531,34 @@ def telemetry_metrics(tel: Telemetry, t0: float, t_end: float) -> dict:
         n_steps=int(len(win)), telemetry_dropped=_dropped_by(tel, t_end + DRAIN_S) - _dropped_by(tel, t0),
     )
     m.update(host_time_metrics(st, t0, t_end))
+    m.update(kv_free_lag_metrics(ev))
+    return m
+
+
+def kv_free_lag_metrics(ev: pd.DataFrame) -> dict:
+    """Per request, ms from its decode loop's stop to its KV pages being back (the S8 lag).
+
+    Pages back = the request's first `kv_release` (RELEASE_KV, MSTAR_KV_RELEASE_AT_COMPLETION=1) or `remove_done`, whichever
+    comes first; the lag runs from its last `loop_stop` before that. `ev` = the run's events (_window); requests named
+    *warmup* (the client's own warmup requests) are left out.
+    """
+    m = dict(kv_release_n=int((ev.ev == "kv_release").sum()) if len(ev) else 0, kv_free_lag_n=0,
+             kv_free_lag_ms_p50=math.nan, kv_free_lag_ms_p99=math.nan, kv_free_lag_ms_max=math.nan)
+    if not len(ev) or "rid" not in ev:
+        return m
+    is_name = lambda r: isinstance(r, str) and "warmup" not in r  # noqa: E731
+    stop = ev.loc[ev.ev == "loop_stop", ["tm", "rid"]].explode("rid")
+    stop = stop[stop.rid.map(is_name).astype(bool)]  # astype: an empty map is float, which would select columns
+    free = ev.loc[ev.ev.isin(("kv_release", "remove_done")), ["tm", "rid"]]
+    free = free[free.rid.map(is_name).astype(bool)].groupby("rid").tm.min()
+    stop = stop[stop.rid.isin(free.index)]
+    stop = stop[stop.tm.values <= free.reindex(stop.rid).values]
+    if not len(stop):
+        return m
+    last = stop.groupby("rid").tm.max()
+    lag = (free.reindex(last.index) - last) * 1e3
+    m.update(kv_free_lag_n=int(len(lag)), kv_free_lag_ms_p50=_pct(lag, 50), kv_free_lag_ms_p99=_pct(lag, 99),
+             kv_free_lag_ms_max=float(lag.max()))
     return m
 
 
@@ -754,6 +782,7 @@ SCALARS = [
     "offloads", "startup_s", "gpu_util_mean_pct", "gpu_mem_peak_mib", "adm_wait_mean_short_s", "adm_wait_mean_long_s",
     "adm_reserved_mean_short_s", "adm_reserved_mean_long_s", "completed_server_side",
     "host_ms_p50", "host_ms_w0_50", "host_ms_w50_200", "host_ms_w200_400", "host_ms_w400p",
+    "kv_release_n", "kv_free_lag_ms_p50", "kv_free_lag_ms_p99", "kv_free_lag_ms_max",
 ]
 # (key, column header, decimals) of the spread table: the metrics a decision rests on, each as mean [min-max] over reps
 SPREAD_COLS = [
@@ -850,7 +879,8 @@ def workload_table(aggs: dict[str, dict], reasons: list[str]) -> str:
                "short E2E mean (s)", "short E2E p50 (s)", "short E2E p99 (s)", "short TTFT mean (s)", "short TTFT p99 (s)",
                "long E2E mean (s)", "long E2E max (s)", "long TTFT mean (s)", "holds"]
     headers += [f"fail: {r}" for r in reasons]
-    headers += ["grant_deferred (adm log)", "min free KV pages", "GPU busy", "decode bs", "planner_us p50", "planner_us p99"]
+    headers += ["grant_deferred (adm log)", "min free KV pages", "GPU busy", "decode bs", "planner_us p50", "planner_us p99",
+                "KV free lag p50 (ms)", "KV free lag p99 (ms)", "kv_release"]
     rows = []
     for cfg in cfgs:
         a = aggs[cfg]
@@ -863,6 +893,7 @@ def workload_table(aggs: dict[str, dict], reasons: list[str]) -> str:
             f(a["long_e2e_mean_s"], 1), f(a["long_e2e_max_s"], 1), f(a["long_ttft_mean_s"], 2), f(a["holds"], 0),
             *fails, f(a["grant_deferred_log"], 0), f(a["min_free_kv_pages"], 0), f(a["gpu_busy_share"], pct=True),
             f(a["decode_bs_mean"], 1), f(a["planner_us_p50"], 1), f(a["planner_us_p99"], 1),
+            f(a["kv_free_lag_ms_p50"], 1), f(a["kv_free_lag_ms_p99"], 1), f(a["kv_release_n"], 0),
         ])
     col = {h: i for i, h in enumerate(headers)}
     for ref in ("ac", "main"):
@@ -920,6 +951,9 @@ def render_md(groups: dict, aggs: dict, problems: list[str], figs: dict, exclude
         "GPU busy = sum of step `gpu_ms` / (trace start to last request end). decode bs = mean `bs` of ok `decode` steps. "
         "fail: columns count `admit_fail` events by `reason`.",
         "- grant_deferred (adm log), planner_us: admission log, bench-peak configs only (`-` for main/ac).",
+        "- KV free lag: per request, ms from its decode `loop_stop` to its pages being back (its first `kv_release`, sent "
+        "under MSTAR_KV_RELEASE_AT_COMPLETION=1, or `remove_done`); p50/p99 per rep, then averaged. kv_release = how many "
+        "`kv_release` events the run has (0 when S8 is off).",
         "- Ratio rows `X / ref` = X's mean divided by the reference's mean (E2E < 1 and tok/s > 1 favour X). "
         "**≈ (within noise)**: X's and the reference's [min–max] rep ranges of that metric overlap, so the spread between reps "
         "alone could give the difference (a min–max overlap, not a significance test; no mark means the ranges are apart, "
