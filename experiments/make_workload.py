@@ -87,6 +87,8 @@ def main():
     ap.add_argument("--long-prompt", type=int, default=0, help="if >0: prompt length of long requests (long context)")
     ap.add_argument("--long-prompt-lo", type=int, default=0,
                     help="if >0 (needs --long-prompt): long prompts ~U[long-prompt-lo, long-prompt] instead of fixed")
+    ap.add_argument("--long-lo", type=int, default=0,
+                    help="if >0 (needs an integer --long >= it): long output lengths ~U[long-lo, long] instead of fixed")
     ap.add_argument("--n-long", type=int, default=0, help="if >0: exactly this many long requests (with --long-first)")
     ap.add_argument("--short-lo", type=int, default=16)
     ap.add_argument("--short-hi", type=int, default=48)
@@ -145,6 +147,9 @@ def main():
             long_in = rng.integers(args.long_prompt_lo, args.long_prompt + 1, n)
         else:
             long_in = np.full(n, args.long_prompt)
+        if args.long_lo > 0:  # drawn after every other flag's draws, so the other flag sets keep their random stream
+            assert args.long != "reasoning" and int(args.long) >= args.long_lo, "--long-lo needs an integer --long >= it"
+            long_out = rng.integers(args.long_lo, int(args.long) + 1, n)
         for i in range(n):
             out = int(long_out[i] if is_long[i] else short_out[i])
             inp = int(long_in[i]) if (is_long[i] and args.long_prompt > 0) else ins[i]
