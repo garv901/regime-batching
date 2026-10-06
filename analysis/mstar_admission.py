@@ -374,6 +374,8 @@ def request_table(b: dict) -> pd.DataFrame:
     t0 = b.get("t0_monotonic")
     t0 = float(t0) if t0 is not None else float(start_abs.min() if n else 0.0)
     timed_out = ~ok & np.array([bool(TIMEOUT_RE.search(e)) or e == EMPTY_MSG_ERROR for e in err], dtype=bool)
+    want = b.get("intended_output_lens")  # requested output tokens, same trace order as output_lens (trace_replay.build_bench)
+    want = np.asarray(want, dtype=float) if want is not None and len(want) == n else np.full(n, np.nan)
     cls = b.get("cls")
     if cls is not None and len(cls) == n:
         cls = np.array([str(c) for c in cls], dtype=object)
@@ -387,8 +389,8 @@ def request_table(b: dict) -> pd.DataFrame:
     rid = b.get("request_ids")
     rid = list(rid) if rid is not None and len(rid) == n else [str(i) for i in range(n)]
     return pd.DataFrame(dict(
-        rid=rid, cls=cls, inp=b["input_lens"], out=out, ttft=ttft, lat=lat, ok=ok, timed_out=timed_out, err=err,
-        start_abs=start_abs, start=start_abs - t0, end=np.where(ok, start_abs - t0 + lat, np.nan),
+        rid=rid, cls=cls, inp=b["input_lens"], out=out, want=want, trunc=ok & (out < want), ttft=ttft, lat=lat, ok=ok,
+        timed_out=timed_out, err=err, start_abs=start_abs, start=start_abs - t0, end=np.where(ok, start_abs - t0 + lat, np.nan),
     ))
 
 
@@ -439,6 +441,8 @@ def bench_metrics(rt: pd.DataFrame, b: dict, stall_s: float) -> dict:
     m = dict(
         n_requests=n, completed=int(rt.ok.sum()), timed_out=int(rt.timed_out.sum()),
         failed=int((~rt.ok & ~rt.timed_out).sum()), duration_s=duration,
+        # completed requests that returned fewer tokens than asked (NaN: bench.json has no intended_output_lens)
+        truncated=int(rt.trunc.sum()) if rt.want.notna().any() else math.nan,
         out_tok_s=float(ok.out.sum()) / duration if duration > 0 else math.nan,
         short_n=len(sh), short_e2e_mean_s=_mean(sh.lat), short_e2e_p50_s=_pct(sh.lat, 50), short_e2e_p99_s=_pct(sh.lat, 99),
         short_ttft_mean_s=_mean(sh.ttft), short_ttft_p99_s=_pct(sh.ttft, 99),
@@ -622,6 +626,14 @@ def analyze_case(ref: CaseRef, stall_s: float = STALL_S) -> Case:
             c.notes.append(
                 f"STALLED: {c.m['timed_out']} request(s) timed out; longest stretch without a completion while requests "
                 f"were outstanding {c.m['max_stall_s']:.1f}s, starting at t={c.m['max_stall_at_s']:.1f}s")
+        if c.m["truncated"] > 0:
+            tr = rt[rt.trunc]
+            c.flags.add("TRUNCATED")
+            c.notes.append(
+                f"TRUNCATED: {c.m['truncated']} of {c.m['completed']} completed request(s) returned fewer output tokens than "
+                f"requested (generated {int(tr.out.min())}-{int(tr.out.max())} vs requested {int(tr.want.min())}-"
+                f"{int(tr.want.max())}); the engine stopped them early (BAGEL's decode loop ends at 2,049 tokens), so this "
+                "run's KV pressure is below what the workload plans")
         ok = rt[rt.ok]
         c.series.update(
             arrivals=np.sort(rt.start.values), completions=np.sort(ok.end.values),
@@ -677,7 +689,7 @@ def analyze_case(ref: CaseRef, stall_s: float = STALL_S) -> Case:
 
 # ----------------------------------------------------------------------------------------------- aggregation
 SCALARS = [
-    "n_requests", "completed", "failed", "timed_out", "duration_s", "out_tok_s", "max_stall_s",
+    "n_requests", "completed", "failed", "timed_out", "truncated", "duration_s", "out_tok_s", "max_stall_s",
     "short_e2e_mean_s", "short_e2e_p50_s", "short_e2e_p99_s", "short_ttft_mean_s", "short_ttft_p99_s",
     "long_e2e_mean_s", "long_e2e_max_s", "long_ttft_mean_s", "holds", "held_requests", "admit_fail_total",
     "grant_deferred_log", "min_free_kv_pages", "gpu_busy_share", "decode_bs_mean", "planner_us_p50", "planner_us_p99",
@@ -791,6 +803,9 @@ def render_md(groups: dict, aggs: dict, problems: list[str], figs: dict) -> str:
         "",
         "- **STALLED**: a request timed out, or no request completed for > 60 s while one was outstanding "
         "(`max stall`; a timed-out request counts as outstanding until its timeout).",
+        "- **TRUNCATED**: a completed request returned fewer output tokens than the trace asked for "
+        "(`output_lens` < `intended_output_lens`; BAGEL's decode loop stops at 2,049 tokens), so the run's KV pressure is "
+        "below the workload's plan; `truncated` in summary.json counts them.",
         "- *timed out* = failed with the client's empty-message error (`request failed`) or a timeout message; "
         "*failed* = every other error.",
         "- holds / fail: / min free KV pages / GPU busy / decode bs come from step telemetry in the run's window "

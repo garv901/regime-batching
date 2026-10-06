@@ -57,12 +57,13 @@ def _stats(prefix, seconds):  # trace_replay._stats
     return {f"{k}_{prefix}_ms": float(v) for k, v in zip(keys, vals)}
 
 
-def make_bench(run_id, scale=1.0, timeout_idx=None, duration=None):
-    """The dict trace_replay.build_bench returns (same keys, same conventions for failed requests)."""
+def make_bench(run_id, scale=1.0, timeout_idx=None, duration=None, cap_out=None):
+    """The dict trace_replay.build_bench returns (same keys, same conventions for failed requests).
+    cap_out: the engine stops every request at this many output tokens (BAGEL's max_iters), whatever it asked for."""
     n = len(REQS)
     ok = [i != timeout_idx for i in range(n)]
     starts = [T0 + r[3] for r in REQS]
-    out_lens = [r[2] if o else 0 for r, o in zip(REQS, ok)]
+    out_lens = [min(r[2], cap_out or r[2]) if o else 0 for r, o in zip(REQS, ok)]
     ttfts = [r[4] if o else 0.0 for r, o in zip(REQS, ok)]
     lats = [r[5] * scale if o else 0.0 for r, o in zip(REQS, ok)]
     itls = [[0.02] * (r[2] - 1) if o else [] for r, o in zip(REQS, ok)]
@@ -91,7 +92,7 @@ def make_bench(run_id, scale=1.0, timeout_idx=None, duration=None):
         "intended_start_times": starts, "sched_lag_s": [0.0] * n, "sched_lag_ms_p50": 0.0, "sched_lag_ms_p99": 0.0,
         "sched_lag_ms_max": 0.0, "client_loop_lag_ms_p99": 0.1, "client_loop_lag_ms_max": 0.2,
         "t0_monotonic": T0, "t0_wall": 1.78e9, "template_overhead_tokens": 20, "n_clamped_inputs": 0,
-        "n_short_outputs": 0,
+        "n_short_outputs": sum(ol != r[2] for r, ol, o in zip(REQS, out_lens, ok) if o),
         "trace": {"path": "data/workloads/bagel_burst.jsonl", "rows": n, "seed": 0, "timeout_s": TIMEOUT_S},
     }
 
@@ -211,13 +212,13 @@ def write_jsonl(path, rows, truncated_tail=False):
 
 
 def make_case(job_dir, workload, rep, *, config, scale=1.0, timeout_idx=None, telemetry=True, admission=False,
-              bench=True, truncated_tail=False):
+              bench=True, truncated_tail=False, cap_out=None):
     d = os.path.join(job_dir, f"{workload}_r{rep}")
     os.makedirs(d, exist_ok=True)
     run_id = f"{config}-{workload}-r{rep}"
     open(os.path.join(d, "server.log"), "w").write("INFO server up\n")
     if bench:
-        json.dump(make_bench(run_id, scale, timeout_idx), open(os.path.join(d, "bench.json"), "w"))
+        json.dump(make_bench(run_id, scale, timeout_idx, cap_out=cap_out), open(os.path.join(d, "bench.json"), "w"))
         open(os.path.join(d, "client.log"), "w").write("trace replay: ok\nWrote bench.json\n")
         open(os.path.join(d, "startup_s.txt"), "w").write("71.3\n")
         open(os.path.join(d, "gpu_mem.csv"), "w").write(
@@ -632,6 +633,34 @@ def test_shared_server_without_a_trustworthy_wall_clock(tmp_path):
 
 
 # ------------------------------------------------------------------------------------------------ units
+def test_truncated_outputs_are_flagged(result, tmp_path):
+    _, s = result
+    healthy = rep(s, "bagel_burst", "ac", 0)
+    assert healthy["truncated"] == 0 and "TRUNCATED" not in cfg(s, "bagel_burst", "ac")["reps"][0]["flags"]
+    # the engine cuts both longs (asked 2000) to 1500 tokens; request 5 then times out, so only request 4 is truncated
+    job = tmp_path / "5_ac"
+    both = make_case(str(job), "bagel_burst", 1, config="ac", telemetry=False, cap_out=1500)
+    one = make_case(str(job), "bagel_burst", 2, config="ac", telemetry=False, cap_out=1500, timeout_idx=5)
+    refs, _ = ma.discover([str(job)])
+    c1, c2 = (ma.analyze_case(r) for r in sorted(refs, key=lambda r: r.rep))
+    assert c1.m["truncated"] == 2 and "TRUNCATED" in c1.flags
+    assert any("TRUNCATED: 2 of 6" in n and "generated 1500-1500 vs requested 2000-2000" in n for n in c1.notes)
+    assert c2.m["truncated"] == 1 and "TRUNCATED" in c2.flags  # a failed request is not a completed one
+    # bench.json without intended_output_lens (older client): unknown, not zero, and no flag
+    b = json.load(open(os.path.join(both, "bench.json")))
+    del b["intended_output_lens"]
+    json.dump(b, open(os.path.join(one, "bench.json"), "w"))
+    c3 = ma.analyze_case([r for r in refs if r.rep == 2][0])
+    assert c3.m["truncated"] != c3.m["truncated"] and "TRUNCATED" not in c3.flags
+    # compare.md: the flag in the table, the legend, the note
+    out = str(tmp_path / "out")
+    ma.run([str(job / "bagel_burst_r1")], out)
+    md = open(os.path.join(out, "compare.md")).read()
+    assert "TRUNCATED 1/1" in md and "- **TRUNCATED**:" in md and "intended_output_lens" in md
+    assert "TRUNCATED: 2 of 6" in md.split("## Data problems")[1]
+    assert json.load(open(os.path.join(out, "summary.json")))["workloads"]["bagel_burst"]["configs"]["ac"]["mean"]["truncated"] == 2
+
+
 def test_max_stall_units():
     # two requests at 0; one completes at 10, the other is outstanding to 100
     assert ma.max_stall([0, 0], [10], [], 100) == (90.0, 10.0)
