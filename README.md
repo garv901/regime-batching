@@ -97,6 +97,7 @@ Details: [docs/04_vllm_takeaways.md](docs/04_vllm_takeaways.md).
 | [docs/04_vllm_takeaways.md](docs/04_vllm_takeaways.md) | What the study shows about vLLM scheduling, KV management and kernel use |
 | [docs/05_reproduce.md](docs/05_reproduce.md) | Install, run, and analyze |
 | [docs/06_limitations_and_future_work.md](docs/06_limitations_and_future_work.md) | Limits of the evidence and next steps |
+| [docs/07_mstar_gaps.md](docs/07_mstar_gaps.md) | Scheduling and kernel gaps in mstar, as hypotheses to test |
 | [reports/00_pen_and_paper.md](reports/00_pen_and_paper.md) | Full analysis log: cost model, simulator, every measurement |
 | [reports/related_work.md](reports/related_work.md) | Related work and how this study differs |
 | [reports/diagrams/](reports/diagrams/) | Diagrams of the mechanisms |
