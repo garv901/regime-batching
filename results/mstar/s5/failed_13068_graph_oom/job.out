@@ -1,0 +1,10 @@
+preflight: mstar from /shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/__init__.py flash_attn 2.8.3.post1
+job=13068 host=brev-tffbb7a2o gpu=0 restart=0 date=2026-10-06T15:28:17+00:00
+server=/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline @ a0c259547 (garv/s5-stage-deadline)
+arms=round_robin deadline reps=2 config=configs/qwen3omni_colocated.yaml server venv=/data/garv901-55613a/venvs/mstar-cu129
+index, name, memory.used [MiB], memory.total [MiB]
+0, NVIDIA H100 80GB HBM3, 0 MiB, 81559 MiB
+=== [15:28:17] arm round_robin: 8 cases to run, env: MSTAR_STEP_TELEMETRY_DETAIL=0 PYTHONPATH=/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline MSTAR_SCHED_POLICY=round_robin -> /shared/home/garv901-55613a/regime-batching/regime-batching/results/mstar/s5/run1/round_robin/server_1
+server up after 464.3s (port 23068, pid 3872386)
+=== [15:36:02] round_robin warmup rep 0 -> /shared/home/garv901-55613a/regime-batching/regime-batching/results/mstar/s5/run1/round_robin/server_1/warmup
+slurmstepd-node1: error: *** JOB 13068 ON node1 CANCELLED AT 2026-10-06T15:45:59 ***

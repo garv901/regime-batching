@@ -1,0 +1,9 @@
+{"kind":"meta","phase":"process","schema":1,"rank":0,"pid":3897384,"detail":false,"ts":1791300520.400334,"tm":2498048.729537231,"env":{"MSTAR_DIR":"/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline","MSTAR_MODEL":"qwen3_omni","MSTAR_CONFIG":"configs/qwen3omni_colocated.yaml","MSTAR_VENV":"/data/garv901-55613a/venvs/mstar-cu129","MSTAR_STEP_TELEMETRY_DIR":"/shared/home/garv901-55613a/regime-batching/regime-batching/results/mstar/s5/run1/round_robin/server_1/telemetry","MSTAR_STEP_TELEMETRY_DETAIL":"0","MSTAR_SCHED_POLICY":"round_robin"}}
+{"kind":"meta","phase":"worker","worker_id":"worker_0","rank":0,"pid":3897384,"ts":1791300520.4004366,"tm":2498048.729639482}
+{"kind":"event","ev":"new_request","ts":1791300962.4959893,"tm":2498490.825192171,"rank":0,"rid":"round_robin-warmup-r0-t0-8","h":0,"partition":"Thinker","walk":"prefill_text"}
+{"kind":"event","ev":"new_request","ts":1791300962.5111194,"tm":2498490.840322253,"rank":0,"rid":"round_robin-warmup-r0-t1-9","h":1,"partition":"Thinker","walk":"prefill_text"}
+{"kind":"event","ev":"new_request","ts":1791300962.526006,"tm":2498490.855208834,"rank":0,"rid":"round_robin-warmup-r0-t3-11","h":2,"partition":"Thinker","walk":"prefill_text"}
+{"kind":"event","ev":"new_request","ts":1791300962.5417216,"tm":2498490.870924652,"rank":0,"rid":"round_robin-warmup-r0-t4-12","h":3,"partition":"Thinker","walk":"prefill_text"}
+{"kind":"event","ev":"new_request","ts":1791300962.5565271,"tm":2498490.885730077,"rank":0,"rid":"round_robin-warmup-r0-t6-14","h":4,"partition":"Thinker","walk":"prefill_text"}
+{"kind":"event","ev":"new_request","ts":1791300962.5737453,"tm":2498490.902948005,"rank":0,"rid":"round_robin-warmup-r0-t7-15","h":5,"partition":"Thinker","walk":"prefill_text"}
+{"kind":"event","ev":"new_request","ts":1791300962.586706,"tm":2498490.915908625,"rank":0,"rid":"round_robin-warmup-r0-a7","h":6,"partition":"Thinker","walk":"prefill_text"}

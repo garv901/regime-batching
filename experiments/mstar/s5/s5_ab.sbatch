@@ -66,7 +66,9 @@ case_args() {
     esac
 }
 arm_env() {  # server-side env of an arm
-    local common="MSTAR_STEP_TELEMETRY_DETAIL=0 PYTHONPATH=$MSTAR_DIR"
+    # MSTAR_CODE2WAV_MAX_GRAPH_BS: the bs=32 Code2Wav graph holds ~7 GiB, and with every Omni node on one 80 GB GPU the
+    # other CUDA graphs then fail to capture and the first request OOMs (job 13068). Same value in every arm.
+    local common="MSTAR_STEP_TELEMETRY_DETAIL=0 PYTHONPATH=$MSTAR_DIR MSTAR_CODE2WAV_MAX_GRAPH_BS=${CODE2WAV_MAX_GRAPH_BS:-8}"
     case $1 in
         round_robin) echo "$common MSTAR_SCHED_POLICY=round_robin" ;;
         deadline) echo "$common MSTAR_SCHED_POLICY=deadline MSTAR_SCHED_MAX_WAIT_MS=200" ;;
@@ -107,6 +109,9 @@ for arm in $ARMS; do
     fi
     echo "$SERVER_STARTUP_S" > "$SDIR/startup_s.txt"
     grep -m1 -i "scheduling policy" "$SDIR/server.log" > "$SDIR/policy_line.txt" 2>/dev/null
+    # a graph bucket that failed to capture is served eagerly, which would make every number below unrepresentative
+    grep -c "Failed to capture CUDA graph" "$SDIR/server.log" > "$SDIR/capture_failures.txt" 2>/dev/null
+    echo "CUDA graph capture failures in this server: $(cat "$SDIR/capture_failures.txt")"
     run_case "$arm" warmup 0 "$WARMUP_TIMEOUT" "$SDIR/warmup"
     sleep 10
     for item in "${todo[@]}"; do
