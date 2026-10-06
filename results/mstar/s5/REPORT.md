@@ -11,7 +11,7 @@
   then ran alone at batch 1.7 instead of 3.7 (73% of GPU time against 54%), waiting for tokens.
 * with one fix (`MSTAR_SCHED_PIPELINE_AWARE=1`: Thinker decode carries the deadline of the stream it feeds, and the speculation
   chain yields on urgency rather than priority) and a 50 ms aging guard (`deadline_pa_w50`), **TTFA p50 is level with round-robin**
-  (-3%, +12%, +2%, +3% in a4, a8, b4, b8; the repeat of round-robin differs by -0% to +6%). Under mixed load (b4, b8) the audio
+  (-3%, +12%, +2%, +3% in a4, a8, b4, b8; the repeat of round-robin differs by -1% to +6%). Under mixed load (b4, b8) the audio
   chunk gap p50 is 18-22% shorter and RTF p50 9-12% lower (both well outside the round-robin repeat's -2%..+3%), at a **text cost of
   15-18% of tok/s and +44-59% text TTFT p50** (text ITL p99 within noise). With the default 200 ms guard (`deadline_pa`) TTFA p50
   is +14..+25% worse than round-robin and text tok/s is 25-31% lower.
@@ -28,7 +28,7 @@ round-robin it was.
 
 Job 13085 appended three arms to the run of job 13084, so all five arms are in `run1/analysis.md` (full tables: samples, every audio
 and text metric with deltas, rep-to-rep spread, per-walk longest wait and GPU share, `sched_pick` reasons). Headline numbers, pooled
-over 2 reps per case (a4/a8: 48/64 audio requests, b4/b8: 48/64 audio plus 112-192 text requests):
+over 2 reps per case (a4/a8: 48/64 audio requests, b4/b8: 48/64 audio plus 48-192 text requests):
 
 | case | metric | round_robin | round_robin_b | deadline | deadline_pa | deadline_pa_w50 |
 |---|---|---|---|---|---|---|
