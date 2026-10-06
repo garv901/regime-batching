@@ -14,7 +14,7 @@
 #   MSTAR_CONFIG  YAML, absolute or relative to MSTAR_DIR   (default: configs/bagel_single_gpu.yaml)
 #   TENSOR_PROTO  --tensor-comm-protocol                    (default: SHM)
 #   EXTRA_ENV     space-separated VAR=val applied to the SERVER only, e.g.
-#                 "MSTAR_STEP_TELEMETRY_DIR=/x MSTAR_KV_ADMISSION_FIT=1 MSTAR_KV_ADMISSION_ORDER=lpt"
+#                 "MSTAR_KV_ADMISSION_FIT=peak MSTAR_KV_ADMISSION_ORDER=backfill" (bench-peak worktree only)
 #                 (applied after the defaults below, so it can override them)
 #   HEALTH_TIMEOUT  seconds to wait for /health             (default: 1500; cold start compiles + captures graphs)
 #   LOG_STATS     1 = add --log-stats-file (turns ON worker profiling, enable_prof; default 0 so baselines run unprofiled)
