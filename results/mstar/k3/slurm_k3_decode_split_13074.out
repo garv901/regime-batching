@@ -1,0 +1,218 @@
+job=13074 host=brev-tffbb7a2o restart=0 commit=522b50410
+index, name, memory.used [MiB], memory.total [MiB], clocks.current.sm [MHz], clocks.max.sm [MHz]
+0, NVIDIA H100 80GB HBM3, 0 MiB, 81559 MiB, 345 MHz, 1980 MHz
+torch 2.12.1+cu132 flashinfer 0.7.0.post1 NVIDIA H100 80GB HBM3
+=== [15:35:01] smoke
+[1/24] bagel|u1x512|auto|default|graph: 15.5 us (sub 13.3, plan 71 us, err 0.00087, chunk 128, tiles 4) 1.2s
+[2/24] bagel|u1x512|fa2|nosplit|graph: 18.1 us (sub 15.9, plan 73 us, err 0.000704, chunk None, tiles 1) 0.0s
+[3/24] bagel|u1x512|fa2|fix8|graph: 18.0 us (sub 16.3, plan 75 us, err 0.000704, chunk 1024, tiles 1) 0.0s
+[4/24] bagel|u8x512|auto|default|graph: 18.8 us (sub 17.4, plan 89 us, err 0.00132, chunk 128, tiles 32) 0.0s
+[5/24] bagel|u8x512|fa2|nosplit|graph: 19.2 us (sub 17.7, plan 95 us, err 0.001, chunk None, tiles 8) 0.0s
+[6/24] bagel|u8x512|fa2|fix8|graph: 19.2 us (sub 17.7, plan 86 us, err 0.001, chunk 1024, tiles 8) 0.0s
+[7/24] bagel|s1x32768+7x512|auto|default|graph: 48.7 us (sub 46.4, plan 91 us, err 0.00111, chunk 640, tiles 59) 0.0s
+[8/24] bagel|s1x32768+7x512|fa2|nosplit|graph: 436.4 us (sub 430.2, plan 89 us, err 0.00111, chunk None, tiles 8) 0.1s
+[9/24] bagel|s1x32768+7x512|fa2|fix8|graph: 48.4 us (sub 46.7, plan 91 us, err 0.00111, chunk 1024, tiles 39) 0.0s
+[10/24] bagel|s1x32768+31x512|auto|default|graph: 56.7 us (sub 55.4, plan 142 us, err 0.0012, chunk 1024, tiles 63) 0.0s
+[11/24] bagel|s1x32768+31x512|fa2|nosplit|graph: 411.0 us (sub 408.4, plan 146 us, err 0.0012, chunk None, tiles 32) 0.1s
+[12/24] bagel|s1x32768+31x512|fa2|fix8|graph: 57.5 us (sub 55.0, plan 143 us, err 0.0012, chunk 1024, tiles 63) 0.0s
+[13/24] bagel|u1x512|auto|default|eager: 13.2 us (sub 10.6, plan 70 us, err 0.000855, chunk 128, tiles 4) 0.0s
+[14/24] bagel|u1x512|fa2|nosplit|eager: 15.0 us (sub 11.1, plan 71 us, err 0.000704, chunk None, tiles 1) 0.0s
+[15/24] bagel|u1x512|fa2|fix8|eager: 15.1 us (sub 11.1, plan 72 us, err 0.000704, chunk 1024, tiles 1) 0.0s
+[16/24] bagel|u8x512|auto|default|eager: 17.1 us (sub 12.6, plan 90 us, err 0.00132, chunk 128, tiles 32) 0.0s
+[17/24] bagel|u8x512|fa2|nosplit|eager: 17.0 us (sub 12.4, plan 90 us, err 0.001, chunk None, tiles 8) 0.0s
+[18/24] bagel|u8x512|fa2|fix8|eager: 16.9 us (sub 12.3, plan 95 us, err 0.001, chunk 1024, tiles 8) 0.0s
+[19/24] bagel|s1x32768+7x512|auto|default|eager: 47.7 us (sub 42.9, plan 94 us, err 0.00111, chunk 640, tiles 59) 0.0s
+[20/24] bagel|s1x32768+7x512|fa2|nosplit|eager: 364.4 us (sub 360.4, plan 102 us, err 0.00111, chunk None, tiles 8) 0.0s
+[21/24] bagel|s1x32768+7x512|fa2|fix8|eager: 48.8 us (sub 43.1, plan 93 us, err 0.00111, chunk 1024, tiles 39) 0.0s
+[22/24] bagel|s1x32768+31x512|auto|default|eager: 56.6 us (sub 52.0, plan 155 us, err 0.0012, chunk 1024, tiles 63) 0.0s
+[23/24] bagel|s1x32768+31x512|fa2|nosplit|eager: 365.7 us (sub 360.7, plan 141 us, err 0.0012, chunk None, tiles 32) 0.0s
+[24/24] bagel|s1x32768+31x512|fa2|fix8|eager: 56.5 us (sub 51.9, plan 158 us, err 0.0012, chunk 1024, tiles 63) 0.0s
+smoke: 24 ok rows
+=== [15:35:07] full sweep
+[1/748] bagel|u1x512|auto|default|graph: 15.7 us (sub 13.6, plan 70 us, err 0.00135, chunk 128, tiles 4) 1.4s
+[2/748] bagel|u1x512|fa2|default|graph: 15.6 us (sub 13.5, plan 70 us, err 0.00135, chunk 128, tiles 4) 0.1s
+[3/748] bagel|u1x512|fa2|nosplit|graph: 18.4 us (sub 16.2, plan 72 us, err 0.000662, chunk None, tiles 1) 0.1s
+[4/748] bagel|u1x512|fa2|fix2|graph: 17.2 us (sub 15.1, plan 87 us, err 0.000865, chunk 256, tiles 2) 0.1s
+[5/748] bagel|u1x512|fa2|fix4|graph: 18.3 us (sub 16.1, plan 104 us, err 0.000662, chunk 512, tiles 1) 0.1s
+[6/748] bagel|u1x512|fa2|fix8|graph: 18.3 us (sub 16.2, plan 83 us, err 0.000662, chunk 1024, tiles 1) 0.1s
+[7/748] bagel|u1x512|fa2|fix16|graph: 18.6 us (sub 16.5, plan 70 us, err 0.000662, chunk 2048, tiles 1) 0.1s
+[8/748] bagel|u1x512|fa2|fix32|graph: 18.5 us (sub 16.5, plan 84 us, err 0.000662, chunk 4096, tiles 1) 0.1s
+[9/748] bagel|u1x512|fa2|fix64|graph: 18.6 us (sub 16.4, plan 77 us, err 0.000662, chunk 8192, tiles 1) 0.1s
+[10/748] bagel|u1x512|fa3|default|graph: 17.0 us (sub 14.9, plan 89 us, err 0.000638, chunk None, tiles None) 0.1s
+[11/748] bagel|u1x512|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[12/748] bagel|u1x2048|auto|default|graph: 17.4 us (sub 16.6, plan 76 us, err 0.000461, chunk 128, tiles 16) 0.1s
+[13/748] bagel|u1x2048|fa2|default|graph: 17.4 us (sub 16.8, plan 77 us, err 0.000461, chunk 128, tiles 16) 0.1s
+[14/748] bagel|u1x2048|fa2|nosplit|graph: 38.2 us (sub 37.2, plan 75 us, err 0.000376, chunk None, tiles 1) 0.1s
+[15/748] bagel|u1x2048|fa2|fix2|graph: 18.6 us (sub 17.9, plan 74 us, err 0.000376, chunk 256, tiles 8) 0.1s
+[16/748] bagel|u1x2048|fa2|fix4|graph: 21.1 us (sub 20.4, plan 76 us, err 0.000442, chunk 512, tiles 4) 0.1s
+[17/748] bagel|u1x2048|fa2|fix8|graph: 27.8 us (sub 27.0, plan 72 us, err 0.000458, chunk 1024, tiles 2) 0.1s
+[18/748] bagel|u1x2048|fa2|fix16|graph: 38.0 us (sub 37.1, plan 69 us, err 0.000376, chunk 2048, tiles 1) 0.1s
+[19/748] bagel|u1x2048|fa2|fix32|graph: 38.2 us (sub 37.4, plan 70 us, err 0.000376, chunk 4096, tiles 1) 0.1s
+[20/748] bagel|u1x2048|fa2|fix64|graph: 38.4 us (sub 37.3, plan 71 us, err 0.000376, chunk 8192, tiles 1) 0.4s
+[21/748] bagel|u1x2048|fa3|default|graph: 36.4 us (sub 35.4, plan 89 us, err 0.000416, chunk None, tiles None) 0.1s
+[22/748] bagel|u1x2048|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[23/748] bagel|u8x512|auto|default|graph: 19.1 us (sub 18.2, plan 89 us, err 0.0016, chunk 128, tiles 32) 0.1s
+[24/748] bagel|u8x512|fa2|default|graph: 19.1 us (sub 18.2, plan 142 us, err 0.0016, chunk 128, tiles 32) 0.1s
+[25/748] bagel|u8x512|fa2|nosplit|graph: 19.5 us (sub 18.5, plan 107 us, err 0.00109, chunk None, tiles 8) 0.1s
+[26/748] bagel|u8x512|fa2|fix2|graph: 19.9 us (sub 19.0, plan 138 us, err 0.00144, chunk 256, tiles 16) 0.1s
+[27/748] bagel|u8x512|fa2|fix4|graph: 19.4 us (sub 18.6, plan 92 us, err 0.00109, chunk 512, tiles 8) 1.0s
+[28/748] bagel|u8x512|fa2|fix8|graph: 19.5 us (sub 18.5, plan 90 us, err 0.00109, chunk 1024, tiles 8) 0.1s
+[29/748] bagel|u8x512|fa2|fix16|graph: 19.5 us (sub 18.8, plan 102 us, err 0.00109, chunk 2048, tiles 8) 0.1s
+[30/748] bagel|u8x512|fa2|fix32|graph: 19.4 us (sub 18.6, plan 123 us, err 0.00109, chunk 4096, tiles 8) 0.1s
+[31/748] bagel|u8x512|fa2|fix64|graph: 19.4 us (sub 18.5, plan 147 us, err 0.00109, chunk 8192, tiles 8) 0.1s
+[32/748] bagel|u8x512|fa3|default|graph: 27.6 us (sub 26.3, plan 194 us, err 0.00109, chunk None, tiles None) 0.1s
+[33/748] bagel|u8x512|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[34/748] bagel|u8x2048|auto|default|graph: 30.9 us (sub 29.6, plan 104 us, err 0.000542, chunk 256, tiles 64) 0.1s
+[35/748] bagel|u8x2048|fa2|default|graph: 30.3 us (sub 29.1, plan 92 us, err 0.000542, chunk 256, tiles 64) 0.1s
+[36/748] bagel|u8x2048|fa2|nosplit|graph: 41.8 us (sub 40.1, plan 98 us, err 0.000527, chunk None, tiles 8) 0.1s
+[37/748] bagel|u8x2048|fa2|fix2|graph: 30.9 us (sub 29.7, plan 92 us, err 0.000542, chunk 256, tiles 64) 0.1s
+[38/748] bagel|u8x2048|fa2|fix4|graph: 31.5 us (sub 30.3, plan 113 us, err 0.000571, chunk 512, tiles 32) 0.1s
+[39/748] bagel|u8x2048|fa2|fix8|graph: 34.2 us (sub 32.9, plan 99 us, err 0.000628, chunk 1024, tiles 16) 0.1s
+[40/748] bagel|u8x2048|fa2|fix16|graph: 41.6 us (sub 40.1, plan 93 us, err 0.000527, chunk 2048, tiles 8) 0.1s
+[41/748] bagel|u8x2048|fa2|fix32|graph: 41.6 us (sub 40.0, plan 103 us, err 0.000527, chunk 4096, tiles 8) 0.1s
+[42/748] bagel|u8x2048|fa2|fix64|graph: 41.6 us (sub 40.0, plan 107 us, err 0.000527, chunk 8192, tiles 8) 0.1s
+[43/748] bagel|u8x2048|fa3|default|graph: 67.9 us (sub 66.4, plan 194 us, err 0.000583, chunk None, tiles None) 0.1s
+[44/748] bagel|u8x2048|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[45/748] bagel|u32x512|auto|default|graph: 32.0 us (sub 30.7, plan 211 us, err 0.00179, chunk 256, tiles 64) 0.1s
+[46/748] bagel|u32x512|fa2|default|graph: 31.8 us (sub 30.5, plan 205 us, err 0.00179, chunk 256, tiles 64) 0.1s
+[47/748] bagel|u32x512|fa2|nosplit|graph: 28.4 us (sub 27.0, plan 147 us, err 0.0011, chunk None, tiles 32) 0.1s
+[48/748] bagel|u32x512|fa2|fix2|graph: 31.8 us (sub 30.5, plan 151 us, err 0.00179, chunk 256, tiles 64) 0.1s
+[49/748] bagel|u32x512|fa2|fix4|graph: 28.0 us (sub 26.6, plan 216 us, err 0.0011, chunk 512, tiles 32) 0.1s
+[50/748] bagel|u32x512|fa2|fix8|graph: 27.9 us (sub 26.5, plan 141 us, err 0.0011, chunk 1024, tiles 32) 0.1s
+[51/748] bagel|u32x512|fa2|fix16|graph: 27.9 us (sub 26.4, plan 178 us, err 0.0011, chunk 2048, tiles 32) 0.1s
+[52/748] bagel|u32x512|fa2|fix32|graph: 27.9 us (sub 26.5, plan 155 us, err 0.0011, chunk 4096, tiles 32) 0.1s
+[53/748] bagel|u32x512|fa2|fix64|graph: 28.0 us (sub 26.7, plan 152 us, err 0.0011, chunk 8192, tiles 32) 0.1s
+[54/748] bagel|u32x512|fa3|default|graph: 77.0 us (sub 74.9, plan 375 us, err 0.00121, chunk None, tiles None) 0.2s
+[55/748] bagel|u32x512|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[56/748] bagel|u32x2048|auto|default|graph: 69.0 us (sub 68.0, plan 148 us, err 0.000671, chunk 1024, tiles 64) 0.1s
+[57/748] bagel|u32x2048|fa2|default|graph: 69.2 us (sub 68.1, plan 162 us, err 0.000671, chunk 1024, tiles 64) 0.1s
+[58/748] bagel|u32x2048|fa2|nosplit|graph: 66.4 us (sub 65.2, plan 147 us, err 0.000567, chunk None, tiles 32) 0.1s
+[59/748] bagel|u32x2048|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[60/748] bagel|u32x2048|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[61/748] bagel|u32x2048|fa2|fix8|graph: 69.1 us (sub 68.0, plan 159 us, err 0.000671, chunk 1024, tiles 64) 0.1s
+[62/748] bagel|u32x2048|fa2|fix16|graph: 66.8 us (sub 65.7, plan 147 us, err 0.000567, chunk 2048, tiles 32) 0.1s
+[63/748] bagel|u32x2048|fa2|fix32|graph: 67.0 us (sub 66.2, plan 203 us, err 0.000567, chunk 4096, tiles 32) 0.2s
+[64/748] bagel|u32x2048|fa2|fix64|graph: 66.7 us (sub 65.6, plan 148 us, err 0.000567, chunk 8192, tiles 32) 0.1s
+[65/748] bagel|u32x2048|fa3|default|graph: 225.7 us (sub 217.5, plan 375 us, err 0.00059, chunk None, tiles None) 0.2s
+[66/748] bagel|u32x2048|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[67/748] bagel|u64x512|auto|default|graph: 45.9 us (sub 44.8, plan 251 us, err 0.00135, chunk 512, tiles 64) 0.2s
+[68/748] bagel|u64x512|fa2|default|graph: 45.7 us (sub 44.6, plan 260 us, err 0.00135, chunk 512, tiles 64) 0.1s
+[69/748] bagel|u64x512|fa2|nosplit|graph: 43.8 us (sub 42.6, plan 242 us, err 0.00135, chunk None, tiles 64) 0.1s
+[70/748] bagel|u64x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[71/748] bagel|u64x512|fa2|fix4|graph: 43.9 us (sub 42.6, plan 301 us, err 0.00135, chunk 512, tiles 64) 0.1s
+[72/748] bagel|u64x512|fa2|fix8|graph: 43.8 us (sub 42.4, plan 214 us, err 0.00135, chunk 1024, tiles 64) 0.1s
+[73/748] bagel|u64x512|fa2|fix16|graph: 43.9 us (sub 42.4, plan 221 us, err 0.00135, chunk 2048, tiles 64) 0.1s
+[74/748] bagel|u64x512|fa2|fix32|graph: 43.7 us (sub 42.5, plan 230 us, err 0.00135, chunk 4096, tiles 64) 0.1s
+[75/748] bagel|u64x512|fa2|fix64|graph: 43.8 us (sub 42.8, plan 215 us, err 0.00135, chunk 8192, tiles 64) 0.1s
+[76/748] bagel|u64x512|fa3|default|graph: 149.6 us (sub 144.2, plan 619 us, err 0.00135, chunk None, tiles None) 0.2s
+[77/748] bagel|u64x512|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[78/748] bagel|u64x2048|auto|default|graph: 112.5 us (sub 111.2, plan 247 us, err 0.000572, chunk 2048, tiles 64) 0.2s
+[79/748] bagel|u64x2048|fa2|default|graph: 112.3 us (sub 111.0, plan 217 us, err 0.000572, chunk 2048, tiles 64) 0.2s
+[80/748] bagel|u64x2048|fa2|nosplit|graph: 115.0 us (sub 113.5, plan 226 us, err 0.000572, chunk None, tiles 64) 0.2s
+[81/748] bagel|u64x2048|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[82/748] bagel|u64x2048|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[83/748] bagel|u64x2048|fa2|fix8|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[84/748] bagel|u64x2048|fa2|fix16|graph: 115.3 us (sub 113.6, plan 219 us, err 0.000572, chunk 2048, tiles 64) 0.2s
+[85/748] bagel|u64x2048|fa2|fix32|graph: 115.1 us (sub 113.5, plan 222 us, err 0.000572, chunk 4096, tiles 64) 0.2s
+[86/748] bagel|u64x2048|fa2|fix64|graph: 115.1 us (sub 113.4, plan 219 us, err 0.000572, chunk 8192, tiles 64) 0.2s
+[87/748] bagel|u64x2048|fa3|default|graph: 460.1 us (sub 454.8, plan 597 us, err 0.000586, chunk None, tiles None) 0.3s
+[88/748] bagel|u64x2048|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[89/748] bagel|s1x32768+7x512|auto|default|graph: 48.8 us (sub 47.5, plan 139 us, err 0.0015, chunk 640, tiles 59) 0.1s
+[90/748] bagel|s1x32768+7x512|fa2|default|graph: 48.4 us (sub 47.4, plan 122 us, err 0.0015, chunk 640, tiles 59) 0.1s
+[91/748] bagel|s1x32768+7x512|fa2|nosplit|graph: 433.1 us (sub 430.8, plan 91 us, err 0.0015, chunk None, tiles 8) 0.3s
+[92/748] bagel|s1x32768+7x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[93/748] bagel|s1x32768+7x512|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[94/748] bagel|s1x32768+7x512|fa2|fix8|graph: 48.9 us (sub 47.7, plan 111 us, err 0.0015, chunk 1024, tiles 39) 0.1s
+[95/748] bagel|s1x32768+7x512|fa2|fix16|graph: 53.6 us (sub 52.5, plan 119 us, err 0.0015, chunk 2048, tiles 23) 0.1s
+[96/748] bagel|s1x32768+7x512|fa2|fix32|graph: 73.4 us (sub 72.2, plan 119 us, err 0.0015, chunk 4096, tiles 15) 0.1s
+[97/748] bagel|s1x32768+7x512|fa2|fix64|graph: 124.8 us (sub 123.7, plan 95 us, err 0.0015, chunk 8192, tiles 11) 0.2s
+[98/748] bagel|s1x32768+7x512|fa3|default|graph: 433.7 us (sub 423.9, plan 181 us, err 0.0015, chunk None, tiles None) 0.3s
+[99/748] bagel|s1x32768+7x512|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[100/748] bagel|s1x32768+31x512|auto|default|graph: 57.2 us (sub 55.9, plan 155 us, err 0.00108, chunk 1024, tiles 63) 0.1s
+[101/748] bagel|s1x32768+31x512|fa2|default|graph: 57.5 us (sub 56.3, plan 160 us, err 0.00108, chunk 1024, tiles 63) 0.1s
+[102/748] bagel|s1x32768+31x512|fa2|nosplit|graph: 410.1 us (sub 405.6, plan 154 us, err 0.00108, chunk None, tiles 32) 0.3s
+[103/748] bagel|s1x32768+31x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[104/748] bagel|s1x32768+31x512|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[105/748] bagel|s1x32768+31x512|fa2|fix8|graph: 57.1 us (sub 55.9, plan 145 us, err 0.00108, chunk 1024, tiles 63) 0.1s
+[106/748] bagel|s1x32768+31x512|fa2|fix16|graph: 62.3 us (sub 61.1, plan 149 us, err 0.00108, chunk 2048, tiles 47) 0.1s
+[107/748] bagel|s1x32768+31x512|fa2|fix32|graph: 82.4 us (sub 81.5, plan 145 us, err 0.00108, chunk 4096, tiles 39) 0.1s
+[108/748] bagel|s1x32768+31x512|fa2|fix64|graph: 133.0 us (sub 132.0, plan 146 us, err 0.00108, chunk 8192, tiles 35) 0.2s
+[109/748] bagel|s1x32768+31x512|fa3|default|graph: 496.2 us (sub 494.5, plan 363 us, err 0.00109, chunk None, tiles None) 0.3s
+[110/748] bagel|s1x32768+31x512|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[111/748] bagel|s1x32768+63x512|auto|default|graph: 155.5 us (sub 153.7, plan 258 us, err 0.00141, chunk 11008, tiles 66) 0.2s
+[112/748] bagel|s1x32768+63x512|fa2|default|graph: 154.8 us (sub 153.9, plan 228 us, err 0.00141, chunk 11008, tiles 66) 0.2s
+[113/748] bagel|s1x32768+63x512|fa2|nosplit|graph: 422.0 us (sub 425.9, plan 218 us, err 0.00141, chunk None, tiles 64) 0.3s
+[114/748] bagel|s1x32768+63x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[115/748] bagel|s1x32768+63x512|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[116/748] bagel|s1x32768+63x512|fa2|fix8|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[117/748] bagel|s1x32768+63x512|fa2|fix16|graph: 72.2 us (sub 70.8, plan 223 us, err 0.00141, chunk 2048, tiles 79) 0.2s
+[118/748] bagel|s1x32768+63x512|fa2|fix32|graph: 95.1 us (sub 93.8, plan 221 us, err 0.00141, chunk 4096, tiles 71) 0.2s
+[119/748] bagel|s1x32768+63x512|fa2|fix64|graph: 145.9 us (sub 144.7, plan 219 us, err 0.00141, chunk 8192, tiles 67) 0.2s
+[120/748] bagel|s1x32768+63x512|fa3|default|graph: 571.4 us (sub 569.7, plan 518 us, err 0.00141, chunk None, tiles None) 0.4s
+[121/748] bagel|s1x32768+63x512|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[122/748] bagel|s1x16384+31x512|auto|default|graph: 44.6 us (sub 43.6, plan 148 us, err 0.0012, chunk 512, tiles 63) 0.1s
+[123/748] bagel|s1x16384+31x512|fa2|default|graph: 44.8 us (sub 43.5, plan 147 us, err 0.0012, chunk 512, tiles 63) 0.1s
+CUDA context is poisoned; stopping so the supervisor can restart the worker
+supervisor: worker exited 1 (poisoned context); restart 1
+[1/625] bagel|s1x16384+31x512|fa2|nosplit|graph: 230.4 us (sub 228.8, plan 149 us, err 0.00191, chunk None, tiles 32) 1.4s
+[2/625] bagel|s1x16384+31x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[3/625] bagel|s1x16384+31x512|fa2|fix4|graph: 43.9 us (sub 42.8, plan 155 us, err 0.00191, chunk 512, tiles 63) 0.1s
+[4/625] bagel|s1x16384+31x512|fa2|fix8|graph: 46.0 us (sub 44.9, plan 157 us, err 0.00191, chunk 1024, tiles 47) 0.1s
+[5/625] bagel|s1x16384+31x512|fa2|fix16|graph: 54.7 us (sub 53.3, plan 183 us, err 0.00191, chunk 2048, tiles 39) 0.1s
+[6/625] bagel|s1x16384+31x512|fa2|fix32|graph: 79.5 us (sub 78.3, plan 159 us, err 0.00191, chunk 4096, tiles 35) 0.1s
+[7/625] bagel|s1x16384+31x512|fa2|fix64|graph: 132.0 us (sub 130.7, plan 161 us, err 0.00191, chunk 8192, tiles 33) 0.2s
+[8/625] bagel|s1x16384+31x512|fa3|default|graph: 284.2 us (sub 287.7, plan 347 us, err 0.00191, chunk None, tiles None) 0.3s
+[9/625] bagel|s1x16384+31x512|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[10/625] bagel|s2x32768+30x512|auto|default|graph: 80.0 us (sub 78.5, plan 172 us, err 0.00106, chunk 1920, tiles 66) 0.2s
+[11/625] bagel|s2x32768+30x512|fa2|default|graph: 80.0 us (sub 78.6, plan 157 us, err 0.00106, chunk 1920, tiles 66) 0.2s
+[12/625] bagel|s2x32768+30x512|fa2|nosplit|graph: 447.1 us (sub 444.5, plan 154 us, err 0.00106, chunk None, tiles 32) 0.3s
+[13/625] bagel|s2x32768+30x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[14/625] bagel|s2x32768+30x512|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[15/625] bagel|s2x32768+30x512|fa2|fix8|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[16/625] bagel|s2x32768+30x512|fa2|fix16|graph: 79.2 us (sub 77.9, plan 407 us, err 0.00106, chunk 2048, tiles 62) 0.2s
+[17/625] bagel|s2x32768+30x512|fa2|fix32|graph: 91.1 us (sub 89.8, plan 163 us, err 0.00106, chunk 4096, tiles 46) 0.1s
+[18/625] bagel|s2x32768+30x512|fa2|fix64|graph: 136.2 us (sub 134.3, plan 157 us, err 0.00106, chunk 8192, tiles 38) 0.2s
+[19/625] bagel|s2x32768+30x512|fa3|default|graph: 512.6 us (sub 509.4, plan 357 us, err 0.00116, chunk None, tiles None) 0.3s
+[20/625] bagel|s2x32768+30x512|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[21/625] bagel|s1x32768+15x512|auto|default|graph: 51.6 us (sub 50.4, plan 117 us, err 0.00111, chunk 768, tiles 58) 0.1s
+[22/625] bagel|s1x32768+15x512|fa2|default|graph: 51.6 us (sub 50.3, plan 118 us, err 0.00111, chunk 768, tiles 58) 0.1s
+[23/625] bagel|s1x32768+15x512|fa2|nosplit|graph: 428.9 us (sub 432.4, plan 117 us, err 0.00111, chunk None, tiles 16) 0.3s
+[24/625] bagel|s1x32768+15x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[25/625] bagel|s1x32768+15x512|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[26/625] bagel|s1x32768+15x512|fa2|fix8|graph: 51.3 us (sub 50.0, plan 109 us, err 0.00111, chunk 1024, tiles 47) 0.1s
+[27/625] bagel|s1x32768+15x512|fa2|fix16|graph: 56.1 us (sub 54.8, plan 177 us, err 0.00111, chunk 2048, tiles 31) 0.1s
+[28/625] bagel|s1x32768+15x512|fa2|fix32|graph: 75.6 us (sub 74.0, plan 118 us, err 0.00111, chunk 4096, tiles 23) 0.1s
+[29/625] bagel|s1x32768+15x512|fa2|fix64|graph: 127.0 us (sub 125.1, plan 126 us, err 0.00111, chunk 8192, tiles 19) 1.1s
+[30/625] bagel|s1x32768+15x512|fa3|default|graph: 460.4 us (sub 459.2, plan 242 us, err 0.00124, chunk None, tiles None) 0.3s
+[31/625] bagel|s1x32768+15x512|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[32/625] bagel|s1x32768+63x2048|auto|default|graph: 208.0 us (sub 206.6, plan 224 us, err 0.000545, chunk 11008, tiles 66) 0.2s
+[33/625] bagel|s1x32768+63x2048|fa2|default|graph: 208.0 us (sub 206.5, plan 224 us, err 0.000545, chunk 11008, tiles 66) 0.2s
+[34/625] bagel|s1x32768+63x2048|fa2|nosplit|graph: 484.0 us (sub 480.9, plan 218 us, err 0.000545, chunk None, tiles 64) 0.3s
+[35/625] bagel|s1x32768+63x2048|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[36/625] bagel|s1x32768+63x2048|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[37/625] bagel|s1x32768+63x2048|fa2|fix8|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[38/625] bagel|s1x32768+63x2048|fa2|fix16|graph: 141.9 us (sub 140.3, plan 224 us, err 0.000545, chunk 2048, tiles 79) 0.2s
+[39/625] bagel|s1x32768+63x2048|fa2|fix32|graph: 144.3 us (sub 142.9, plan 225 us, err 0.000545, chunk 4096, tiles 71) 0.2s
+[40/625] bagel|s1x32768+63x2048|fa2|fix64|graph: 180.5 us (sub 179.2, plan 228 us, err 0.000545, chunk 8192, tiles 67) 0.2s
+[41/625] bagel|s1x32768+63x2048|fa3|default|graph: 888.4 us (sub 885.0, plan 533 us, err 0.000605, chunk None, tiles None) 0.5s
+[42/625] bagel|s1x32768+63x2048|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[43/625] bagel|u8x32768|auto|default|graph: 197.9 us (sub 196.6, plan 102 us, err 0.000144, chunk 4096, tiles 64) 0.2s
+[44/625] bagel|u8x32768|fa2|default|graph: 197.8 us (sub 196.6, plan 107 us, err 0.000144, chunk 4096, tiles 64) 0.2s
+[45/625] bagel|u8x32768|fa2|nosplit|graph: 448.4 us (sub 442.6, plan 106 us, err 0.00013, chunk None, tiles 8) 0.3s
+[46/625] bagel|u8x32768|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[47/625] bagel|u8x32768|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[48/625] bagel|u8x32768|fa2|fix8|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[49/625] bagel|u8x32768|fa2|fix16|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[50/625] bagel|u8x32768|fa2|fix32|graph: 197.4 us (sub 196.2, plan 100 us, err 0.000144, chunk 4096, tiles 64) 0.2s
+[51/625] bagel|u8x32768|fa2|fix64|graph: 205.6 us (sub 204.1, plan 100 us, err 0.000144, chunk 8192, tiles 32) 0.2s
+[52/625] bagel|u8x32768|fa3|default|graph: 868.0 us (sub 869.4, plan 200 us, err 0.000119, chunk None, tiles None) 0.5s
+[53/625] bagel|u8x32768|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[54/625] bagel|u32x8192|auto|default|graph: 199.0 us (sub 197.5, plan 156 us, err 0.000354, chunk 4096, tiles 64) 0.2s
+[55/625] bagel|u32x8192|fa2|default|graph: 199.1 us (sub 197.6, plan 162 us, err 0.000354, chunk 4096, tiles 64) 0.2s
+[56/625] bagel|u32x8192|fa2|nosplit|graph: 202.7 us (sub 201.3, plan 160 us, err 0.000279, chunk None, tiles 32) 0.2s
+[57/625] bagel|u32x8192|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[58/625] bagel|u32x8192|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[59/625] bagel|u32x8192|fa2|fix8|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[60/625] bagel|u32x8192|fa2|fix16|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[61/625] bagel|u32x8192|fa2|fix32|graph: 198.7 us (sub 197.2, plan 154 us, err 0.000354, chunk 4096, tiles 64) 0.2s
+slurmstepd-node1: error: *** JOB 13074 ON node1 CANCELLED AT 2026-10-06T15:49:14 ***

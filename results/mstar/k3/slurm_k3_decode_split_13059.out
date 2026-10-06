@@ -1,0 +1,40 @@
+job=13059 host=brev-tffbb7a2o restart=0 commit=56e5273de
+index, name, memory.used [MiB], memory.total [MiB], clocks.current.sm [MHz], clocks.max.sm [MHz]
+0, NVIDIA H100 80GB HBM3, 0 MiB, 81559 MiB, 1980 MHz, 1980 MHz
+torch 2.12.1+cu132 flashinfer 0.7.0.post1 NVIDIA H100 80GB HBM3
+=== [15:22:58] smoke
+[1/24] bagel|u1x512|auto|default|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[2/24] bagel|u1x512|fa2|nosplit|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[3/24] bagel|u1x512|fa2|fix8|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[4/24] bagel|u8x512|auto|default|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[5/24] bagel|u8x512|fa2|nosplit|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[6/24] bagel|u8x512|fa2|fix8|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[7/24] bagel|s1x32768+7x512|auto|default|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[8/24] bagel|s1x32768+7x512|fa2|nosplit|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[9/24] bagel|s1x32768+7x512|fa2|fix8|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[10/24] bagel|s1x32768+31x512|auto|default|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[11/24] bagel|s1x32768+31x512|fa2|nosplit|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[12/24] bagel|s1x32768+31x512|fa2|fix8|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[13/24] bagel|u1x512|auto|default|eager: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[14/24] bagel|u1x512|fa2|nosplit|eager: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[15/24] bagel|u1x512|fa2|fix8|eager: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[16/24] bagel|u8x512|auto|default|eager: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[17/24] bagel|u8x512|fa2|nosplit|eager: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[18/24] bagel|u8x512|fa2|fix8|eager: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[19/24] bagel|s1x32768+7x512|auto|default|eager: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[20/24] bagel|s1x32768+7x512|fa2|nosplit|eager: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[21/24] bagel|s1x32768+7x512|fa2|fix8|eager: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[22/24] bagel|s1x32768+31x512|auto|default|eager: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[23/24] bagel|s1x32768+31x512|fa2|nosplit|eager: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[24/24] bagel|s1x32768+31x512|fa2|fix8|eager: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+=== [15:23:03] full sweep
+[1/748] bagel|u1x512|auto|default|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[2/748] bagel|u1x512|fa2|default|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[3/748] bagel|u1x512|fa2|nosplit|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[4/748] bagel|u1x512|fa2|fix2|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[5/748] bagel|u1x512|fa2|fix4|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[6/748] bagel|u1x512|fa2|fix8|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[7/748] bagel|u1x512|fa2|fix16|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[8/748] bagel|u1x512|fa2|fix32|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+[9/748] bagel|u1x512|fa2|fix64|graph: ERROR FileNotFoundError: [Errno 2] No such file or directory: 'ninja'
+slurmstepd-node1: error: *** JOB 13059 ON node1 CANCELLED AT 2026-10-06T15:23:32 ***

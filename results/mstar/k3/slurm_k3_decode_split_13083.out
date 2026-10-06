@@ -1,0 +1,596 @@
+job=13083 host=brev-tffbb7a2o restart=0 commit=c446b6615
+index, name, memory.used [MiB], memory.total [MiB], clocks.current.sm [MHz], clocks.max.sm [MHz]
+0, NVIDIA H100 80GB HBM3, 0 MiB, 81559 MiB, 345 MHz, 1980 MHz
+torch 2.12.1+cu132 flashinfer 0.7.0.post1 NVIDIA H100 80GB HBM3
+=== [15:49:37] smoke
+smoke: 24 ok rows
+=== [15:49:41] full sweep
+[1/564] bagel|u32x8192|fa2|fix64|graph: 207.2 us (sub 206.5, plan 143 us, err 0.000288, chunk 8192, tiles 32) 1.3s
+[2/564] bagel|u32x8192|fa3|default|graph: 787.9 us (sub 859.1, plan 349 us, err 0.000308, chunk None, tiles None) 0.5s
+[3/564] bagel|u32x8192|fa2_notc|default|graph: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[4/564] bagel|u1x512|auto|default|eager: 13.6 us (sub 9.9, plan 76 us, err 0.00134, chunk 128, tiles 4) 0.1s
+[5/564] bagel|u1x512|fa2|default|eager: 13.4 us (sub 11.1, plan 72 us, err 0.00134, chunk 128, tiles 4) 0.1s
+[6/564] bagel|u1x512|fa2|nosplit|eager: 14.9 us (sub 10.4, plan 72 us, err 0.000885, chunk None, tiles 1) 0.1s
+[7/564] bagel|u1x512|fa2|fix2|eager: 14.4 us (sub 10.8, plan 73 us, err 0.000952, chunk 256, tiles 2) 0.1s
+[8/564] bagel|u1x512|fa2|fix4|eager: 14.8 us (sub 10.5, plan 71 us, err 0.000885, chunk 512, tiles 1) 0.1s
+[9/564] bagel|u1x512|fa2|fix8|eager: 14.8 us (sub 10.2, plan 70 us, err 0.000885, chunk 1024, tiles 1) 0.1s
+[10/564] bagel|u1x512|fa2|fix16|eager: 14.8 us (sub 10.4, plan 74 us, err 0.000885, chunk 2048, tiles 1) 0.1s
+[11/564] bagel|u1x512|fa2|fix32|eager: 14.7 us (sub 10.3, plan 73 us, err 0.000885, chunk 4096, tiles 1) 0.1s
+[12/564] bagel|u1x512|fa2|fix64|eager: 14.8 us (sub 10.4, plan 72 us, err 0.000885, chunk 8192, tiles 1) 0.1s
+[13/564] bagel|u1x512|fa3|default|eager: 16.2 us (sub 13.5, plan 90 us, err 0.000885, chunk None, tiles None) 0.1s
+[14/564] bagel|u1x512|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[15/564] bagel|u1x2048|auto|default|eager: 14.8 us (sub 13.6, plan 79 us, err 0.000587, chunk 128, tiles 16) 0.1s
+[16/564] bagel|u1x2048|fa2|default|eager: 15.2 us (sub 13.0, plan 82 us, err 0.000587, chunk 128, tiles 16) 0.1s
+[17/564] bagel|u1x2048|fa2|nosplit|eager: 31.2 us (sub 26.8, plan 78 us, err 0.000324, chunk None, tiles 1) 0.1s
+[18/564] bagel|u1x2048|fa2|fix2|eager: 16.2 us (sub 12.0, plan 78 us, err 0.000403, chunk 256, tiles 8) 0.1s
+[19/564] bagel|u1x2048|fa2|fix4|eager: 18.6 us (sub 14.1, plan 73 us, err 0.000484, chunk 512, tiles 4) 0.1s
+[20/564] bagel|u1x2048|fa2|fix8|eager: 23.3 us (sub 19.0, plan 74 us, err 0.000545, chunk 1024, tiles 2) 0.1s
+[21/564] bagel|u1x2048|fa2|fix16|eager: 31.0 us (sub 26.7, plan 74 us, err 0.000324, chunk 2048, tiles 1) 0.1s
+[22/564] bagel|u1x2048|fa2|fix32|eager: 31.1 us (sub 26.7, plan 78 us, err 0.000324, chunk 4096, tiles 1) 0.1s
+[23/564] bagel|u1x2048|fa2|fix64|eager: 31.2 us (sub 26.6, plan 73 us, err 0.000324, chunk 8192, tiles 1) 0.1s
+[24/564] bagel|u1x2048|fa3|default|eager: 35.7 us (sub 33.5, plan 88 us, err 0.000397, chunk None, tiles None) 0.1s
+[25/564] bagel|u1x2048|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[26/564] bagel|u8x512|auto|default|eager: 16.9 us (sub 12.6, plan 93 us, err 0.00138, chunk 128, tiles 32) 0.1s
+[27/564] bagel|u8x512|fa2|default|eager: 17.0 us (sub 12.5, plan 98 us, err 0.00138, chunk 128, tiles 32) 0.1s
+[28/564] bagel|u8x512|fa2|nosplit|eager: 17.0 us (sub 12.2, plan 91 us, err 0.00102, chunk None, tiles 8) 0.1s
+[29/564] bagel|u8x512|fa2|fix2|eager: 17.4 us (sub 13.0, plan 94 us, err 0.00123, chunk 256, tiles 16) 0.1s
+[30/564] bagel|u8x512|fa2|fix4|eager: 16.8 us (sub 12.2, plan 92 us, err 0.00102, chunk 512, tiles 8) 0.1s
+[31/564] bagel|u8x512|fa2|fix8|eager: 16.9 us (sub 12.2, plan 94 us, err 0.00102, chunk 1024, tiles 8) 0.1s
+[32/564] bagel|u8x512|fa2|fix16|eager: 16.8 us (sub 12.3, plan 92 us, err 0.00102, chunk 2048, tiles 8) 0.1s
+[33/564] bagel|u8x512|fa2|fix32|eager: 16.8 us (sub 12.1, plan 91 us, err 0.00102, chunk 4096, tiles 8) 0.1s
+[34/564] bagel|u8x512|fa2|fix64|eager: 16.9 us (sub 12.3, plan 92 us, err 0.00102, chunk 8192, tiles 8) 0.1s
+[35/564] bagel|u8x512|fa3|default|eager: 27.1 us (sub 23.7, plan 189 us, err 0.00102, chunk None, tiles None) 0.1s
+[36/564] bagel|u8x512|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[37/564] bagel|u8x2048|auto|default|eager: 29.5 us (sub 24.9, plan 92 us, err 0.000654, chunk 256, tiles 64) 0.1s
+[38/564] bagel|u8x2048|fa2|default|eager: 29.9 us (sub 24.9, plan 93 us, err 0.000654, chunk 256, tiles 64) 0.1s
+[39/564] bagel|u8x2048|fa2|nosplit|eager: 37.3 us (sub 32.3, plan 98 us, err 0.000515, chunk None, tiles 8) 0.1s
+[40/564] bagel|u8x2048|fa2|fix2|eager: 29.8 us (sub 25.0, plan 96 us, err 0.000654, chunk 256, tiles 64) 0.1s
+[41/564] bagel|u8x2048|fa2|fix4|eager: 29.0 us (sub 24.0, plan 93 us, err 0.000567, chunk 512, tiles 32) 0.1s
+[42/564] bagel|u8x2048|fa2|fix8|eager: 31.4 us (sub 26.5, plan 92 us, err 0.000725, chunk 1024, tiles 16) 0.1s
+[43/564] bagel|u8x2048|fa2|fix16|eager: 37.2 us (sub 32.1, plan 98 us, err 0.000515, chunk 2048, tiles 8) 0.1s
+[44/564] bagel|u8x2048|fa2|fix32|eager: 37.4 us (sub 32.4, plan 96 us, err 0.000515, chunk 4096, tiles 8) 0.1s
+[45/564] bagel|u8x2048|fa2|fix64|eager: 37.4 us (sub 32.1, plan 90 us, err 0.000515, chunk 8192, tiles 8) 0.1s
+[46/564] bagel|u8x2048|fa3|default|eager: 67.0 us (sub 63.2, plan 184 us, err 0.000528, chunk None, tiles None) 0.1s
+[47/564] bagel|u8x2048|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[48/564] bagel|u32x512|auto|default|eager: 30.9 us (sub 26.0, plan 144 us, err 0.00165, chunk 256, tiles 64) 0.1s
+[49/564] bagel|u32x512|fa2|default|eager: 31.1 us (sub 26.0, plan 168 us, err 0.00165, chunk 256, tiles 64) 0.1s
+[50/564] bagel|u32x512|fa2|nosplit|eager: 26.2 us (sub 22.5, plan 152 us, err 0.00115, chunk None, tiles 32) 0.1s
+[51/564] bagel|u32x512|fa2|fix2|eager: 31.2 us (sub 26.3, plan 147 us, err 0.00165, chunk 256, tiles 64) 0.1s
+[52/564] bagel|u32x512|fa2|fix4|eager: 26.3 us (sub 21.1, plan 148 us, err 0.00115, chunk 512, tiles 32) 0.1s
+[53/564] bagel|u32x512|fa2|fix8|eager: 26.2 us (sub 21.0, plan 149 us, err 0.00115, chunk 1024, tiles 32) 0.1s
+[54/564] bagel|u32x512|fa2|fix16|eager: 26.2 us (sub 21.1, plan 143 us, err 0.00115, chunk 2048, tiles 32) 0.1s
+[55/564] bagel|u32x512|fa2|fix32|eager: 26.1 us (sub 21.0, plan 147 us, err 0.00115, chunk 4096, tiles 32) 0.2s
+[56/564] bagel|u32x512|fa2|fix64|eager: 26.2 us (sub 21.1, plan 145 us, err 0.00115, chunk 8192, tiles 32) 0.1s
+[57/564] bagel|u32x512|fa3|default|eager: 76.8 us (sub 72.4, plan 352 us, err 0.00115, chunk None, tiles None) 0.1s
+[58/564] bagel|u32x512|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[59/564] bagel|u32x2048|auto|default|eager: 68.2 us (sub 63.6, plan 147 us, err 0.000901, chunk 1024, tiles 64) 0.1s
+[60/564] bagel|u32x2048|fa2|default|eager: 68.5 us (sub 63.6, plan 151 us, err 0.000901, chunk 1024, tiles 64) 0.1s
+[61/564] bagel|u32x2048|fa2|nosplit|eager: 63.7 us (sub 58.7, plan 123 us, err 0.000556, chunk None, tiles 32) 0.1s
+[62/564] bagel|u32x2048|fa2|fix2|eager: 71.9 us (sub 66.9, plan 145 us, err 0.000725, chunk 256, tiles 256) 0.1s
+[63/564] bagel|u32x2048|fa2|fix4|eager: 71.1 us (sub 66.1, plan 145 us, err 0.000769, chunk 512, tiles 128) 0.1s
+[64/564] bagel|u32x2048|fa2|fix8|eager: 68.7 us (sub 63.7, plan 144 us, err 0.000901, chunk 1024, tiles 64) 0.1s
+[65/564] bagel|u32x2048|fa2|fix16|eager: 63.8 us (sub 58.7, plan 142 us, err 0.000556, chunk 2048, tiles 32) 0.1s
+[66/564] bagel|u32x2048|fa2|fix32|eager: 63.8 us (sub 58.8, plan 142 us, err 0.000556, chunk 4096, tiles 32) 0.1s
+[67/564] bagel|u32x2048|fa2|fix64|eager: 63.7 us (sub 58.6, plan 147 us, err 0.000556, chunk 8192, tiles 32) 0.1s
+[68/564] bagel|u32x2048|fa3|default|eager: 225.9 us (sub 215.6, plan 352 us, err 0.000558, chunk None, tiles None) 0.2s
+[69/564] bagel|u32x2048|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[70/564] bagel|u64x512|auto|default|eager: 41.4 us (sub 36.4, plan 214 us, err 0.00114, chunk 512, tiles 64) 0.1s
+[71/564] bagel|u64x512|fa2|default|eager: 41.5 us (sub 36.4, plan 211 us, err 0.00114, chunk 512, tiles 64) 0.1s
+[72/564] bagel|u64x512|fa2|nosplit|eager: 41.5 us (sub 36.4, plan 212 us, err 0.00114, chunk None, tiles 64) 0.1s
+[73/564] bagel|u64x512|fa2|fix2|eager: 49.5 us (sub 44.9, plan 213 us, err 0.00191, chunk 256, tiles 128) 0.1s
+[74/564] bagel|u64x512|fa2|fix4|eager: 41.3 us (sub 36.2, plan 203 us, err 0.00114, chunk 512, tiles 64) 0.1s
+[75/564] bagel|u64x512|fa2|fix8|eager: 41.4 us (sub 36.3, plan 211 us, err 0.00114, chunk 1024, tiles 64) 0.1s
+[76/564] bagel|u64x512|fa2|fix16|eager: 41.4 us (sub 36.4, plan 211 us, err 0.00114, chunk 2048, tiles 64) 0.1s
+[77/564] bagel|u64x512|fa2|fix32|eager: 41.5 us (sub 36.2, plan 211 us, err 0.00114, chunk 4096, tiles 64) 0.1s
+[78/564] bagel|u64x512|fa2|fix64|eager: 41.4 us (sub 36.2, plan 227 us, err 0.00114, chunk 8192, tiles 64) 0.1s
+[79/564] bagel|u64x512|fa3|default|eager: 148.9 us (sub 141.8, plan 514 us, err 0.00116, chunk None, tiles None) 0.2s
+[80/564] bagel|u64x512|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[81/564] bagel|u64x2048|auto|default|eager: 107.9 us (sub 102.8, plan 215 us, err 0.000603, chunk 2048, tiles 64) 0.2s
+[82/564] bagel|u64x2048|fa2|default|eager: 107.9 us (sub 102.4, plan 227 us, err 0.000603, chunk 2048, tiles 64) 0.2s
+[83/564] bagel|u64x2048|fa2|nosplit|eager: 107.9 us (sub 102.7, plan 213 us, err 0.000603, chunk None, tiles 64) 0.2s
+[84/564] bagel|u64x2048|fa2|fix2|eager: 121.1 us (sub 116.1, plan 221 us, err 0.000778, chunk 256, tiles 512) 0.2s
+[85/564] bagel|u64x2048|fa2|fix4|eager: 118.6 us (sub 113.5, plan 203 us, err 0.000944, chunk 512, tiles 256) 0.2s
+[86/564] bagel|u64x2048|fa2|fix8|eager: 116.9 us (sub 112.1, plan 216 us, err 0.000839, chunk 1024, tiles 128) 0.2s
+[87/564] bagel|u64x2048|fa2|fix16|eager: 107.7 us (sub 102.5, plan 214 us, err 0.000603, chunk 2048, tiles 64) 0.2s
+[88/564] bagel|u64x2048|fa2|fix32|eager: 108.0 us (sub 102.8, plan 215 us, err 0.000603, chunk 4096, tiles 64) 0.2s
+[89/564] bagel|u64x2048|fa2|fix64|eager: 107.8 us (sub 102.7, plan 216 us, err 0.000603, chunk 8192, tiles 64) 0.2s
+[90/564] bagel|u64x2048|fa3|default|eager: 455.9 us (sub 470.4, plan 931 us, err 0.000604, chunk None, tiles None) 0.3s
+[91/564] bagel|u64x2048|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[92/564] bagel|s1x32768+7x512|auto|default|eager: 47.9 us (sub 43.1, plan 93 us, err 0.00104, chunk 640, tiles 59) 0.1s
+[93/564] bagel|s1x32768+7x512|fa2|default|eager: 48.0 us (sub 43.0, plan 92 us, err 0.00104, chunk 640, tiles 59) 0.1s
+[94/564] bagel|s1x32768+7x512|fa2|nosplit|eager: 366.2 us (sub 358.3, plan 93 us, err 0.00104, chunk None, tiles 8) 0.3s
+[95/564] bagel|s1x32768+7x512|fa2|fix2|eager: 52.0 us (sub 47.3, plan 94 us, err 0.0015, chunk 256, tiles 142) 0.1s
+[96/564] bagel|s1x32768+7x512|fa2|fix4|eager: 51.6 us (sub 47.0, plan 95 us, err 0.00104, chunk 512, tiles 71) 0.1s
+[97/564] bagel|s1x32768+7x512|fa2|fix8|eager: 48.1 us (sub 43.3, plan 92 us, err 0.00104, chunk 1024, tiles 39) 0.1s
+[98/564] bagel|s1x32768+7x512|fa2|fix16|eager: 49.9 us (sub 45.3, plan 92 us, err 0.00104, chunk 2048, tiles 23) 0.1s
+[99/564] bagel|s1x32768+7x512|fa2|fix32|eager: 65.9 us (sub 61.1, plan 99 us, err 0.00104, chunk 4096, tiles 15) 0.1s
+[100/564] bagel|s1x32768+7x512|fa2|fix64|eager: 108.0 us (sub 103.6, plan 97 us, err 0.00104, chunk 8192, tiles 11) 0.1s
+[101/564] bagel|s1x32768+7x512|fa3|default|eager: 433.6 us (sub 422.4, plan 204 us, err 0.0011, chunk None, tiles None) 0.3s
+[102/564] bagel|s1x32768+7x512|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[103/564] bagel|s1x32768+31x512|auto|default|eager: 56.6 us (sub 51.5, plan 148 us, err 0.00109, chunk 1024, tiles 63) 0.1s
+[104/564] bagel|s1x32768+31x512|fa2|default|eager: 56.6 us (sub 52.0, plan 151 us, err 0.00109, chunk 1024, tiles 63) 0.1s
+[105/564] bagel|s1x32768+31x512|fa2|nosplit|eager: 367.2 us (sub 357.6, plan 151 us, err 0.00109, chunk None, tiles 32) 0.3s
+[106/564] bagel|s1x32768+31x512|fa2|fix2|eager: 61.2 us (sub 56.2, plan 164 us, err 0.00161, chunk 256, tiles 190) 0.1s
+[107/564] bagel|s1x32768+31x512|fa2|fix4|eager: 58.9 us (sub 54.2, plan 148 us, err 0.00109, chunk 512, tiles 95) 0.1s
+[108/564] bagel|s1x32768+31x512|fa2|fix8|eager: 56.8 us (sub 51.9, plan 143 us, err 0.00109, chunk 1024, tiles 63) 0.1s
+[109/564] bagel|s1x32768+31x512|fa2|fix16|eager: 60.4 us (sub 55.8, plan 151 us, err 0.00109, chunk 2048, tiles 47) 0.1s
+[110/564] bagel|s1x32768+31x512|fa2|fix32|eager: 75.0 us (sub 70.2, plan 146 us, err 0.00109, chunk 4096, tiles 39) 0.1s
+[111/564] bagel|s1x32768+31x512|fa2|fix64|eager: 114.6 us (sub 109.9, plan 143 us, err 0.00109, chunk 8192, tiles 35) 0.2s
+[112/564] bagel|s1x32768+31x512|fa3|default|eager: 493.3 us (sub 492.6, plan 343 us, err 0.00123, chunk None, tiles None) 0.3s
+[113/564] bagel|s1x32768+31x512|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[114/564] bagel|s1x32768+63x512|auto|default|eager: 182.6 us (sub 177.0, plan 216 us, err 0.00122, chunk 11008, tiles 66) 0.2s
+[115/564] bagel|s1x32768+63x512|fa2|default|eager: 181.8 us (sub 177.0, plan 221 us, err 0.00122, chunk 11008, tiles 66) 0.2s
+[116/564] bagel|s1x32768+63x512|fa2|nosplit|eager: 373.4 us (sub 365.2, plan 174 us, err 0.00122, chunk None, tiles 64) 0.3s
+[117/564] bagel|s1x32768+63x512|fa2|fix2|eager: 74.7 us (sub 70.2, plan 214 us, err 0.00227, chunk 256, tiles 254) 0.1s
+[118/564] bagel|s1x32768+63x512|fa2|fix4|eager: 70.9 us (sub 66.4, plan 217 us, err 0.00122, chunk 512, tiles 127) 0.1s
+[119/564] bagel|s1x32768+63x512|fa2|fix8|eager: 70.3 us (sub 65.6, plan 211 us, err 0.00122, chunk 1024, tiles 95) 0.1s
+[120/564] bagel|s1x32768+63x512|fa2|fix16|eager: 71.2 us (sub 66.6, plan 214 us, err 0.00122, chunk 2048, tiles 79) 0.1s
+[121/564] bagel|s1x32768+63x512|fa2|fix32|eager: 86.1 us (sub 81.4, plan 304 us, err 0.00122, chunk 4096, tiles 71) 0.2s
+[122/564] bagel|s1x32768+63x512|fa2|fix64|eager: 145.8 us (sub 141.2, plan 214 us, err 0.00122, chunk 8192, tiles 67) 0.2s
+[123/564] bagel|s1x32768+63x512|fa3|default|eager: 568.1 us (sub 563.3, plan 526 us, err 0.00117, chunk None, tiles None) 0.4s
+[124/564] bagel|s1x32768+63x512|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[125/564] bagel|s1x16384+31x512|auto|default|eager: 43.9 us (sub 39.4, plan 147 us, err 0.00112, chunk 512, tiles 63) 0.1s
+[126/564] bagel|s1x16384+31x512|fa2|default|eager: 44.0 us (sub 39.4, plan 153 us, err 0.00112, chunk 512, tiles 63) 0.1s
+[127/564] bagel|s1x16384+31x512|fa2|nosplit|eager: 198.5 us (sub 193.1, plan 150 us, err 0.00112, chunk None, tiles 32) 0.2s
+[128/564] bagel|s1x16384+31x512|fa2|fix2|eager: 47.6 us (sub 43.0, plan 152 us, err 0.00146, chunk 256, tiles 126) 0.1s
+[129/564] bagel|s1x16384+31x512|fa2|fix4|eager: 43.6 us (sub 39.3, plan 160 us, err 0.00112, chunk 512, tiles 63) 0.1s
+[130/564] bagel|s1x16384+31x512|fa2|fix8|eager: 45.6 us (sub 41.0, plan 144 us, err 0.00112, chunk 1024, tiles 47) 0.1s
+[131/564] bagel|s1x16384+31x512|fa2|fix16|eager: 52.0 us (sub 47.7, plan 144 us, err 0.00112, chunk 2048, tiles 39) 0.1s
+[132/564] bagel|s1x16384+31x512|fa2|fix32|eager: 72.4 us (sub 67.6, plan 146 us, err 0.00112, chunk 4096, tiles 35) 0.1s
+[133/564] bagel|s1x16384+31x512|fa2|fix64|eager: 113.1 us (sub 108.6, plan 149 us, err 0.00112, chunk 8192, tiles 33) 0.2s
+[134/564] bagel|s1x16384+31x512|fa3|default|eager: 284.2 us (sub 284.7, plan 356 us, err 0.00112, chunk None, tiles None) 0.2s
+[135/564] bagel|s1x16384+31x512|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[136/564] bagel|s2x32768+30x512|auto|default|eager: 79.3 us (sub 74.4, plan 167 us, err 0.00118, chunk 1920, tiles 66) 0.5s
+[137/564] bagel|s2x32768+30x512|fa2|default|eager: 79.1 us (sub 74.5, plan 159 us, err 0.00118, chunk 1920, tiles 66) 0.1s
+[138/564] bagel|s2x32768+30x512|fa2|nosplit|eager: 357.6 us (sub 350.1, plan 152 us, err 0.00118, chunk None, tiles 32) 0.3s
+[139/564] bagel|s2x32768+30x512|fa2|fix2|eager: 84.4 us (sub 79.5, plan 164 us, err 0.00175, chunk 256, tiles 316) 0.1s
+[140/564] bagel|s2x32768+30x512|fa2|fix4|eager: 81.9 us (sub 77.4, plan 145 us, err 0.00118, chunk 512, tiles 158) 0.1s
+[141/564] bagel|s2x32768+30x512|fa2|fix8|eager: 79.9 us (sub 75.0, plan 146 us, err 0.00118, chunk 1024, tiles 94) 0.1s
+[142/564] bagel|s2x32768+30x512|fa2|fix16|eager: 78.8 us (sub 74.5, plan 146 us, err 0.00118, chunk 2048, tiles 62) 0.1s
+[143/564] bagel|s2x32768+30x512|fa2|fix32|eager: 89.9 us (sub 84.8, plan 155 us, err 0.00118, chunk 4096, tiles 46) 0.1s
+[144/564] bagel|s2x32768+30x512|fa2|fix64|eager: 117.8 us (sub 113.3, plan 145 us, err 0.00118, chunk 8192, tiles 38) 0.2s
+[145/564] bagel|s2x32768+30x512|fa3|default|eager: 505.9 us (sub 503.9, plan 385 us, err 0.00115, chunk None, tiles None) 0.3s
+[146/564] bagel|s2x32768+30x512|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[147/564] bagel|s1x32768+15x512|auto|default|eager: 51.2 us (sub 46.6, plan 114 us, err 0.00112, chunk 768, tiles 58) 0.1s
+[148/564] bagel|s1x32768+15x512|fa2|default|eager: 51.2 us (sub 46.3, plan 105 us, err 0.00112, chunk 768, tiles 58) 0.1s
+[149/564] bagel|s1x32768+15x512|fa2|nosplit|eager: 363.8 us (sub 356.6, plan 113 us, err 0.00112, chunk None, tiles 16) 0.3s
+[150/564] bagel|s1x32768+15x512|fa2|fix2|eager: 55.2 us (sub 50.4, plan 102 us, err 0.00128, chunk 256, tiles 158) 0.1s
+[151/564] bagel|s1x32768+15x512|fa2|fix4|eager: 53.3 us (sub 48.8, plan 107 us, err 0.00112, chunk 512, tiles 79) 0.1s
+[152/564] bagel|s1x32768+15x512|fa2|fix8|eager: 50.9 us (sub 46.3, plan 113 us, err 0.00112, chunk 1024, tiles 47) 0.1s
+[153/564] bagel|s1x32768+15x512|fa2|fix16|eager: 52.6 us (sub 48.2, plan 112 us, err 0.00112, chunk 2048, tiles 31) 0.1s
+[154/564] bagel|s1x32768+15x512|fa2|fix32|eager: 68.3 us (sub 63.6, plan 112 us, err 0.00112, chunk 4096, tiles 23) 0.1s
+[155/564] bagel|s1x32768+15x512|fa2|fix64|eager: 108.9 us (sub 104.5, plan 112 us, err 0.00112, chunk 8192, tiles 19) 0.1s
+[156/564] bagel|s1x32768+15x512|fa3|default|eager: 455.9 us (sub 453.4, plan 242 us, err 0.00111, chunk None, tiles None) 0.3s
+[157/564] bagel|s1x32768+15x512|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[158/564] bagel|s1x32768+63x2048|auto|default|eager: 231.0 us (sub 225.6, plan 223 us, err 0.000564, chunk 11008, tiles 66) 0.2s
+[159/564] bagel|s1x32768+63x2048|fa2|default|eager: 231.0 us (sub 225.5, plan 220 us, err 0.000564, chunk 11008, tiles 66) 0.2s
+[160/564] bagel|s1x32768+63x2048|fa2|nosplit|eager: 424.2 us (sub 418.5, plan 228 us, err 0.000564, chunk None, tiles 64) 0.3s
+[161/564] bagel|s1x32768+63x2048|fa2|fix2|eager: 144.5 us (sub 139.6, plan 246 us, err 0.000646, chunk 256, tiles 632) 0.2s
+[162/564] bagel|s1x32768+63x2048|fa2|fix4|eager: 139.5 us (sub 135.0, plan 225 us, err 0.000705, chunk 512, tiles 316) 0.2s
+[163/564] bagel|s1x32768+63x2048|fa2|fix8|eager: 139.5 us (sub 134.7, plan 216 us, err 0.000734, chunk 1024, tiles 158) 0.2s
+[164/564] bagel|s1x32768+63x2048|fa2|fix16|eager: 140.1 us (sub 135.5, plan 227 us, err 0.000564, chunk 2048, tiles 79) 0.2s
+[165/564] bagel|s1x32768+63x2048|fa2|fix32|eager: 139.6 us (sub 134.9, plan 228 us, err 0.000564, chunk 4096, tiles 71) 0.2s
+[166/564] bagel|s1x32768+63x2048|fa2|fix64|eager: 194.2 us (sub 189.6, plan 214 us, err 0.000564, chunk 8192, tiles 67) 0.2s
+[167/564] bagel|s1x32768+63x2048|fa3|default|eager: 886.1 us (sub 883.5, plan 520 us, err 0.000614, chunk None, tiles None) 0.5s
+[168/564] bagel|s1x32768+63x2048|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[169/564] bagel|u8x32768|auto|default|eager: 197.4 us (sub 192.8, plan 106 us, err 0.000153, chunk 4096, tiles 64) 0.2s
+[170/564] bagel|u8x32768|fa2|default|eager: 197.6 us (sub 192.7, plan 93 us, err 0.000153, chunk 4096, tiles 64) 0.2s
+[171/564] bagel|u8x32768|fa2|nosplit|eager: 365.0 us (sub 357.7, plan 97 us, err 0.000153, chunk None, tiles 8) 0.3s
+[172/564] bagel|u8x32768|fa2|fix2|eager: 214.2 us (sub 209.5, plan 111 us, err 0.000145, chunk 256, tiles 1024) 0.2s
+[173/564] bagel|u8x32768|fa2|fix4|eager: 207.4 us (sub 202.9, plan 99 us, err 0.00015, chunk 512, tiles 512) 0.2s
+[174/564] bagel|u8x32768|fa2|fix8|eager: 204.3 us (sub 200.0, plan 109 us, err 0.00018, chunk 1024, tiles 256) 0.2s
+[175/564] bagel|u8x32768|fa2|fix16|eager: 200.2 us (sub 195.8, plan 104 us, err 0.000179, chunk 2048, tiles 128) 0.2s
+[176/564] bagel|u8x32768|fa2|fix32|eager: 197.5 us (sub 192.8, plan 94 us, err 0.000153, chunk 4096, tiles 64) 0.2s
+[177/564] bagel|u8x32768|fa2|fix64|eager: 196.4 us (sub 192.2, plan 93 us, err 0.000153, chunk 8192, tiles 32) 0.2s
+[178/564] bagel|u8x32768|fa3|default|eager: 868.1 us (sub 865.6, plan 189 us, err 0.000145, chunk None, tiles None) 0.5s
+[179/564] bagel|u8x32768|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[180/564] bagel|u32x8192|auto|default|eager: 198.7 us (sub 193.9, plan 150 us, err 0.000397, chunk 4096, tiles 64) 0.2s
+[181/564] bagel|u32x8192|fa2|default|eager: 198.4 us (sub 193.8, plan 147 us, err 0.000397, chunk 4096, tiles 64) 0.2s
+[182/564] bagel|u32x8192|fa2|nosplit|eager: 193.8 us (sub 188.8, plan 149 us, err 0.000289, chunk None, tiles 32) 0.2s
+[183/564] bagel|u32x8192|fa2|fix2|eager: 215.1 us (sub 210.3, plan 172 us, err 0.000337, chunk 256, tiles 1024) 0.2s
+[184/564] bagel|u32x8192|fa2|fix4|eager: 208.1 us (sub 204.1, plan 151 us, err 0.000363, chunk 512, tiles 512) 0.2s
+[185/564] bagel|u32x8192|fa2|fix8|eager: 205.0 us (sub 200.4, plan 147 us, err 0.000337, chunk 1024, tiles 256) 0.2s
+[186/564] bagel|u32x8192|fa2|fix16|eager: 201.1 us (sub 196.7, plan 144 us, err 0.000353, chunk 2048, tiles 128) 0.2s
+[187/564] bagel|u32x8192|fa2|fix32|eager: 198.5 us (sub 193.8, plan 145 us, err 0.000397, chunk 4096, tiles 64) 0.2s
+[188/564] bagel|u32x8192|fa2|fix64|eager: 193.8 us (sub 189.0, plan 146 us, err 0.000289, chunk 8192, tiles 32) 0.2s
+[189/564] bagel|u32x8192|fa3|default|eager: 782.3 us (sub 851.2, plan 367 us, err 0.000303, chunk None, tiles None) 0.5s
+[190/564] bagel|u32x8192|fa2_notc|default|eager: ERROR RuntimeError: Error in function 'operator()' at /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/0.7.0.post1/90a/generated/batch_decode_with_kv_cache_dtype_q_
+[191/564] omni32|u1x512|auto|default|graph: 15.6 us (sub 13.5, plan 73 us, err 0.00162, chunk 128, tiles 4) 0.1s
+[192/564] omni32|u1x512|fa2|default|graph: 15.5 us (sub 13.6, plan 72 us, err 0.00162, chunk 128, tiles 4) 0.1s
+supervisor: no heartbeat for 180 s at 'omni32|u1x512|fa2|nosplit|graph' (graph warmup+capture); worker killed
+[1/371] omni32|u1x512|fa2|fix2|graph: 17.2 us (sub 15.3, plan 72 us, err 0.00115, chunk 256, tiles 2) 1.2s
+[2/371] omni32|u1x512|fa2|fix4|graph: 18.1 us (sub 16.2, plan 72 us, err 0.00111, chunk 512, tiles 1) 0.1s
+[3/371] omni32|u1x512|fa2|fix8|graph: 18.1 us (sub 16.2, plan 82 us, err 0.00111, chunk 1024, tiles 1) 0.1s
+[4/371] omni32|u1x512|fa2|fix16|graph: 18.0 us (sub 16.1, plan 79 us, err 0.00111, chunk 2048, tiles 1) 0.1s
+[5/371] omni32|u1x512|fa2|fix32|graph: 18.2 us (sub 16.2, plan 81 us, err 0.00111, chunk 4096, tiles 1) 0.1s
+[6/371] omni32|u1x512|fa2|fix64|graph: 18.0 us (sub 16.1, plan 90 us, err 0.00111, chunk 8192, tiles 1) 0.1s
+[7/371] omni32|u1x512|fa3|default|graph: 17.0 us (sub 15.0, plan 101 us, err 0.000838, chunk None, tiles None) 0.1s
+[8/371] omni32|u1x512|fa2_notc|default|graph: 21.2 us (sub 19.3, plan 79 us, err 0.000898, chunk None, tiles None) 0.1s
+[9/371] omni32|u1x2048|auto|default|graph: 17.7 us (sub 16.9, plan 82 us, err 0.000559, chunk 128, tiles 16) 0.1s
+[10/371] omni32|u1x2048|fa2|default|graph: 17.6 us (sub 16.9, plan 81 us, err 0.000559, chunk 128, tiles 16) 0.1s
+[11/371] omni32|u1x2048|fa2|nosplit|graph: 38.0 us (sub 36.8, plan 82 us, err 0.000505, chunk None, tiles 1) 0.1s
+[12/371] omni32|u1x2048|fa2|fix2|graph: 18.5 us (sub 17.8, plan 79 us, err 0.000505, chunk 256, tiles 8) 0.1s
+[13/371] omni32|u1x2048|fa2|fix4|graph: 21.2 us (sub 20.4, plan 81 us, err 0.000505, chunk 512, tiles 4) 0.1s
+[14/371] omni32|u1x2048|fa2|fix8|graph: 27.2 us (sub 26.6, plan 79 us, err 0.000671, chunk 1024, tiles 2) 0.1s
+[15/371] omni32|u1x2048|fa2|fix16|graph: 37.9 us (sub 36.9, plan 80 us, err 0.000505, chunk 2048, tiles 1) 0.1s
+[16/371] omni32|u1x2048|fa2|fix32|graph: 37.9 us (sub 36.8, plan 82 us, err 0.000505, chunk 4096, tiles 1) 0.1s
+[17/371] omni32|u1x2048|fa2|fix64|graph: 38.0 us (sub 37.1, plan 77 us, err 0.000505, chunk 8192, tiles 1) 0.1s
+[18/371] omni32|u1x2048|fa3|default|graph: 36.0 us (sub 34.9, plan 100 us, err 0.000505, chunk None, tiles None) 0.1s
+[19/371] omni32|u1x2048|fa2_notc|default|graph: 21.6 us (sub 20.7, plan 79 us, err 0.000604, chunk None, tiles None) 0.1s
+[20/371] omni32|u8x512|auto|default|graph: 19.2 us (sub 18.3, plan 103 us, err 0.00166, chunk 128, tiles 32) 0.1s
+[21/371] omni32|u8x512|fa2|default|graph: 19.1 us (sub 18.4, plan 106 us, err 0.00166, chunk 128, tiles 32) 0.1s
+[22/371] omni32|u8x512|fa2|nosplit|graph: 19.2 us (sub 18.3, plan 102 us, err 0.000891, chunk None, tiles 8) 0.1s
+[23/371] omni32|u8x512|fa2|fix2|graph: 20.1 us (sub 19.1, plan 100 us, err 0.00157, chunk 256, tiles 16) 0.1s
+[24/371] omni32|u8x512|fa2|fix4|graph: 19.2 us (sub 18.3, plan 100 us, err 0.000891, chunk 512, tiles 8) 0.1s
+[25/371] omni32|u8x512|fa2|fix8|graph: 19.4 us (sub 18.5, plan 97 us, err 0.000891, chunk 1024, tiles 8) 0.1s
+[26/371] omni32|u8x512|fa2|fix16|graph: 19.2 us (sub 18.4, plan 97 us, err 0.000891, chunk 2048, tiles 8) 0.1s
+[27/371] omni32|u8x512|fa2|fix32|graph: 19.4 us (sub 18.4, plan 99 us, err 0.000891, chunk 4096, tiles 8) 0.1s
+[28/371] omni32|u8x512|fa2|fix64|graph: 19.2 us (sub 18.3, plan 98 us, err 0.000891, chunk 8192, tiles 8) 0.1s
+[29/371] omni32|u8x512|fa3|default|graph: 27.5 us (sub 26.1, plan 199 us, err 0.000891, chunk None, tiles None) 0.1s
+[30/371] omni32|u8x512|fa2_notc|default|graph: 21.8 us (sub 21.0, plan 75 us, err 0.00151, chunk None, tiles None) 0.1s
+[31/371] omni32|u8x2048|auto|default|graph: 30.9 us (sub 29.6, plan 99 us, err 0.00052, chunk 256, tiles 64) 0.1s
+[32/371] omni32|u8x2048|fa2|default|graph: 30.2 us (sub 29.0, plan 100 us, err 0.00052, chunk 256, tiles 64) 0.1s
+[33/371] omni32|u8x2048|fa2|nosplit|graph: 41.7 us (sub 40.0, plan 101 us, err 0.000504, chunk None, tiles 8) 0.1s
+[34/371] omni32|u8x2048|fa2|fix2|graph: 30.8 us (sub 29.6, plan 99 us, err 0.00052, chunk 256, tiles 64) 0.1s
+[35/371] omni32|u8x2048|fa2|fix4|graph: 31.4 us (sub 30.0, plan 93 us, err 0.000738, chunk 512, tiles 32) 0.1s
+[36/371] omni32|u8x2048|fa2|fix8|graph: 34.0 us (sub 32.9, plan 100 us, err 0.000672, chunk 1024, tiles 16) 0.1s
+[37/371] omni32|u8x2048|fa2|fix16|graph: 41.6 us (sub 40.0, plan 99 us, err 0.000504, chunk 2048, tiles 8) 0.1s
+[38/371] omni32|u8x2048|fa2|fix32|graph: 41.5 us (sub 40.0, plan 99 us, err 0.000504, chunk 4096, tiles 8) 0.1s
+[39/371] omni32|u8x2048|fa2|fix64|graph: 41.6 us (sub 39.9, plan 98 us, err 0.000504, chunk 8192, tiles 8) 0.1s
+[40/371] omni32|u8x2048|fa3|default|graph: 67.0 us (sub 65.0, plan 199 us, err 0.000502, chunk None, tiles None) 0.1s
+[41/371] omni32|u8x2048|fa2_notc|default|graph: 37.6 us (sub 36.4, plan 79 us, err 0.000576, chunk None, tiles None) 0.1s
+[42/371] omni32|u32x512|auto|default|graph: 32.1 us (sub 30.8, plan 156 us, err 0.00163, chunk 256, tiles 64) 0.1s
+[43/371] omni32|u32x512|fa2|default|graph: 32.0 us (sub 30.6, plan 149 us, err 0.00163, chunk 256, tiles 64) 0.1s
+[44/371] omni32|u32x512|fa2|nosplit|graph: 28.4 us (sub 27.0, plan 158 us, err 0.00106, chunk None, tiles 32) 0.1s
+[45/371] omni32|u32x512|fa2|fix2|graph: 32.3 us (sub 30.8, plan 160 us, err 0.00163, chunk 256, tiles 64) 0.1s
+[46/371] omni32|u32x512|fa2|fix4|graph: 28.0 us (sub 26.6, plan 156 us, err 0.00106, chunk 512, tiles 32) 0.1s
+[47/371] omni32|u32x512|fa2|fix8|graph: 28.0 us (sub 26.7, plan 158 us, err 0.00106, chunk 1024, tiles 32) 0.1s
+[48/371] omni32|u32x512|fa2|fix16|graph: 28.0 us (sub 26.7, plan 151 us, err 0.00106, chunk 2048, tiles 32) 0.1s
+[49/371] omni32|u32x512|fa2|fix32|graph: 28.2 us (sub 26.6, plan 148 us, err 0.00106, chunk 4096, tiles 32) 0.1s
+[50/371] omni32|u32x512|fa2|fix64|graph: 27.9 us (sub 26.6, plan 159 us, err 0.00106, chunk 8192, tiles 32) 0.1s
+[51/371] omni32|u32x512|fa3|default|graph: 86.6 us (sub 83.3, plan 374 us, err 0.0012, chunk None, tiles None) 0.2s
+[52/371] omni32|u32x512|fa2_notc|default|graph: 39.2 us (sub 37.7, plan 74 us, err 0.00151, chunk None, tiles None) 0.1s
+[53/371] omni32|u32x2048|auto|default|graph: 69.3 us (sub 67.9, plan 156 us, err 0.000821, chunk 1024, tiles 64) 0.1s
+[54/371] omni32|u32x2048|fa2|default|graph: 69.0 us (sub 67.8, plan 157 us, err 0.000821, chunk 1024, tiles 64) 0.1s
+[55/371] omni32|u32x2048|fa2|nosplit|graph: 66.9 us (sub 65.5, plan 151 us, err 0.000601, chunk None, tiles 32) 0.1s
+[56/371] omni32|u32x2048|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[57/371] omni32|u32x2048|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[58/371] omni32|u32x2048|fa2|fix8|graph: 69.1 us (sub 67.8, plan 160 us, err 0.000821, chunk 1024, tiles 64) 0.1s
+[59/371] omni32|u32x2048|fa2|fix16|graph: 67.2 us (sub 65.7, plan 142 us, err 0.000601, chunk 2048, tiles 32) 0.1s
+[60/371] omni32|u32x2048|fa2|fix32|graph: 67.1 us (sub 65.8, plan 152 us, err 0.000601, chunk 4096, tiles 32) 0.1s
+[61/371] omni32|u32x2048|fa2|fix64|graph: 67.2 us (sub 65.8, plan 157 us, err 0.000601, chunk 8192, tiles 32) 0.1s
+[62/371] omni32|u32x2048|fa3|default|graph: 253.9 us (sub 244.8, plan 357 us, err 0.000571, chunk None, tiles None) 0.2s
+[63/371] omni32|u32x2048|fa2_notc|default|graph: 107.2 us (sub 104.2, plan 79 us, err 0.000646, chunk None, tiles None) 0.2s
+[64/371] omni32|u64x512|auto|default|graph: 45.6 us (sub 44.4, plan 220 us, err 0.00115, chunk 512, tiles 64) 0.1s
+[65/371] omni32|u64x512|fa2|default|graph: 45.8 us (sub 44.5, plan 207 us, err 0.00115, chunk 512, tiles 64) 0.1s
+[66/371] omni32|u64x512|fa2|nosplit|graph: 44.4 us (sub 43.1, plan 228 us, err 0.00115, chunk None, tiles 64) 0.1s
+[67/371] omni32|u64x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[68/371] omni32|u64x512|fa2|fix4|graph: 44.1 us (sub 42.8, plan 227 us, err 0.00115, chunk 512, tiles 64) 0.1s
+[69/371] omni32|u64x512|fa2|fix8|graph: 43.9 us (sub 42.7, plan 216 us, err 0.00115, chunk 1024, tiles 64) 0.1s
+[70/371] omni32|u64x512|fa2|fix16|graph: 44.1 us (sub 42.7, plan 209 us, err 0.00115, chunk 2048, tiles 64) 0.1s
+[71/371] omni32|u64x512|fa2|fix32|graph: 43.9 us (sub 42.6, plan 237 us, err 0.00115, chunk 4096, tiles 64) 0.8s
+[72/371] omni32|u64x512|fa2|fix64|graph: 44.2 us (sub 42.7, plan 241 us, err 0.00115, chunk 8192, tiles 64) 0.1s
+[73/371] omni32|u64x512|fa3|default|graph: 167.0 us (sub 161.2, plan 542 us, err 0.00119, chunk None, tiles None) 0.7s
+[74/371] omni32|u64x512|fa2_notc|default|graph: 62.4 us (sub 60.6, plan 83 us, err 0.00221, chunk None, tiles None) 0.1s
+[75/371] omni32|u64x2048|auto|default|graph: 112.2 us (sub 110.9, plan 235 us, err 0.000597, chunk 2048, tiles 64) 0.2s
+[76/371] omni32|u64x2048|fa2|default|graph: 112.3 us (sub 111.0, plan 225 us, err 0.000597, chunk 2048, tiles 64) 0.2s
+[77/371] omni32|u64x2048|fa2|nosplit|graph: 117.2 us (sub 115.4, plan 224 us, err 0.000597, chunk None, tiles 64) 0.2s
+[78/371] omni32|u64x2048|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[79/371] omni32|u64x2048|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[80/371] omni32|u64x2048|fa2|fix8|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[81/371] omni32|u64x2048|fa2|fix16|graph: 115.6 us (sub 113.9, plan 225 us, err 0.000597, chunk 2048, tiles 64) 0.2s
+[82/371] omni32|u64x2048|fa2|fix32|graph: 115.5 us (sub 114.0, plan 225 us, err 0.000597, chunk 4096, tiles 64) 0.2s
+[83/371] omni32|u64x2048|fa2|fix64|graph: 115.9 us (sub 114.0, plan 224 us, err 0.000597, chunk 8192, tiles 64) 0.2s
+[84/371] omni32|u64x2048|fa3|default|graph: 517.8 us (sub 547.6, plan 545 us, err 0.000582, chunk None, tiles None) 0.3s
+[85/371] omni32|u64x2048|fa2_notc|default|graph: 204.1 us (sub 198.8, plan 83 us, err 0.000881, chunk None, tiles None) 0.2s
+[86/371] omni32|s1x32768+7x512|auto|default|graph: 48.5 us (sub 47.3, plan 101 us, err 0.00108, chunk 640, tiles 59) 0.1s
+[87/371] omni32|s1x32768+7x512|fa2|default|graph: 48.7 us (sub 47.4, plan 101 us, err 0.00108, chunk 640, tiles 59) 0.1s
+supervisor: no heartbeat for 180 s at 'omni32|s1x32768+7x512|fa2|nosplit|graph' (graph warmup+capture); worker killed
+[1/283] omni32|s1x32768+7x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[2/283] omni32|s1x32768+7x512|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[3/283] omni32|s1x32768+7x512|fa2|fix8|graph: 48.4 us (sub 47.0, plan 100 us, err 0.000948, chunk 1024, tiles 39) 0.2s
+[4/283] omni32|s1x32768+7x512|fa2|fix16|graph: 53.1 us (sub 51.9, plan 101 us, err 0.000948, chunk 2048, tiles 23) 0.1s
+[5/283] omni32|s1x32768+7x512|fa2|fix32|graph: 72.6 us (sub 71.3, plan 98 us, err 0.000948, chunk 4096, tiles 15) 0.1s
+[6/283] omni32|s1x32768+7x512|fa2|fix64|graph: 124.2 us (sub 122.9, plan 98 us, err 0.000948, chunk 8192, tiles 11) 0.2s
+[7/283] omni32|s1x32768+7x512|fa3|default|graph: 442.0 us (sub 439.6, plan 194 us, err 0.00106, chunk None, tiles None) 0.3s
+[8/283] omni32|s1x32768+7x512|fa2_notc|default|graph: 62.8 us (sub 61.5, plan 75 us, err 0.00135, chunk None, tiles None) 0.1s
+[9/283] omni32|s1x32768+31x512|auto|default|graph: 57.2 us (sub 55.8, plan 160 us, err 0.00162, chunk 1024, tiles 63) 0.2s
+[10/283] omni32|s1x32768+31x512|fa2|default|graph: 56.8 us (sub 55.6, plan 155 us, err 0.00162, chunk 1024, tiles 63) 0.1s
+[11/283] omni32|s1x32768+31x512|fa2|nosplit|graph: 409.9 us (sub 407.3, plan 166 us, err 0.00162, chunk None, tiles 32) 0.3s
+[12/283] omni32|s1x32768+31x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[13/283] omni32|s1x32768+31x512|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[14/283] omni32|s1x32768+31x512|fa2|fix8|graph: 56.8 us (sub 55.6, plan 158 us, err 0.00162, chunk 1024, tiles 63) 0.1s
+[15/283] omni32|s1x32768+31x512|fa2|fix16|graph: 62.1 us (sub 60.8, plan 150 us, err 0.00162, chunk 2048, tiles 47) 0.1s
+[16/283] omni32|s1x32768+31x512|fa2|fix32|graph: 82.6 us (sub 80.9, plan 165 us, err 0.00162, chunk 4096, tiles 39) 0.1s
+[17/283] omni32|s1x32768+31x512|fa2|fix64|graph: 133.2 us (sub 131.8, plan 157 us, err 0.00162, chunk 8192, tiles 35) 0.2s
+[18/283] omni32|s1x32768+31x512|fa3|default|graph: 501.6 us (sub 504.8, plan 399 us, err 0.00162, chunk None, tiles None) 0.3s
+[19/283] omni32|s1x32768+31x512|fa2_notc|default|graph: 78.0 us (sub 76.0, plan 76 us, err 0.00162, chunk None, tiles None) 0.1s
+[20/283] omni32|s1x32768+63x512|auto|default|graph: 155.3 us (sub 154.2, plan 231 us, err 0.00108, chunk 11008, tiles 66) 0.2s
+[21/283] omni32|s1x32768+63x512|fa2|default|graph: 154.8 us (sub 153.4, plan 234 us, err 0.00108, chunk 11008, tiles 66) 0.2s
+[22/283] omni32|s1x32768+63x512|fa2|nosplit|graph: 426.9 us (sub 428.3, plan 204 us, err 0.00108, chunk None, tiles 64) 0.3s
+[23/283] omni32|s1x32768+63x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[24/283] omni32|s1x32768+63x512|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[25/283] omni32|s1x32768+63x512|fa2|fix8|graph: 71.1 us (sub 69.9, plan 223 us, err 0.00108, chunk 1024, tiles 95) 0.1s
+[26/283] omni32|s1x32768+63x512|fa2|fix16|graph: 72.8 us (sub 71.4, plan 217 us, err 0.00108, chunk 2048, tiles 79) 0.1s
+[27/283] omni32|s1x32768+63x512|fa2|fix32|graph: 86.9 us (sub 86.0, plan 224 us, err 0.00108, chunk 4096, tiles 71) 0.1s
+[28/283] omni32|s1x32768+63x512|fa2|fix64|graph: 127.3 us (sub 126.1, plan 199 us, err 0.00108, chunk 8192, tiles 67) 0.2s
+[29/283] omni32|s1x32768+63x512|fa3|default|graph: 596.9 us (sub 594.1, plan 669 us, err 0.00116, chunk None, tiles None) 0.4s
+[30/283] omni32|s1x32768+63x512|fa2_notc|default|graph: 109.7 us (sub 106.6, plan 83 us, err 0.0018, chunk None, tiles None) 0.6s
+[31/283] omni32|s1x16384+31x512|auto|default|graph: 44.5 us (sub 43.2, plan 156 us, err 0.00113, chunk 512, tiles 63) 0.1s
+[32/283] omni32|s1x16384+31x512|fa2|default|graph: 44.5 us (sub 43.1, plan 159 us, err 0.00113, chunk 512, tiles 63) 0.1s
+[33/283] omni32|s1x16384+31x512|fa2|nosplit|graph: 216.3 us (sub 214.8, plan 154 us, err 0.00113, chunk None, tiles 32) 0.2s
+[34/283] omni32|s1x16384+31x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[35/283] omni32|s1x16384+31x512|fa2|fix4|graph: 44.3 us (sub 43.2, plan 162 us, err 0.00113, chunk 512, tiles 63) 0.1s
+[36/283] omni32|s1x16384+31x512|fa2|fix8|graph: 46.8 us (sub 45.5, plan 157 us, err 0.00113, chunk 1024, tiles 47) 0.1s
+[37/283] omni32|s1x16384+31x512|fa2|fix16|graph: 54.7 us (sub 53.2, plan 160 us, err 0.00113, chunk 2048, tiles 39) 0.1s
+[38/283] omni32|s1x16384+31x512|fa2|fix32|graph: 79.4 us (sub 78.0, plan 161 us, err 0.00113, chunk 4096, tiles 35) 0.1s
+[39/283] omni32|s1x16384+31x512|fa2|fix64|graph: 131.4 us (sub 130.1, plan 156 us, err 0.00113, chunk 8192, tiles 33) 0.2s
+[40/283] omni32|s1x16384+31x512|fa3|default|graph: 295.9 us (sub 296.4, plan 417 us, err 0.00114, chunk None, tiles None) 0.2s
+[41/283] omni32|s1x16384+31x512|fa2_notc|default|graph: 60.6 us (sub 58.8, plan 74 us, err 0.00122, chunk None, tiles None) 0.1s
+[42/283] omni32|s2x32768+30x512|auto|default|graph: 79.9 us (sub 78.4, plan 154 us, err 0.00114, chunk 1920, tiles 66) 0.2s
+[43/283] omni32|s2x32768+30x512|fa2|default|graph: 79.7 us (sub 78.4, plan 153 us, err 0.00114, chunk 1920, tiles 66) 0.1s
+[44/283] omni32|s2x32768+30x512|fa2|nosplit|graph: 446.4 us (sub 443.8, plan 158 us, err 0.00114, chunk None, tiles 32) 0.3s
+[45/283] omni32|s2x32768+30x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[46/283] omni32|s2x32768+30x512|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[47/283] omni32|s2x32768+30x512|fa2|fix8|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[48/283] omni32|s2x32768+30x512|fa2|fix16|graph: 79.6 us (sub 77.9, plan 169 us, err 0.00114, chunk 2048, tiles 62) 0.1s
+[49/283] omni32|s2x32768+30x512|fa2|fix32|graph: 90.7 us (sub 89.1, plan 343 us, err 0.00114, chunk 4096, tiles 46) 0.2s
+[50/283] omni32|s2x32768+30x512|fa2|fix64|graph: 136.5 us (sub 134.4, plan 170 us, err 0.00114, chunk 8192, tiles 38) 0.2s
+[51/283] omni32|s2x32768+30x512|fa3|default|graph: 516.8 us (sub 515.7, plan 416 us, err 0.0011, chunk None, tiles None) 0.3s
+[52/283] omni32|s2x32768+30x512|fa2_notc|default|graph: 129.6 us (sub 125.1, plan 82 us, err 0.00156, chunk None, tiles None) 0.2s
+[53/283] omni32|s1x32768+15x512|auto|default|graph: 51.5 us (sub 50.2, plan 126 us, err 0.00106, chunk 768, tiles 58) 0.1s
+[54/283] omni32|s1x32768+15x512|fa2|default|graph: 51.5 us (sub 50.1, plan 121 us, err 0.00106, chunk 768, tiles 58) 0.1s
+[55/283] omni32|s1x32768+15x512|fa2|nosplit|graph: 427.9 us (sub 427.5, plan 134 us, err 0.00106, chunk None, tiles 16) 0.3s
+[56/283] omni32|s1x32768+15x512|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[57/283] omni32|s1x32768+15x512|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[58/283] omni32|s1x32768+15x512|fa2|fix8|graph: 51.4 us (sub 50.3, plan 125 us, err 0.00106, chunk 1024, tiles 47) 0.1s
+[59/283] omni32|s1x32768+15x512|fa2|fix16|graph: 56.2 us (sub 54.6, plan 123 us, err 0.00106, chunk 2048, tiles 31) 0.1s
+[60/283] omni32|s1x32768+15x512|fa2|fix32|graph: 75.6 us (sub 74.2, plan 121 us, err 0.00106, chunk 4096, tiles 23) 0.1s
+[61/283] omni32|s1x32768+15x512|fa2|fix64|graph: 126.8 us (sub 125.3, plan 120 us, err 0.00106, chunk 8192, tiles 19) 0.2s
+[62/283] omni32|s1x32768+15x512|fa3|default|graph: 465.8 us (sub 465.3, plan 281 us, err 0.00124, chunk None, tiles None) 0.3s
+[63/283] omni32|s1x32768+15x512|fa2_notc|default|graph: 75.6 us (sub 74.0, plan 76 us, err 0.00159, chunk None, tiles None) 0.1s
+[64/283] omni32|s1x32768+63x2048|auto|default|graph: 207.4 us (sub 206.0, plan 244 us, err 0.000576, chunk 11008, tiles 66) 0.2s
+[65/283] omni32|s1x32768+63x2048|fa2|default|graph: 207.8 us (sub 206.1, plan 243 us, err 0.000576, chunk 11008, tiles 66) 0.2s
+[66/283] omni32|s1x32768+63x2048|fa2|nosplit|graph: 482.2 us (sub 479.0, plan 245 us, err 0.000576, chunk None, tiles 64) 0.3s
+[67/283] omni32|s1x32768+63x2048|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[68/283] omni32|s1x32768+63x2048|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[69/283] omni32|s1x32768+63x2048|fa2|fix8|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[70/283] omni32|s1x32768+63x2048|fa2|fix16|graph: 141.4 us (sub 139.9, plan 246 us, err 0.000576, chunk 2048, tiles 79) 0.2s
+[71/283] omni32|s1x32768+63x2048|fa2|fix32|graph: 140.9 us (sub 139.3, plan 245 us, err 0.000576, chunk 4096, tiles 71) 0.2s
+[72/283] omni32|s1x32768+63x2048|fa2|fix64|graph: 180.1 us (sub 178.4, plan 244 us, err 0.000576, chunk 8192, tiles 67) 0.2s
+[73/283] omni32|s1x32768+63x2048|fa3|default|graph: 964.9 us (sub 962.7, plan 603 us, err 0.00057, chunk None, tiles None) 0.5s
+[74/283] omni32|s1x32768+63x2048|fa2_notc|default|graph: 263.8 us (sub 259.9, plan 76 us, err 0.000816, chunk None, tiles None) 0.2s
+[75/283] omni32|u8x32768|auto|default|graph: 198.3 us (sub 196.8, plan 99 us, err 0.000119, chunk 4096, tiles 64) 0.2s
+[76/283] omni32|u8x32768|fa2|default|graph: 198.4 us (sub 197.1, plan 101 us, err 0.000119, chunk 4096, tiles 64) 0.2s
+supervisor: no heartbeat for 180 s at 'omni32|u8x32768|fa2|nosplit|graph' (graph warmup+capture); worker killed
+[1/206] omni32|u8x32768|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[2/206] omni32|u8x32768|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[3/206] omni32|u8x32768|fa2|fix8|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[4/206] omni32|u8x32768|fa2|fix16|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[5/206] omni32|u8x32768|fa2|fix32|graph: 197.9 us (sub 196.4, plan 95 us, err 0.000153, chunk 4096, tiles 64) 0.3s
+[6/206] omni32|u8x32768|fa2|fix64|graph: 204.1 us (sub 202.8, plan 101 us, err 0.000166, chunk 8192, tiles 32) 0.8s
+[7/206] omni32|u8x32768|fa3|default|graph: 865.4 us (sub 909.5, plan 196 us, err 0.00012, chunk None, tiles None) 0.5s
+[8/206] omni32|u8x32768|fa2_notc|default|graph: 341.1 us (sub 333.5, plan 72 us, err 0.000197, chunk None, tiles None) 0.3s
+[9/206] omni32|u32x8192|auto|default|graph: 199.4 us (sub 197.9, plan 139 us, err 0.000343, chunk 4096, tiles 64) 0.2s
+[10/206] omni32|u32x8192|fa2|default|graph: 199.1 us (sub 197.8, plan 143 us, err 0.000343, chunk 4096, tiles 64) 0.2s
+[11/206] omni32|u32x8192|fa2|nosplit|graph: 202.2 us (sub 201.0, plan 151 us, err 0.000275, chunk None, tiles 32) 0.2s
+[12/206] omni32|u32x8192|fa2|fix2|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[13/206] omni32|u32x8192|fa2|fix4|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[14/206] omni32|u32x8192|fa2|fix8|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[15/206] omni32|u32x8192|fa2|fix16|graph: ERROR RuntimeError: Error in function 'PrefillSplitQOKVIndptr' at /shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/f
+[16/206] omni32|u32x8192|fa2|fix32|graph: 198.9 us (sub 197.7, plan 144 us, err 0.000343, chunk 4096, tiles 64) 0.2s
+[17/206] omni32|u32x8192|fa2|fix64|graph: 205.9 us (sub 207.2, plan 142 us, err 0.000275, chunk 8192, tiles 32) 0.2s
+[18/206] omni32|u32x8192|fa3|default|graph: 900.5 us (sub 970.7, plan 352 us, err 0.00027, chunk None, tiles None) 0.5s
+[19/206] omni32|u32x8192|fa2_notc|default|graph: 387.9 us (sub 381.3, plan 73 us, err 0.000301, chunk None, tiles None) 0.3s
+[20/206] omni32|u1x512|auto|default|eager: 13.7 us (sub 9.5, plan 72 us, err 0.000778, chunk 128, tiles 4) 0.1s
+[21/206] omni32|u1x512|fa2|default|eager: 13.6 us (sub 9.7, plan 71 us, err 0.000778, chunk 128, tiles 4) 0.1s
+[22/206] omni32|u1x512|fa2|nosplit|eager: 14.9 us (sub 10.6, plan 72 us, err 0.000776, chunk None, tiles 1) 0.1s
+[23/206] omni32|u1x512|fa2|fix2|eager: 14.9 us (sub 11.0, plan 73 us, err 0.00118, chunk 256, tiles 2) 0.1s
+[24/206] omni32|u1x512|fa2|fix4|eager: 15.0 us (sub 10.8, plan 70 us, err 0.000776, chunk 512, tiles 1) 0.1s
+[25/206] omni32|u1x512|fa2|fix8|eager: 14.9 us (sub 10.5, plan 71 us, err 0.000776, chunk 1024, tiles 1) 0.1s
+[26/206] omni32|u1x512|fa2|fix16|eager: 14.9 us (sub 10.7, plan 63 us, err 0.000776, chunk 2048, tiles 1) 0.1s
+[27/206] omni32|u1x512|fa2|fix32|eager: 14.8 us (sub 10.4, plan 73 us, err 0.000776, chunk 4096, tiles 1) 0.1s
+[28/206] omni32|u1x512|fa2|fix64|eager: 14.8 us (sub 10.8, plan 69 us, err 0.000776, chunk 8192, tiles 1) 0.1s
+[29/206] omni32|u1x512|fa3|default|eager: 16.5 us (sub 13.6, plan 91 us, err 0.000776, chunk None, tiles None) 0.1s
+[30/206] omni32|u1x512|fa2_notc|default|eager: 16.8 us (sub 12.8, plan 69 us, err 0.00118, chunk None, tiles None) 0.1s
+[31/206] omni32|u1x2048|auto|default|eager: 15.1 us (sub 11.2, plan 71 us, err 0.000541, chunk 128, tiles 16) 0.1s
+[32/206] omni32|u1x2048|fa2|default|eager: 15.4 us (sub 11.3, plan 71 us, err 0.000541, chunk 128, tiles 16) 0.1s
+[33/206] omni32|u1x2048|fa2|nosplit|eager: 30.9 us (sub 26.7, plan 73 us, err 0.000397, chunk None, tiles 1) 0.1s
+[34/206] omni32|u1x2048|fa2|fix2|eager: 16.3 us (sub 12.3, plan 73 us, err 0.000446, chunk 256, tiles 8) 0.1s
+[35/206] omni32|u1x2048|fa2|fix4|eager: 18.6 us (sub 14.2, plan 72 us, err 0.000515, chunk 512, tiles 4) 0.1s
+[36/206] omni32|u1x2048|fa2|fix8|eager: 23.5 us (sub 19.4, plan 71 us, err 0.000635, chunk 1024, tiles 2) 0.1s
+[37/206] omni32|u1x2048|fa2|fix16|eager: 31.1 us (sub 26.7, plan 71 us, err 0.000397, chunk 2048, tiles 1) 0.1s
+[38/206] omni32|u1x2048|fa2|fix32|eager: 31.0 us (sub 26.7, plan 68 us, err 0.000397, chunk 4096, tiles 1) 0.1s
+[39/206] omni32|u1x2048|fa2|fix64|eager: 31.0 us (sub 26.7, plan 70 us, err 0.000397, chunk 8192, tiles 1) 0.1s
+[40/206] omni32|u1x2048|fa3|default|eager: 35.9 us (sub 33.7, plan 88 us, err 0.000397, chunk None, tiles None) 0.1s
+[41/206] omni32|u1x2048|fa2_notc|default|eager: 17.8 us (sub 14.0, plan 108 us, err 0.000635, chunk None, tiles None) 0.1s
+[42/206] omni32|u8x512|auto|default|eager: 17.0 us (sub 34.6, plan 91 us, err 0.00112, chunk 128, tiles 32) 0.1s
+[43/206] omni32|u8x512|fa2|default|eager: 17.0 us (sub 12.6, plan 92 us, err 0.00112, chunk 128, tiles 32) 0.1s
+[44/206] omni32|u8x512|fa2|nosplit|eager: 17.0 us (sub 12.6, plan 93 us, err 0.00105, chunk None, tiles 8) 0.1s
+[45/206] omni32|u8x512|fa2|fix2|eager: 17.4 us (sub 13.5, plan 94 us, err 0.00164, chunk 256, tiles 16) 0.1s
+[46/206] omni32|u8x512|fa2|fix4|eager: 17.1 us (sub 12.4, plan 91 us, err 0.00105, chunk 512, tiles 8) 0.1s
+[47/206] omni32|u8x512|fa2|fix8|eager: 17.0 us (sub 12.9, plan 94 us, err 0.00105, chunk 1024, tiles 8) 0.1s
+[48/206] omni32|u8x512|fa2|fix16|eager: 17.2 us (sub 12.7, plan 93 us, err 0.00105, chunk 2048, tiles 8) 0.1s
+[49/206] omni32|u8x512|fa2|fix32|eager: 17.0 us (sub 12.2, plan 94 us, err 0.00105, chunk 4096, tiles 8) 0.1s
+[50/206] omni32|u8x512|fa2|fix64|eager: 16.9 us (sub 12.4, plan 96 us, err 0.00105, chunk 8192, tiles 8) 0.1s
+[51/206] omni32|u8x512|fa3|default|eager: 27.5 us (sub 24.2, plan 183 us, err 0.00122, chunk None, tiles None) 0.1s
+[52/206] omni32|u8x512|fa2_notc|default|eager: 17.9 us (sub 13.8, plan 69 us, err 0.00126, chunk None, tiles None) 0.1s
+[53/206] omni32|u8x2048|auto|default|eager: 29.7 us (sub 25.2, plan 90 us, err 0.000734, chunk 256, tiles 64) 0.1s
+[54/206] omni32|u8x2048|fa2|default|eager: 30.1 us (sub 25.3, plan 97 us, err 0.000734, chunk 256, tiles 64) 0.1s
+[55/206] omni32|u8x2048|fa2|nosplit|eager: 37.4 us (sub 32.4, plan 94 us, err 0.000547, chunk None, tiles 8) 0.1s
+[56/206] omni32|u8x2048|fa2|fix2|eager: 29.9 us (sub 25.1, plan 92 us, err 0.000734, chunk 256, tiles 64) 0.1s
+[57/206] omni32|u8x2048|fa2|fix4|eager: 29.1 us (sub 24.1, plan 91 us, err 0.00076, chunk 512, tiles 32) 0.1s
+[58/206] omni32|u8x2048|fa2|fix8|eager: 31.3 us (sub 26.8, plan 82 us, err 0.000767, chunk 1024, tiles 16) 0.1s
+[59/206] omni32|u8x2048|fa2|fix16|eager: 37.4 us (sub 32.4, plan 84 us, err 0.000547, chunk 2048, tiles 8) 0.1s
+[60/206] omni32|u8x2048|fa2|fix32|eager: 37.6 us (sub 32.5, plan 91 us, err 0.000547, chunk 4096, tiles 8) 0.1s
+[61/206] omni32|u8x2048|fa2|fix64|eager: 37.4 us (sub 32.4, plan 91 us, err 0.000547, chunk 8192, tiles 8) 0.1s
+[62/206] omni32|u8x2048|fa3|default|eager: 67.3 us (sub 63.6, plan 190 us, err 0.000528, chunk None, tiles None) 0.1s
+[63/206] omni32|u8x2048|fa2_notc|default|eager: 33.0 us (sub 28.1, plan 67 us, err 0.000748, chunk None, tiles None) 0.1s
+[64/206] omni32|u32x512|auto|default|eager: 31.4 us (sub 26.8, plan 124 us, err 0.00165, chunk 256, tiles 64) 0.1s
+[65/206] omni32|u32x512|fa2|default|eager: 31.3 us (sub 26.9, plan 144 us, err 0.00165, chunk 256, tiles 64) 0.1s
+[66/206] omni32|u32x512|fa2|nosplit|eager: 26.3 us (sub 21.1, plan 147 us, err 0.00124, chunk None, tiles 32) 0.1s
+[67/206] omni32|u32x512|fa2|fix2|eager: 31.0 us (sub 26.4, plan 147 us, err 0.00165, chunk 256, tiles 64) 0.1s
+[68/206] omni32|u32x512|fa2|fix4|eager: 26.3 us (sub 21.3, plan 145 us, err 0.00124, chunk 512, tiles 32) 0.1s
+[69/206] omni32|u32x512|fa2|fix8|eager: 26.2 us (sub 21.0, plan 143 us, err 0.00124, chunk 1024, tiles 32) 0.1s
+[70/206] omni32|u32x512|fa2|fix16|eager: 26.3 us (sub 21.2, plan 146 us, err 0.00124, chunk 2048, tiles 32) 0.1s
+[71/206] omni32|u32x512|fa2|fix32|eager: 26.3 us (sub 21.2, plan 149 us, err 0.00124, chunk 4096, tiles 32) 0.1s
+[72/206] omni32|u32x512|fa2|fix64|eager: 26.2 us (sub 21.1, plan 151 us, err 0.00124, chunk 8192, tiles 32) 0.1s
+[73/206] omni32|u32x512|fa3|default|eager: 87.1 us (sub 81.7, plan 371 us, err 0.0012, chunk None, tiles None) 0.1s
+[74/206] omni32|u32x512|fa2_notc|default|eager: 34.0 us (sub 29.5, plan 73 us, err 0.00154, chunk None, tiles None) 0.1s
+[75/206] omni32|u32x2048|auto|default|eager: 68.5 us (sub 63.9, plan 145 us, err 0.000766, chunk 1024, tiles 64) 0.1s
+[76/206] omni32|u32x2048|fa2|default|eager: 68.9 us (sub 63.9, plan 151 us, err 0.000766, chunk 1024, tiles 64) 0.1s
+[77/206] omni32|u32x2048|fa2|nosplit|eager: 63.9 us (sub 59.0, plan 155 us, err 0.000552, chunk None, tiles 32) 0.1s
+[78/206] omni32|u32x2048|fa2|fix2|eager: 72.7 us (sub 67.8, plan 151 us, err 0.000746, chunk 256, tiles 256) 0.1s
+[79/206] omni32|u32x2048|fa2|fix4|eager: 71.6 us (sub 66.6, plan 146 us, err 0.000766, chunk 512, tiles 128) 0.1s
+[80/206] omni32|u32x2048|fa2|fix8|eager: 68.8 us (sub 64.0, plan 148 us, err 0.000766, chunk 1024, tiles 64) 0.1s
+[81/206] omni32|u32x2048|fa2|fix16|eager: 64.0 us (sub 58.9, plan 146 us, err 0.000552, chunk 2048, tiles 32) 0.1s
+[82/206] omni32|u32x2048|fa2|fix32|eager: 64.0 us (sub 59.1, plan 146 us, err 0.000552, chunk 4096, tiles 32) 0.1s
+[83/206] omni32|u32x2048|fa2|fix64|eager: 64.1 us (sub 59.0, plan 148 us, err 0.000552, chunk 8192, tiles 32) 0.1s
+[84/206] omni32|u32x2048|fa3|default|eager: 252.8 us (sub 242.8, plan 364 us, err 0.000568, chunk None, tiles None) 0.2s
+[85/206] omni32|u32x2048|fa2_notc|default|eager: 97.5 us (sub 90.7, plan 74 us, err 0.000746, chunk None, tiles None) 0.1s
+[86/206] omni32|u64x512|auto|default|eager: 41.5 us (sub 36.4, plan 213 us, err 0.00113, chunk 512, tiles 64) 0.1s
+[87/206] omni32|u64x512|fa2|default|eager: 41.4 us (sub 36.5, plan 217 us, err 0.00113, chunk 512, tiles 64) 0.1s
+[88/206] omni32|u64x512|fa2|nosplit|eager: 41.3 us (sub 36.4, plan 215 us, err 0.00113, chunk None, tiles 64) 0.1s
+[89/206] omni32|u64x512|fa2|fix2|eager: 50.4 us (sub 45.7, plan 215 us, err 0.00175, chunk 256, tiles 128) 0.1s
+[90/206] omni32|u64x512|fa2|fix4|eager: 41.5 us (sub 36.5, plan 217 us, err 0.00113, chunk 512, tiles 64) 0.1s
+[91/206] omni32|u64x512|fa2|fix8|eager: 41.6 us (sub 36.5, plan 211 us, err 0.00113, chunk 1024, tiles 64) 0.1s
+[92/206] omni32|u64x512|fa2|fix16|eager: 41.5 us (sub 36.6, plan 210 us, err 0.00113, chunk 2048, tiles 64) 0.1s
+[93/206] omni32|u64x512|fa2|fix32|eager: 41.5 us (sub 36.4, plan 217 us, err 0.00113, chunk 4096, tiles 64) 0.1s
+[94/206] omni32|u64x512|fa2|fix64|eager: 41.4 us (sub 36.6, plan 220 us, err 0.00113, chunk 8192, tiles 64) 0.2s
+[95/206] omni32|u64x512|fa3|default|eager: 167.7 us (sub 159.4, plan 542 us, err 0.00117, chunk None, tiles None) 0.2s
+[96/206] omni32|u64x512|fa2_notc|default|eager: 57.5 us (sub 52.3, plan 186 us, err 0.0015, chunk None, tiles None) 0.1s
+[97/206] omni32|u64x2048|auto|default|eager: 108.1 us (sub 102.8, plan 228 us, err 0.000603, chunk 2048, tiles 64) 0.2s
+[98/206] omni32|u64x2048|fa2|default|eager: 108.0 us (sub 102.8, plan 213 us, err 0.000603, chunk 2048, tiles 64) 0.2s
+[99/206] omni32|u64x2048|fa2|nosplit|eager: 108.0 us (sub 102.8, plan 212 us, err 0.000603, chunk None, tiles 64) 0.2s
+[100/206] omni32|u64x2048|fa2|fix2|eager: 123.7 us (sub 118.3, plan 218 us, err 0.000836, chunk 256, tiles 512) 0.2s
+[101/206] omni32|u64x2048|fa2|fix4|eager: 121.1 us (sub 116.0, plan 215 us, err 0.000747, chunk 512, tiles 256) 0.2s
+[102/206] omni32|u64x2048|fa2|fix8|eager: 117.9 us (sub 112.9, plan 220 us, err 0.00072, chunk 1024, tiles 128) 0.2s
+[103/206] omni32|u64x2048|fa2|fix16|eager: 107.9 us (sub 102.8, plan 213 us, err 0.000603, chunk 2048, tiles 64) 0.2s
+[104/206] omni32|u64x2048|fa2|fix32|eager: 107.9 us (sub 102.8, plan 223 us, err 0.000603, chunk 4096, tiles 64) 0.2s
+[105/206] omni32|u64x2048|fa2|fix64|eager: 108.1 us (sub 102.7, plan 220 us, err 0.000603, chunk 8192, tiles 64) 0.2s
+[106/206] omni32|u64x2048|fa3|default|eager: 516.3 us (sub 516.3, plan 543 us, err 0.00057, chunk None, tiles None) 0.3s
+[107/206] omni32|u64x2048|fa2_notc|default|eager: 186.4 us (sub 176.4, plan 75 us, err 0.000769, chunk None, tiles None) 0.2s
+[108/206] omni32|s1x32768+7x512|auto|default|eager: 47.9 us (sub 43.3, plan 95 us, err 0.000949, chunk 640, tiles 59) 0.1s
+[109/206] omni32|s1x32768+7x512|fa2|default|eager: 48.0 us (sub 43.2, plan 100 us, err 0.000949, chunk 640, tiles 59) 0.1s
+[110/206] omni32|s1x32768+7x512|fa2|nosplit|eager: 366.2 us (sub 356.8, plan 93 us, err 0.000949, chunk None, tiles 8) 0.3s
+[111/206] omni32|s1x32768+7x512|fa2|fix2|eager: 51.6 us (sub 47.1, plan 94 us, err 0.00144, chunk 256, tiles 142) 0.1s
+[112/206] omni32|s1x32768+7x512|fa2|fix4|eager: 51.8 us (sub 47.1, plan 95 us, err 0.000949, chunk 512, tiles 71) 0.1s
+[113/206] omni32|s1x32768+7x512|fa2|fix8|eager: 47.9 us (sub 43.7, plan 91 us, err 0.000949, chunk 1024, tiles 39) 0.1s
+[114/206] omni32|s1x32768+7x512|fa2|fix16|eager: 50.1 us (sub 45.3, plan 93 us, err 0.000949, chunk 2048, tiles 23) 0.1s
+[115/206] omni32|s1x32768+7x512|fa2|fix32|eager: 65.6 us (sub 61.2, plan 92 us, err 0.000949, chunk 4096, tiles 15) 0.1s
+[116/206] omni32|s1x32768+7x512|fa2|fix64|eager: 108.3 us (sub 103.7, plan 93 us, err 0.000949, chunk 8192, tiles 11) 0.1s
+[117/206] omni32|s1x32768+7x512|fa3|default|eager: 441.8 us (sub 431.9, plan 198 us, err 0.001, chunk None, tiles None) 0.3s
+[118/206] omni32|s1x32768+7x512|fa2_notc|default|eager: 60.0 us (sub 57.6, plan 75 us, err 0.00119, chunk None, tiles None) 0.1s
+[119/206] omni32|s1x32768+31x512|auto|default|eager: 56.6 us (sub 51.6, plan 144 us, err 0.00121, chunk 1024, tiles 63) 0.1s
+[120/206] omni32|s1x32768+31x512|fa2|default|eager: 56.4 us (sub 51.8, plan 145 us, err 0.00121, chunk 1024, tiles 63) 0.1s
+[121/206] omni32|s1x32768+31x512|fa2|nosplit|eager: 367.3 us (sub 358.6, plan 145 us, err 0.00121, chunk None, tiles 32) 0.3s
+[122/206] omni32|s1x32768+31x512|fa2|fix2|eager: 61.8 us (sub 57.0, plan 148 us, err 0.00161, chunk 256, tiles 190) 0.1s
+[123/206] omni32|s1x32768+31x512|fa2|fix4|eager: 58.8 us (sub 54.3, plan 150 us, err 0.00121, chunk 512, tiles 95) 0.1s
+[124/206] omni32|s1x32768+31x512|fa2|fix8|eager: 56.6 us (sub 51.6, plan 151 us, err 0.00121, chunk 1024, tiles 63) 0.1s
+[125/206] omni32|s1x32768+31x512|fa2|fix16|eager: 60.6 us (sub 56.1, plan 154 us, err 0.00121, chunk 2048, tiles 47) 0.1s
+[126/206] omni32|s1x32768+31x512|fa2|fix32|eager: 75.1 us (sub 70.1, plan 147 us, err 0.00121, chunk 4096, tiles 39) 0.1s
+[127/206] omni32|s1x32768+31x512|fa2|fix64|eager: 114.2 us (sub 109.7, plan 148 us, err 0.00121, chunk 8192, tiles 35) 0.2s
+[128/206] omni32|s1x32768+31x512|fa3|default|eager: 501.7 us (sub 503.1, plan 400 us, err 0.00121, chunk None, tiles None) 0.3s
+[129/206] omni32|s1x32768+31x512|fa2_notc|default|eager: 77.4 us (sub 71.8, plan 75 us, err 0.00158, chunk None, tiles None) 0.1s
+[130/206] omni32|s1x32768+63x512|auto|default|eager: 183.1 us (sub 178.2, plan 218 us, err 0.0011, chunk 11008, tiles 66) 0.2s
+[131/206] omni32|s1x32768+63x512|fa2|default|eager: 182.0 us (sub 177.3, plan 219 us, err 0.0011, chunk 11008, tiles 66) 0.2s
+[132/206] omni32|s1x32768+63x512|fa2|nosplit|eager: 373.0 us (sub 364.4, plan 218 us, err 0.0011, chunk None, tiles 64) 0.3s
+[133/206] omni32|s1x32768+63x512|fa2|fix2|eager: 74.8 us (sub 70.8, plan 234 us, err 0.00185, chunk 256, tiles 254) 0.1s
+[134/206] omni32|s1x32768+63x512|fa2|fix4|eager: 71.1 us (sub 66.1, plan 222 us, err 0.0011, chunk 512, tiles 127) 0.1s
+[135/206] omni32|s1x32768+63x512|fa2|fix8|eager: 70.0 us (sub 65.6, plan 235 us, err 0.0011, chunk 1024, tiles 95) 0.1s
+[136/206] omni32|s1x32768+63x512|fa2|fix16|eager: 71.9 us (sub 67.0, plan 219 us, err 0.0011, chunk 2048, tiles 79) 0.1s
+[137/206] omni32|s1x32768+63x512|fa2|fix32|eager: 86.0 us (sub 81.3, plan 216 us, err 0.0011, chunk 4096, tiles 71) 0.1s
+[138/206] omni32|s1x32768+63x512|fa2|fix64|eager: 146.3 us (sub 141.4, plan 215 us, err 0.0011, chunk 8192, tiles 67) 0.2s
+[139/206] omni32|s1x32768+63x512|fa3|default|eager: 596.6 us (sub 593.6, plan 588 us, err 0.00118, chunk None, tiles None) 0.4s
+[140/206] omni32|s1x32768+63x512|fa2_notc|default|eager: 101.0 us (sub 94.5, plan 78 us, err 0.00185, chunk None, tiles None) 0.1s
+[141/206] omni32|s1x16384+31x512|auto|default|eager: 43.9 us (sub 39.4, plan 154 us, err 0.00123, chunk 512, tiles 63) 0.1s
+[142/206] omni32|s1x16384+31x512|fa2|default|eager: 43.9 us (sub 39.0, plan 158 us, err 0.00123, chunk 512, tiles 63) 0.1s
+[143/206] omni32|s1x16384+31x512|fa2|nosplit|eager: 198.8 us (sub 193.2, plan 145 us, err 0.00123, chunk None, tiles 32) 0.2s
+[144/206] omni32|s1x16384+31x512|fa2|fix2|eager: 47.8 us (sub 43.0, plan 149 us, err 0.0019, chunk 256, tiles 126) 0.1s
+[145/206] omni32|s1x16384+31x512|fa2|fix4|eager: 43.5 us (sub 39.2, plan 142 us, err 0.00123, chunk 512, tiles 63) 0.1s
+[146/206] omni32|s1x16384+31x512|fa2|fix8|eager: 45.5 us (sub 40.8, plan 150 us, err 0.00123, chunk 1024, tiles 47) 0.1s
+[147/206] omni32|s1x16384+31x512|fa2|fix16|eager: 51.9 us (sub 47.5, plan 156 us, err 0.00123, chunk 2048, tiles 39) 0.1s
+[148/206] omni32|s1x16384+31x512|fa2|fix32|eager: 72.2 us (sub 67.3, plan 161 us, err 0.00123, chunk 4096, tiles 35) 0.1s
+[149/206] omni32|s1x16384+31x512|fa2|fix64|eager: 113.2 us (sub 108.9, plan 160 us, err 0.00123, chunk 8192, tiles 33) 0.2s
+[150/206] omni32|s1x16384+31x512|fa3|default|eager: 297.6 us (sub 294.2, plan 393 us, err 0.00133, chunk None, tiles None) 0.2s
+[151/206] omni32|s1x16384+31x512|fa2_notc|default|eager: 55.8 us (sub 50.5, plan 73 us, err 0.00144, chunk None, tiles None) 0.1s
+[152/206] omni32|s2x32768+30x512|auto|default|eager: 79.1 us (sub 74.5, plan 156 us, err 0.001, chunk 1920, tiles 66) 0.1s
+[153/206] omni32|s2x32768+30x512|fa2|default|eager: 79.2 us (sub 74.5, plan 149 us, err 0.001, chunk 1920, tiles 66) 0.1s
+[154/206] omni32|s2x32768+30x512|fa2|nosplit|eager: 358.3 us (sub 352.4, plan 145 us, err 0.001, chunk None, tiles 32) 0.3s
+[155/206] omni32|s2x32768+30x512|fa2|fix2|eager: 84.7 us (sub 80.7, plan 146 us, err 0.00168, chunk 256, tiles 316) 0.1s
+[156/206] omni32|s2x32768+30x512|fa2|fix4|eager: 82.3 us (sub 77.5, plan 137 us, err 0.001, chunk 512, tiles 158) 0.1s
+[157/206] omni32|s2x32768+30x512|fa2|fix8|eager: 80.1 us (sub 75.5, plan 145 us, err 0.001, chunk 1024, tiles 94) 0.1s
+[158/206] omni32|s2x32768+30x512|fa2|fix16|eager: 79.3 us (sub 74.5, plan 145 us, err 0.001, chunk 2048, tiles 62) 0.1s
+[159/206] omni32|s2x32768+30x512|fa2|fix32|eager: 89.5 us (sub 85.0, plan 144 us, err 0.001, chunk 4096, tiles 46) 0.1s
+[160/206] omni32|s2x32768+30x512|fa2|fix64|eager: 118.6 us (sub 113.5, plan 145 us, err 0.001, chunk 8192, tiles 38) 0.2s
+[161/206] omni32|s2x32768+30x512|fa3|default|eager: 520.7 us (sub 518.0, plan 389 us, err 0.00116, chunk None, tiles None) 0.3s
+[162/206] omni32|s2x32768+30x512|fa2_notc|default|eager: 138.5 us (sub 131.1, plan 75 us, err 0.00152, chunk None, tiles None) 0.2s
+[163/206] omni32|s1x32768+15x512|auto|default|eager: 51.3 us (sub 46.6, plan 122 us, err 0.00118, chunk 768, tiles 58) 0.1s
+[164/206] omni32|s1x32768+15x512|fa2|default|eager: 51.2 us (sub 46.5, plan 113 us, err 0.00118, chunk 768, tiles 58) 0.1s
+[165/206] omni32|s1x32768+15x512|fa2|nosplit|eager: 366.5 us (sub 358.2, plan 116 us, err 0.00118, chunk None, tiles 16) 0.3s
+[166/206] omni32|s1x32768+15x512|fa2|fix2|eager: 55.2 us (sub 50.5, plan 125 us, err 0.0014, chunk 256, tiles 158) 0.1s
+[167/206] omni32|s1x32768+15x512|fa2|fix4|eager: 53.3 us (sub 48.8, plan 165 us, err 0.00118, chunk 512, tiles 79) 0.1s
+[168/206] omni32|s1x32768+15x512|fa2|fix8|eager: 50.9 us (sub 46.1, plan 110 us, err 0.00118, chunk 1024, tiles 47) 0.1s
+[169/206] omni32|s1x32768+15x512|fa2|fix16|eager: 52.4 us (sub 48.1, plan 110 us, err 0.00118, chunk 2048, tiles 31) 0.1s
+[170/206] omni32|s1x32768+15x512|fa2|fix32|eager: 68.5 us (sub 63.8, plan 115 us, err 0.00118, chunk 4096, tiles 23) 0.1s
+[171/206] omni32|s1x32768+15x512|fa2|fix64|eager: 108.9 us (sub 104.2, plan 109 us, err 0.00118, chunk 8192, tiles 19) 0.1s
+[172/206] omni32|s1x32768+15x512|fa3|default|eager: 462.1 us (sub 467.0, plan 267 us, err 0.00117, chunk None, tiles None) 0.3s
+[173/206] omni32|s1x32768+15x512|fa2_notc|default|eager: 66.8 us (sub 61.6, plan 74 us, err 0.0014, chunk None, tiles None) 0.1s
+[174/206] omni32|s1x32768+63x2048|auto|default|eager: 231.7 us (sub 226.5, plan 223 us, err 0.00055, chunk 11008, tiles 66) 0.2s
+[175/206] omni32|s1x32768+63x2048|fa2|default|eager: 231.6 us (sub 226.6, plan 218 us, err 0.00055, chunk 11008, tiles 66) 0.2s
+[176/206] omni32|s1x32768+63x2048|fa2|nosplit|eager: 426.1 us (sub 420.0, plan 210 us, err 0.00055, chunk None, tiles 64) 0.3s
+[177/206] omni32|s1x32768+63x2048|fa2|fix2|eager: 147.6 us (sub 142.7, plan 220 us, err 0.000769, chunk 256, tiles 632) 0.2s
+[178/206] omni32|s1x32768+63x2048|fa2|fix4|eager: 142.6 us (sub 137.6, plan 220 us, err 0.000749, chunk 512, tiles 316) 0.2s
+[179/206] omni32|s1x32768+63x2048|fa2|fix8|eager: 140.1 us (sub 135.5, plan 213 us, err 0.000882, chunk 1024, tiles 158) 0.2s
+[180/206] omni32|s1x32768+63x2048|fa2|fix16|eager: 140.8 us (sub 135.8, plan 212 us, err 0.00055, chunk 2048, tiles 79) 0.2s
+[181/206] omni32|s1x32768+63x2048|fa2|fix32|eager: 139.3 us (sub 134.8, plan 214 us, err 0.00055, chunk 4096, tiles 71) 0.2s
+[182/206] omni32|s1x32768+63x2048|fa2|fix64|eager: 195.5 us (sub 190.6, plan 215 us, err 0.00055, chunk 8192, tiles 67) 0.2s
+[183/206] omni32|s1x32768+63x2048|fa3|default|eager: 966.2 us (sub 960.3, plan 578 us, err 0.000582, chunk None, tiles None) 0.5s
+[184/206] omni32|s1x32768+63x2048|fa2_notc|default|eager: 262.7 us (sub 248.0, plan 73 us, err 0.000741, chunk None, tiles None) 0.2s
+[185/206] omni32|u8x32768|auto|default|eager: 197.4 us (sub 192.7, plan 93 us, err 0.000156, chunk 4096, tiles 64) 0.2s
+[186/206] omni32|u8x32768|fa2|default|eager: 197.4 us (sub 192.5, plan 93 us, err 0.000156, chunk 4096, tiles 64) 0.2s
+[187/206] omni32|u8x32768|fa2|nosplit|eager: 366.2 us (sub 356.9, plan 92 us, err 0.000127, chunk None, tiles 8) 0.3s
+[188/206] omni32|u8x32768|fa2|fix2|eager: 215.0 us (sub 210.2, plan 102 us, err 0.000139, chunk 256, tiles 1024) 0.2s
+[189/206] omni32|u8x32768|fa2|fix4|eager: 207.6 us (sub 203.3, plan 98 us, err 0.000151, chunk 512, tiles 512) 0.2s
+[190/206] omni32|u8x32768|fa2|fix8|eager: 205.3 us (sub 200.6, plan 93 us, err 0.000145, chunk 1024, tiles 256) 0.2s
+[191/206] omni32|u8x32768|fa2|fix16|eager: 200.4 us (sub 195.9, plan 94 us, err 0.000143, chunk 2048, tiles 128) 0.2s
+[192/206] omni32|u8x32768|fa2|fix32|eager: 197.5 us (sub 192.9, plan 91 us, err 0.000156, chunk 4096, tiles 64) 0.2s
+[193/206] omni32|u8x32768|fa2|fix64|eager: 195.7 us (sub 191.2, plan 93 us, err 0.000165, chunk 8192, tiles 32) 0.2s
+[194/206] omni32|u8x32768|fa3|default|eager: 866.1 us (sub 895.0, plan 193 us, err 0.00012, chunk None, tiles None) 0.5s
+[195/206] omni32|u8x32768|fa2_notc|default|eager: 340.0 us (sub 329.7, plan 74 us, err 0.000198, chunk None, tiles None) 0.2s
+[196/206] omni32|u32x8192|auto|default|eager: 198.7 us (sub 193.9, plan 146 us, err 0.000343, chunk 4096, tiles 64) 0.2s
+[197/206] omni32|u32x8192|fa2|default|eager: 198.6 us (sub 193.8, plan 144 us, err 0.000343, chunk 4096, tiles 64) 0.2s
+[198/206] omni32|u32x8192|fa2|nosplit|eager: 193.3 us (sub 188.2, plan 142 us, err 0.000275, chunk None, tiles 32) 0.2s
+[199/206] omni32|u32x8192|fa2|fix2|eager: 215.3 us (sub 210.6, plan 154 us, err 0.000393, chunk 256, tiles 1024) 0.2s
+[200/206] omni32|u32x8192|fa2|fix4|eager: 209.0 us (sub 204.1, plan 151 us, err 0.000301, chunk 512, tiles 512) 0.2s
+[201/206] omni32|u32x8192|fa2|fix8|eager: 205.9 us (sub 201.5, plan 184 us, err 0.000311, chunk 1024, tiles 256) 0.2s
+[202/206] omni32|u32x8192|fa2|fix16|eager: 201.6 us (sub 197.1, plan 148 us, err 0.000346, chunk 2048, tiles 128) 0.2s
+[203/206] omni32|u32x8192|fa2|fix32|eager: 198.4 us (sub 194.0, plan 144 us, err 0.000343, chunk 4096, tiles 64) 0.2s
+[204/206] omni32|u32x8192|fa2|fix64|eager: 193.3 us (sub 188.2, plan 142 us, err 0.000275, chunk 8192, tiles 32) 0.2s
+[205/206] omni32|u32x8192|fa3|default|eager: 897.8 us (sub 978.1, plan 367 us, err 0.00027, chunk None, tiles None) 0.5s
+[206/206] omni32|u32x8192|fa2_notc|default|eager: 348.2 us (sub 337.7, plan 75 us, err 0.000301, chunk None, tiles None) 0.3s
+=== [16:00:35] full sweep exit 0; kernel names
+/shared/home/garv901-55613a/mstar-worktrees/k3-flashinfer-split/.venv/lib/python3.12/site-packages/torch/profiler/profiler.py:272: UserWarning: Warning: Profiler clears events at the end of each cycle.Only events from the current cycle will be reported.To keep events across cycles, set acc_events=True.
+  _warn_once(
+USDT:2026-10-06 16:00:39 3257570:3257570 ActivityProfilerController.cpp:415] profiler_start
+USDT:2026-10-06 16:00:39 3257570:3257570 ActivityProfilerController.cpp:455] profiler_stop
+USDT:2026-10-06 16:00:39 3257570:3257570 ActivityProfilerController.cpp:415] profiler_start
+USDT:2026-10-06 16:00:39 3257570:3257570 ActivityProfilerController.cpp:455] profiler_stop
+USDT:2026-10-06 16:00:39 3257570:3257570 ActivityProfilerController.cpp:415] profiler_start
+USDT:2026-10-06 16:00:39 3257570:3257570 ActivityProfilerController.cpp:455] profiler_stop
+USDT:2026-10-06 16:00:39 3257570:3257570 ActivityProfilerController.cpp:415] profiler_start
+USDT:2026-10-06 16:00:39 3257570:3257570 ActivityProfilerController.cpp:455] profiler_stop
+USDT:2026-10-06 16:00:39 3257570:3257570 ActivityProfilerController.cpp:415] profiler_start
+USDT:2026-10-06 16:00:39 3257570:3257570 ActivityProfilerController.cpp:455] profiler_stop
+USDT:2026-10-06 16:00:39 3257570:3257570 ActivityProfilerController.cpp:415] profiler_start
+USDT:2026-10-06 16:00:39 3257570:3257570 ActivityProfilerController.cpp:455] profiler_stop
+=== [16:00:40] exotic backends
+2026-10-06 16:00:46,856 - INFO - cubin_loader.py:231 - flashinfer.jit: Fetching 2d6a5a029eefcc388ec0ceb87efb55d8bcce5c3c/fmha/trtllm-gen//checksums.txt from https://edge.urm.nvidia.com/artifactory/sw-kernelinferencelibrary-public-generic-local/2d6a5a029eefcc388ec0ceb87efb55d8bcce5c3c/fmha/trtllm-gen/checksums.txt
+2026-10-06 16:00:46,857 - INFO - cubin_loader.py:84 - flashinfer.jit: Acquired lock for /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/cubins/2d6a5a029eefcc388ec0ceb87efb55d8bcce5c3c/fmha/trtllm-gen/checksums.txt
+2026-10-06 16:00:47,063 - INFO - cubin_loader.py:114 - flashinfer.jit: File downloaded successfully: https://edge.urm.nvidia.com/artifactory/sw-kernelinferencelibrary-public-generic-local/2d6a5a029eefcc388ec0ceb87efb55d8bcce5c3c/fmha/trtllm-gen/checksums.txt -> /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/cubins/2d6a5a029eefcc388ec0ceb87efb55d8bcce5c3c/fmha/trtllm-gen/checksums.txt
+2026-10-06 16:00:47,103 - INFO - cubin_loader.py:231 - flashinfer.jit: Fetching 2d6a5a029eefcc388ec0ceb87efb55d8bcce5c3c/fmha/trtllm-gen//include/flashInferMetaInfo.h from https://edge.urm.nvidia.com/artifactory/sw-kernelinferencelibrary-public-generic-local/2d6a5a029eefcc388ec0ceb87efb55d8bcce5c3c/fmha/trtllm-gen/include/flashInferMetaInfo.h
+2026-10-06 16:00:47,103 - INFO - cubin_loader.py:84 - flashinfer.jit: Acquired lock for /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/cubins/2d6a5a029eefcc388ec0ceb87efb55d8bcce5c3c/fmha/trtllm-gen/include/flashInferMetaInfo.h
+2026-10-06 16:00:48,941 - INFO - cubin_loader.py:114 - flashinfer.jit: File downloaded successfully: https://edge.urm.nvidia.com/artifactory/sw-kernelinferencelibrary-public-generic-local/2d6a5a029eefcc388ec0ceb87efb55d8bcce5c3c/fmha/trtllm-gen/include/flashInferMetaInfo.h -> /data/garv901-55613a/k3_fi_cache/.cache/flashinfer/cubins/2d6a5a029eefcc388ec0ceb87efb55d8bcce5c3c/fmha/trtllm-gen/include/flashInferMetaInfo.h
+2026-10-06 16:00:48,966 - INFO - core.py:564 - flashinfer.jit: Building JIT module fmha_gen; this can take several minutes on first use.
+=== [16:02:51] done
+wrote /shared/home/garv901-55613a/regime-batching/regime-batching/results/mstar/k3/summary.md (652 ok rows, 101 error rows)
