@@ -4,9 +4,13 @@
       --out reports/figures/mstar_admission/<tag>
 
 Input layout (experiments/mstar/admission_matrix.sbatch), one run = one case dir:
-  <results_root>/<slurmjob>_<config>/<workload>_r<rep>/{bench.json, client.log, server.log, gpu_mem.csv,
-      startup_s.txt, telemetry/steps_rank*_pid*.jsonl, telemetry/admission_*.jsonl (bench-peak configs)}
-  <results_root>/<slurmjob>_<config>/meta.txt
+  <results_root>/<slurmjob>_<config>/<workload>_r<rep>/{bench.json, client.log, server.log, telemetry/}
+  <results_root>/<slurmjob>_<config>/server_<k>/{server.log, startup_s.txt, telemetry/steps_rank*_pid*.jsonl,
+      telemetry/admission_*.jsonl (bench-peak configs)}
+  <results_root>/<slurmjob>_<config>/{meta.txt, gpu_mem.csv}
+One server serves several runs: each case's telemetry/ and server.log are symlinks into its server_<k>/, so cases
+share them and everything read from them is cut to the run's window [trace start, last request end + DRAIN_S].
+The older layout (real telemetry/, server.log, startup_s.txt, gpu_mem.csv in every case dir) still works.
 Every file may be missing; a missing file is reported (flags in the table, notes in compare.md and summary.json),
 never an error. Job dirs of the same config are pooled as extra reps.
 
@@ -17,6 +21,9 @@ Joins (verified in the producers):
   client <-> server telemetry: bench `request_ids[i]` is the id the client pinned ("{run_id}-{index:06d}"); the API
       server uses it unchanged as the wire id, so telemetry `new_request.rid` / `req_done.rid` / `hold.rid` / ... match
       it by string. bench `start_times`, `t0_monotonic` and telemetry `tm` are all time.monotonic() on one node.
+  bench <-> server.log, gpu_mem.csv: bench `t0_wall` is time.time() at trace start; log lines (asctime) and nvidia-smi
+      stamps are node-local text, read as UTC (the compute nodes run in UTC; a log or csv that does not cover the
+      run window is skipped, with a note, rather than trusted).
   admission log <-> telemetry: the KV pool is keyed by the worker's integer handle (the worker passes handles to
       the engine), so admission `rid` is the int `h` of `new_request`, NOT the wire id. Handles are recycled after a
       request is removed and are per worker process, so the join is (pid, h) as-of the row's `ts_mono` against
@@ -34,6 +41,7 @@ import re
 import sys
 from collections import Counter
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
 import matplotlib
 
@@ -59,11 +67,15 @@ ADMISSION_LOG_CONFIGS = {"sum_bf", "peak_fifo", "peak_bf"}  # bench-peak worktre
 WORKLOAD_ORDER = ["bagel_control", "bagel_burst", "bagel_stag_r0.5", "bagel_stag_r1", "bagel_stag_r2"]
 LONG_OUT = 1024  # output tokens: long class (make_workload / trace_replay.LONG_OUTPUT_TOKENS)
 STALL_S = 60.0
+DRAIN_S = 5.0  # rows (events, admission, log lines, gpu samples) still belong to a run this long after its last request ends
 TIMEOUT_RE = re.compile(r"time.?out|timed out", re.I)
 # trace_replay.build_bench writes "request failed" for an exception with an empty message, which is what
 # asyncio.TimeoutError (the client's --request-timeout) is
 EMPTY_MSG_ERROR = "request failed"
 SERVER_ERR_RE = re.compile(r"Traceback|CUDA out of memory|OutOfMemory|\bFATAL\b|Fatal error", re.I)
+LOG_TS_RE = re.compile(r"^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d,\d{3})")  # logging asctime; flashinfer's lines start the same way
+LOG_TS_FMT, GPU_TS_FMT = "%Y-%m-%d %H:%M:%S,%f", "%Y/%m/%d %H:%M:%S.%f"
+SERVER_LINK_RE = re.compile(r"(?:^|/)server_(\d+)/(?:telemetry|server\.log)$")  # the sbatch's symlink targets
 # categorical slots 1-5 of the reference palette (blue, orange, aqua, yellow, magenta); fixed per config, validated
 # adjacent-pair (lines/bars) with validate_palette.py. Aqua/yellow/magenta are < 3:1 on white, so every chart also
 # carries a legend, direct category labels where it can, and the numbers are in compare.md / summary.json.
@@ -177,6 +189,7 @@ class Telemetry:
     kv_pool_pages: int | None
     n_files: int
     dropped: int
+    drop_marks: list = field(default_factory=list)  # (tm, pid, cumulative rows dropped so far) from `drop` / `end` rows
 
 
 def load_telemetry(tdir: str, notes: list[str]) -> Telemetry | None:
@@ -184,7 +197,7 @@ def load_telemetry(tdir: str, notes: list[str]) -> Telemetry | None:
     if not files:
         notes.append(f"no telemetry/steps_rank*_pid*.jsonl under {tdir}")
         return None
-    steps, events, pools = [], [], {}
+    steps, events, pools, marks = [], [], {}, []
     dropped = 0
     for path in files:
         pid = _pid_of(path)
@@ -205,16 +218,16 @@ def load_telemetry(tdir: str, notes: list[str]) -> Telemetry | None:
                 pools.update(r.get("kv_pools") or {})
             elif kind == "drop":
                 file_dropped = max(file_dropped, r.get("n", 0))
+                marks.append((r.get("tm", math.inf), pid, r.get("n", 0)))
             elif kind == "end":
                 saw_end = True
                 file_dropped = max(file_dropped, r.get("dropped", 0))
+                marks.append((r.get("tm", math.inf), pid, r.get("dropped", 0)))
         if bad[0]:
             notes.append(f"{os.path.basename(path)}: {bad[0]} unparsable line(s) skipped")
         dropped += file_dropped
         if saw_step and not saw_end:
             notes.append(f"{os.path.basename(path)}: no `end` row (server killed before its atexit flush; tail may be missing)")
-    if dropped:
-        notes.append(f"telemetry dropped {dropped} row(s) (bounded writer queue full)")
     df = pd.DataFrame(steps, columns=["tm", "pid", "node", "walk", "bs", "ok", "gpu_ms", "free"])
     # `free` is {resource_key: free pages} for nodes that own a KV pool, {} otherwise
     keys = Counter(k for f in df["free"] if f for k in f)
@@ -227,7 +240,21 @@ def load_telemetry(tdir: str, notes: list[str]) -> Telemetry | None:
         notes.append("telemetry has no step rows")
     pool = (pools.get(kv_key) or {}).get("max_num_pages") if kv_key else None
     ev = pd.DataFrame(events) if events else pd.DataFrame(columns=["ev", "tm", "pid"])
-    return Telemetry(df, ev, kv_key, pool, len(files), dropped)
+    return Telemetry(df, ev, kv_key, pool, len(files), dropped, marks)
+
+
+def _window(df: pd.DataFrame, t0: float, t_end: float, col: str = "tm") -> pd.DataFrame:
+    """Rows of one run, [t0, t_end + DRAIN_S]: the telemetry/admission files are shared by every run on a server."""
+    return df[(df[col] >= t0) & (df[col] <= t_end + DRAIN_S)]
+
+
+def _dropped_by(tel: Telemetry, t: float) -> int:
+    """Rows dropped by time t over all processes (the marks are cumulative per pid)."""
+    best: dict = {}
+    for tm, pid, n in tel.drop_marks:
+        if tm <= t:
+            best[pid] = max(best.get(pid, 0), n)
+    return sum(best.values())
 
 
 def load_admission(tdir: str, notes: list[str]) -> pd.DataFrame | None:
@@ -246,19 +273,51 @@ def load_admission(tdir: str, notes: list[str]) -> pd.DataFrame | None:
     return pd.DataFrame(rows) if rows else None
 
 
-def read_gpu_mem(path: str) -> dict:
-    """nvidia-smi --query-gpu=timestamp,index,memory.used,memory.total,utilization.gpu (csv, noheader, nounits)."""
+def _utc(text: str, fmt: str) -> float:
+    """Node-local timestamp text -> epoch seconds. nvidia-smi and the server's asctime print local time; the nodes run UTC."""
+    return datetime.strptime(text, fmt).replace(tzinfo=timezone.utc).timestamp()
+
+
+def read_gpu_mem(path: str, win: tuple[float, float] | None = None) -> dict:
+    """nvidia-smi --query-gpu=timestamp,index,memory.used,memory.total,utilization.gpu (csv, noheader, nounits).
+
+    `win` = (lo, hi) epoch seconds keeps only the samples inside it (a job-wide file serves every run).
+    """
     mem, util = [], []
     for line in open(path, errors="replace"):
         f = [x.strip() for x in line.split(",")]
         if len(f) >= 5 and f[2].isdigit():
+            if win is not None:
+                try:
+                    if not win[0] <= _utc(f[0], GPU_TS_FMT) <= win[1]:
+                        continue
+                except ValueError:
+                    continue
             mem.append(int(f[2]))
             if f[4].isdigit():
                 util.append(int(f[4]))
     return dict(gpu_mem_peak_mib=max(mem) if mem else None, gpu_util_mean_pct=float(np.mean(util)) if util else None)
 
 
-def scan_logs(case: str, notes: list[str]) -> dict:
+def scan_server_log(path: str, win: tuple[float, float] | None) -> tuple[list[str], bool]:
+    """(Traceback/OOM/fatal lines, whether the log's timestamps reach `win`); with `win`, only lines inside it count.
+
+    A line without a timestamp (a traceback body) takes the last timestamp before it. Only a hit's timestamp is parsed.
+    """
+    hits, first, last = [], None, None
+    for ln in open(path, errors="replace"):
+        m = LOG_TS_RE.match(ln)
+        if m:
+            last = m.group(1)
+            first = first or last
+        if SERVER_ERR_RE.search(ln) and (win is None or (last and win[0] <= _utc(last, LOG_TS_FMT) <= win[1])):
+            hits.append(ln.strip()[:200])
+    covered = win is None or bool(first and _utc(first, LOG_TS_FMT) <= win[1] and _utc(last, LOG_TS_FMT) >= win[0])
+    return hits, covered
+
+
+def scan_logs(case: str, notes: list[str], shared_by: int = 1, win: tuple[float, float] | None = None) -> dict:
+    """`shared_by` > 1: server.log is one file for that many cases; `win` = the run on the epoch clock, to cut it."""
     info: dict = {}
     cl = os.path.join(case, "client.log")
     if os.path.exists(cl):
@@ -267,11 +326,38 @@ def scan_logs(case: str, notes: list[str]) -> dict:
         info["client_last_line"] = lines[-1][:200] if lines else ""
     sl = os.path.join(case, "server.log")
     if os.path.exists(sl):
-        hits = [ln.strip()[:200] for ln in open(sl, errors="replace") if SERVER_ERR_RE.search(ln)]
-        info["server_error_lines"] = len(hits)
-        if hits:
-            notes.append(f"server.log: {len(hits)} line(s) with Traceback/OOM/fatal; first: {hits[0]}")
+        win = win if shared_by > 1 else None
+        if shared_by > 1 and win is None:  # no wall-clock anchor: whole-file counts, per server
+            notes.append(f"server.log shared by {shared_by} cases; log counts are per server")
+        hits, covered = scan_server_log(sl, win)
+        if not covered:
+            notes.append("server.log timestamps (read as UTC) do not reach the run window; log counts skipped")
+        else:
+            info["server_error_lines"] = len(hits)
+            if hits:
+                notes.append(f"server.log{' in the run window' if win else ''}: {len(hits)} line(s) with Traceback/OOM/fatal; "
+                             f"first: {hits[0]}")
     return info
+
+
+def server_of(case: str) -> tuple[int | None, int]:
+    """(k, n): the case's telemetry/ or server.log is a symlink into <job>/server_<k>/, shared by n cases of the job.
+
+    (None, 1) for the older layout, where every case dir holds its own files.
+    """
+    def index(d: str) -> int | None:
+        for name in ("telemetry", "server.log"):
+            p = os.path.join(d, name)
+            m = SERVER_LINK_RE.search(os.readlink(p)) if os.path.islink(p) else None
+            if m:
+                return int(m.group(1))
+        return None
+
+    k = index(case)
+    if k is None:
+        return None, 1
+    job = os.path.dirname(case)
+    return k, sum(1 for x in os.listdir(job) if CASE_RE.match(x) and index(os.path.join(job, x)) == k)
 
 
 # ----------------------------------------------------------------------------------------------- per request
@@ -367,11 +453,11 @@ def bench_metrics(rt: pd.DataFrame, b: dict, stall_s: float) -> dict:
 
 # ----------------------------------------------------------------------------------------------- telemetry metrics
 def telemetry_metrics(tel: Telemetry, t0: float, t_end: float) -> dict:
-    st, ev = tel.steps, tel.events
-    win = st[(st.tm >= t0) & (st.tm <= t_end)]
+    st, ev = tel.steps, _window(tel.events, t0, t_end)
+    win = st[(st.tm >= t0) & (st.tm <= t_end)]  # busy share, decode bs and n_steps stop at the last request end
     wall = t_end - t0
     dec = win[win.walk.fillna("").str.startswith("decode") & (win.ok == True)]  # noqa: E712
-    ev = ev[ev.tm >= t0] if len(ev) else ev
+    kv = _window(st, t0, t_end).free_kv
     holds = ev[ev.ev == "hold"] if len(ev) else ev
     fails = ev[ev.ev == "admit_fail"] if len(ev) else ev
     by_reason = Counter(fails["reason"].fillna("?")) if len(fails) else Counter()
@@ -379,11 +465,11 @@ def telemetry_metrics(tel: Telemetry, t0: float, t_end: float) -> dict:
         holds=int(len(holds)), held_requests=int(holds["n"].sum()) if len(holds) else 0,
         admit_fail_total=int(len(fails)), admit_fail=dict(by_reason),
         offloads=int((ev.ev == "offload").sum()) if len(ev) else 0,
-        min_free_kv_pages=float(st[st.tm >= t0].free_kv.min()) if st.free_kv.notna().any() and (st.tm >= t0).any() else math.nan,
+        min_free_kv_pages=float(kv.min()) if kv.notna().any() else math.nan,
         kv_pool_pages=tel.kv_pool_pages, kv_key=tel.kv_key,
         gpu_busy_share=float(win.gpu_ms.sum()) / 1e3 / wall if wall > 0 else math.nan,
         gpu_ms_unresolved=int(win.gpu_ms.isna().sum()), decode_bs_mean=_mean(pd.to_numeric(dec.bs, errors="coerce").dropna()),
-        n_steps=int(len(win)), telemetry_dropped=tel.dropped,
+        n_steps=int(len(win)), telemetry_dropped=_dropped_by(tel, t_end + DRAIN_S) - _dropped_by(tel, t0),
     )
     return m
 
@@ -398,9 +484,9 @@ def _flat_rids(events: pd.DataFrame, ev: str) -> list[str]:
     return out
 
 
-def join_client_telemetry(rt: pd.DataFrame, tel: Telemetry) -> dict:
+def join_client_telemetry(rt: pd.DataFrame, tel: Telemetry, t0: float, t_end: float) -> dict:
     """Client request ids vs telemetry wire ids; per-class counts of holds, admit failures, offloads."""
-    ev = tel.events
+    ev = _window(tel.events, t0, t_end)
     nr = ev[ev.ev == "new_request"] if len(ev) else ev
     first = nr.drop_duplicates("rid").set_index("rid").tm if len(nr) else pd.Series(dtype=float)
     seen = rt.rid.isin(first.index)
@@ -415,12 +501,12 @@ def join_client_telemetry(rt: pd.DataFrame, tel: Telemetry) -> dict:
     return j
 
 
-def admission_metrics(adm: pd.DataFrame, tel: Telemetry | None, rt: pd.DataFrame | None, t0: float) -> dict:
-    a = adm[adm.ts_mono >= t0].copy()
+def admission_metrics(adm: pd.DataFrame, tel: Telemetry | None, rt: pd.DataFrame | None, t0: float, t_end: float) -> dict:
+    a = _window(adm, t0, t_end, "ts_mono").copy()
     a["wire"] = None
     j: dict = {}
     if tel is not None and len(tel.events) and "rid" in a:
-        nr = tel.events[tel.events.ev == "new_request"]
+        nr = tel.events[tel.events.ev == "new_request"]  # all of them, not the window's: a handle may date from a warmup
         h = pd.to_numeric(a["rid"], errors="coerce")
         is_h = h.notna()
         if is_h.any() and len(nr):
@@ -473,12 +559,14 @@ class Case:
 def analyze_case(ref: CaseRef, stall_s: float = STALL_S) -> Case:
     c = Case(ref)
     d = ref.path
-    b = None
+    b = wall_win = None  # wall_win: the run on the epoch clock, to cut the server log and the job-wide gpu_mem.csv
     if bench_path(d):
         try:
             b = load_bench(d)
             rt = request_table(b)
             bm = bench_metrics(rt, b, stall_s)
+            if isinstance(b.get("t0_wall"), (int, float)):
+                wall_win = (b["t0_wall"], b["t0_wall"] + bm["duration_s"] + DRAIN_S)
         except (OSError, ValueError, KeyError, TypeError, IndexError) as e:
             c.flags.add("BAD_BENCH")
             c.notes.append(f"bench.json unreadable ({type(e).__name__}: {e})")
@@ -486,20 +574,33 @@ def analyze_case(ref: CaseRef, stall_s: float = STALL_S) -> Case:
     else:
         c.flags.add("NO_BENCH")
         c.notes.append("bench.json missing (client crashed, killed by RUN_LIMIT, or the server never started)")
-    c.m.update(scan_logs(d, c.notes))
+    k, shared = server_of(d)  # k: server_<k>/ holds this case's telemetry and server.log (shared with n-1 other cases)
+    sdir = os.path.join(os.path.dirname(d), f"server_{k}") if k is not None else None
+    if k is not None:
+        c.m["server_index"], c.m["server_shared_by"] = k, shared
+    c.m.update(scan_logs(d, c.notes, shared, wall_win))
     if "NO_BENCH" in c.flags and c.m.get("client_last_line"):
         c.notes.append(f"client.log last line: {c.m['client_last_line']}")
-    if not os.path.exists(os.path.join(d, "startup_s.txt")):
+    startup = next((p for p in (os.path.join(x, "startup_s.txt") for x in (d, sdir) if x) if os.path.exists(p)), None)
+    if startup is None:
         c.notes.append("startup_s.txt missing (the server did not come up)")
         if b is None:
             c.flags.add("NO_START")
     else:
         try:
-            c.m["startup_s"] = float(open(os.path.join(d, "startup_s.txt")).read().strip())
+            c.m["startup_s"] = float(open(startup).read().strip())
         except ValueError:
             pass
-    if os.path.exists(os.path.join(d, "gpu_mem.csv")):
-        c.m.update(read_gpu_mem(os.path.join(d, "gpu_mem.csv")))
+    gpu, job_gpu = os.path.join(d, "gpu_mem.csv"), os.path.join(os.path.dirname(d), "gpu_mem.csv")
+    if os.path.exists(gpu):
+        c.m.update(read_gpu_mem(gpu))
+    elif os.path.exists(job_gpu):  # one sampler per job: only the samples of this run
+        g = read_gpu_mem(job_gpu, wall_win) if wall_win else {}
+        if g.get("gpu_mem_peak_mib") is not None:
+            c.m.update(g)
+        else:
+            c.notes.append("job gpu_mem.csv skipped: " + ("bench.json has no t0_wall to cut it to the run" if wall_win is None
+                                                          else "no samples in the run window (timestamps read as UTC)"))
     else:
         c.notes.append("gpu_mem.csv missing")
 
@@ -509,8 +610,6 @@ def analyze_case(ref: CaseRef, stall_s: float = STALL_S) -> Case:
         c.flags.add("NO_TELEMETRY")
         if not os.path.isdir(tdir):
             c.notes.append("telemetry/ missing")
-    if tel is not None and tel.dropped:
-        c.flags.add("TEL_DROPS")
 
     # trace start on the telemetry clock
     t0 = t_end = None
@@ -528,22 +627,26 @@ def analyze_case(ref: CaseRef, stall_s: float = STALL_S) -> Case:
             arrivals=np.sort(rt.start.values), completions=np.sort(ok.end.values),
             short_e2e=ok[ok.cls == "short"].lat.values, long_e2e=ok[ok.cls == "long"].lat.values,
         )
+    elif tel is not None and shared > 1:  # the first new_request .. last step would span every run on this server
+        c.notes.append(f"no bench.json and server_{k} serves {shared} cases: the run's telemetry window is unknown, "
+                       "telemetry metrics skipped")
     elif tel is not None and len(tel.events):
         nr = tel.events[(tel.events.ev == "new_request")]
         nr = nr[~nr.rid.fillna("").str.contains("warmup")]
         t0 = float(nr.tm.min()) if len(nr) else (float(tel.steps.tm.min()) if len(tel.steps) else None)
-        t_end = float(tel.steps.tm.max()) if len(tel.steps) else t0
+        # the last row of any kind: events are cut to the window as well, and req_done follows the last step
+        t_end = max([float(tel.events.tm.max())] + ([float(tel.steps.tm.max())] if len(tel.steps) else []))
     if tel is not None and t0 is not None:
         c.m.update(telemetry_metrics(tel, t0, t_end))
         if b is not None:
-            c.m.update(join_client_telemetry(rt, tel))
+            c.m.update(join_client_telemetry(rt, tel, t0, t_end))
             lag = c.m.get("dispatch_lag_median_s")
             if c.m["join_new_request_frac"] < 0.95:
                 c.notes.append(f"only {c.m['join_new_request']} client request ids found in telemetry new_request events")
             if lag == lag and not (-0.5 <= lag <= 30):
                 c.notes.append(f"median client-start -> worker new_request lag {lag:.2f}s: clocks may not share a domain")
         else:  # completions from the server's own req_done events
-            ev = tel.events
+            ev = _window(tel.events, t0, t_end)
             done = ev[(ev.ev == "req_done")]
             seen, times = set(), []
             for tm, rids in zip(done.tm, done.rid):
@@ -553,17 +656,22 @@ def analyze_case(ref: CaseRef, stall_s: float = STALL_S) -> Case:
                         times.append(tm - t0)
             c.series["completions"] = np.sort(np.array(times))
             c.m["completed_server_side"] = len(times)
-        s = tel.steps[tel.steps.free_kv.notna() & (tel.steps.tm >= t0)]
+        s = _window(tel.steps, t0, t_end)
+        s = s[s.free_kv.notna()]
         if len(s):
             binned = (s.assign(b=np.floor(s.tm - t0).astype(int)).groupby("b").free_kv.min())
             c.series["free_t"], c.series["free_v"] = binned.index.values.astype(float), binned.values
+    dropped = c.m.get("telemetry_dropped", tel.dropped if tel is not None and shared <= 1 else 0)  # per run, else per server
+    if dropped:
+        c.flags.add("TEL_DROPS")
+        c.notes.append(f"telemetry dropped {dropped} row(s) (bounded writer queue full)")
     if ref.config in ADMISSION_LOG_CONFIGS:
         adm = load_admission(tdir, c.notes) if os.path.isdir(tdir) else None
         if adm is None:
             c.flags.add("NO_ADMLOG")
             c.notes.append("admission_*.jsonl missing (expected for a bench-peak config)")
         elif t0 is not None:
-            c.m.update(admission_metrics(adm, tel, rt if b is not None else None, t0))
+            c.m.update(admission_metrics(adm, tel, rt if b is not None else None, t0, t_end))
     return c
 
 
@@ -685,7 +793,8 @@ def render_md(groups: dict, aggs: dict, problems: list[str], figs: dict) -> str:
         "(`max stall`; a timed-out request counts as outstanding until its timeout).",
         "- *timed out* = failed with the client's empty-message error (`request failed`) or a timeout message; "
         "*failed* = every other error.",
-        "- holds / fail: / min free KV pages / GPU busy / decode bs come from step telemetry after trace start. "
+        "- holds / fail: / min free KV pages / GPU busy / decode bs come from step telemetry in the run's window "
+        "(trace start to last request end + 5 s; the server's telemetry is shared by the runs it serves). "
         "GPU busy = sum of step `gpu_ms` / (trace start to last request end). decode bs = mean `bs` of ok `decode` steps. "
         "fail: columns count `admit_fail` events by `reason`.",
         "- grant_deferred (adm log), planner_us: admission log, bench-peak configs only (`-` for main/ac).",

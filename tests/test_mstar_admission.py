@@ -17,10 +17,14 @@ Scenario (all times seconds from trace start t0 = 1000.0 on the monotonic clock,
    5   long  2000    1.5    6.0   80.0
 Cases: ac r1 (healthy), ac r2 (idx5 timed out after 900 s), peak_bf r1 (scale 0.5, with admission log),
 peak_bf r2 (no telemetry at all), peak_bf bagel_control r1 (only a server.log).
+Shared server (make_shared_job, the one-server-per-job layout): one server_1/ whose telemetry, admission log and
+server.log hold two runs 1000 s apart, symlinked into both case dirs (plus a third case whose client died, and a
+second server for a fourth).
 """
 import json
 import os
 import sys
+from datetime import datetime, timezone
 
 import numpy as np
 import pytest
@@ -194,7 +198,7 @@ def admission_rows():
         res(7.58, 0, 6.0, 40.0),  # handle 0 again: now request 5 (long), not request 0
         adm_row("grant_deferred", 10.0, 4, label="main", pages=1, planner_us=5.0),
         adm_row("grant_deferred", 11.0, 4, label="main", pages=1, planner_us=15.0),
-        adm_row("release", 81.0, 0, held=70, claim=70, reserved_s=73.42),
+        adm_row("release", 41.6, 0, held=70, claim=70, reserved_s=73.42),  # inside both runs' windows (42 s and 82 s + drain)
     ]
 
 
@@ -456,6 +460,175 @@ def test_cli(root, tmp_path):
     out = str(tmp_path / "o")
     ma.main([os.path.join(root, "12712_ac"), "--out", out])
     assert os.path.exists(os.path.join(out, "compare.md")) and os.path.exists(os.path.join(out, "summary.json"))
+
+
+# ------------------------------------------------------------------------------------------------ one server, several runs
+SHIFT = 1000.0  # case 2 runs this long after case 1 on the same server, on the monotonic and the wall clock alike
+SHARED_CFG = "peak_bf"
+
+
+def _shift(rows, dt):
+    return [{**r, **{k: r[k] + dt for k in ("tm", "ts", "ts_mono", "ts_wall") if k in r}} for r in rows]
+
+
+def _stamp(rel, fmt, hours=0):  # node-local (UTC) text of the instant `rel` s after case 1's trace start
+    return datetime.fromtimestamp(1.78e9 + rel + hours * 3600, timezone.utc).strftime(fmt)[:-3]  # %f: 6 digits, keep ms
+
+
+def _write_bench(d, run_id, dt, t0_wall=True):
+    b = make_bench(run_id)
+    for k in ("start_times", "intended_start_times"):
+        b[k] = [t + dt for t in b[k]]
+    b["t0_monotonic"] += dt
+    b["t0_wall"] = b["t0_wall"] + dt if t0_wall else None
+    json.dump(b, open(os.path.join(d, "bench.json"), "w"))
+    open(os.path.join(d, "client.log"), "w").write("trace replay: ok\nWrote bench.json\n")
+
+
+def make_shared_job(job, *, t0_wall=True, log_hours=0):
+    """server_1: case 1 (bagel_burst r1, t0 = T0), case 2 (r2, T0 + SHIFT) and bagel_control r1 (client died, no bench.json);
+    server_2: bagel_burst r3 alone. Case 2 differs from case 1 in every number below, so a leak moves one of them."""
+    os.makedirs(job)
+    open(os.path.join(job, "meta.txt"), "w").write(f"job=12800 config={SHARED_CFG}\n")
+    s1, s2 = (os.path.join(job, f"server_{k}") for k in (1, 2))
+    os.makedirs(os.path.join(s1, "telemetry"))
+    os.makedirs(s2)
+    open(os.path.join(s1, "startup_s.txt"), "w").write("71.3\n")
+    open(os.path.join(s2, "startup_s.txt"), "w").write("80.5\n")
+    r1, r2 = (f"{SHARED_CFG}-bagel_burst-r{i}" for i in (1, 2))
+    meta, steps1, ev1 = telemetry_rows(r1)
+    _, steps2, ev2 = telemetry_rows(r2)
+    # case 1: a hold inside the drain window after its last request (t_end = 82 s) and one just outside it
+    ev1 += [event("hold", 85.0, n=1, h=[0], rid=[f"{r1}-000005"], backoff_s=0.01),
+            event("hold", 88.0, n=1, h=[0], rid=[f"{r1}-000005"], backoff_s=0.01)]
+    for st in steps2:  # case 2 never gets below 1400 free pages (case 1: 900)
+        if st["free"]:
+            st["free"] = {"kv": st["free"]["kv"] + 500}
+    ev2 += [event("hold", 3.6, n=1, h=[3], rid=[f"{r2}-000003"], backoff_s=0.01)] + [
+        event("admit_fail", 3.9, node="LLM", walk="decode", bs=4, reason="AllocationFailed", h=None, rid=None,
+              label="main", pages_short=1, resource="kv")] * 2
+    drop = {"kind": "drop", "n": 3, "ts": 1.78e9 + 10, "tm": T0 + 10}  # the writer queue refused 3 rows (shifted with case 2)
+    end = {"kind": "end", "rows": 0, "dropped": 3, "ts": 1.78e9, "tm": T0 + SHIFT + 90}
+    write_jsonl(os.path.join(s1, "telemetry", f"steps_rank0_pid{PID}.jsonl"),
+                [*meta, *steps1, *ev1, *_shift([*steps2, *ev2, drop], SHIFT), end])
+    adm2 = admission_rows() + [adm_row("grant_deferred", 12.0, 4, label="main", pages=1, planner_us=7.0)]
+    for r in adm2:
+        if "planner_us" in r:
+            r["planner_us"] *= 10
+    write_jsonl(os.path.join(s1, "telemetry", f"admission_kv_pid{PID}.jsonl"), [*admission_rows(), *_shift(adm2, SHIFT)])
+    logts = lambda rel: _stamp(rel, ma.LOG_TS_FMT, log_hours)  # noqa: E731
+    err, tb = "ERROR [worker_0] mstar.engine: step failed", "Traceback (most recent call last):"
+    open(os.path.join(s1, "server.log"), "w").write("\n".join([
+        "INFO:     Started server process [1]", f"{logts(-100)} INFO [api_server] mstar: startup", tb,  # before case 1
+        f"{logts(10)} {err}", tb,  # case 1
+        f"{logts(500)} {err}", tb,  # between the runs
+        f"{logts(SHIFT + 20)} ERROR [worker_0] mstar.engine: CUDA out of memory. Tried to allocate 2 GiB",  # case 2
+        f"{logts(SHIFT + 30)} {err}", tb,  # case 2
+        f"{logts(SHIFT + 95)} INFO [api_server] mstar: shutdown", ""]))
+    open(os.path.join(s2, "server.log"), "w").write(f"{logts(3 * SHIFT)} {err}\n{tb}\n")  # server_2: whole file counts
+    gpu = [(-100, 99999, 0), (1, 70000, 10), (40, 71000, 90), (84, 71500, 50), (500, 90000, 5),  # case 1: 1..84 s
+           (SHIFT + 1, 72000, 20), (SHIFT + 40, 75000, 60)]
+    open(os.path.join(job, "gpu_mem.csv"), "w").write(
+        "".join(f"{_stamp(rel, ma.GPU_TS_FMT)}, 0, {mem}, 81559, {util}\n" for rel, mem, util in gpu))
+    r3 = f"{SHARED_CFG}-bagel_burst-r3"
+    for name, run_id, srv, dt in (("bagel_burst_r1", r1, s1, 0.0), ("bagel_burst_r2", r2, s1, SHIFT),
+                                  ("bagel_control_r1", None, s1, 0.0), ("bagel_burst_r3", r3, s2, 3 * SHIFT)):
+        d = os.path.join(job, name)
+        os.makedirs(d)
+        if run_id:
+            _write_bench(d, run_id, dt, t0_wall)
+        for link in ("telemetry", "server.log"):
+            if os.path.exists(os.path.join(srv, link)):
+                os.symlink(os.path.join(srv, link), os.path.join(d, link))  # absolute, as the sbatch's ln -s
+
+
+def analyze(job):
+    return {f"{r.workload}_r{r.rep}": ma.analyze_case(r) for r in ma.discover([job])[0]}
+
+
+def analyze_shared(tmp_path, name, **kw):
+    job = str(tmp_path / f"{name}_{SHARED_CFG}")
+    make_shared_job(job, **kw)
+    return analyze(job)
+
+
+@pytest.fixture(scope="module")
+def shared(tmp_path_factory):
+    return analyze_shared(tmp_path_factory.mktemp("shared"), 12800)
+
+
+def test_shared_telemetry_is_windowed_per_case(shared):
+    m1, m2 = shared["bagel_burst_r1"].m, shared["bagel_burst_r2"].m
+    # case 1: the single-run numbers plus the hold in the drain window (the one at 88 s is out); case 2's rows are not in
+    assert (m1["holds"], m1["held_requests"], m1["offloads"], m1["admit_fail_total"]) == (3, 4, 1, 5)
+    assert m1["admit_fail"] == {"AdmissionDeferred": 3, "GrantDeferred": 1, "AllocationFailed": 1}
+    assert m1["min_free_kv_pages"] == 900 and m1["n_steps"] == 6 and m1["gpu_busy_share"] == pytest.approx(41.0 / 82.0)
+    assert m1["join_new_request"] == "6/6" and m1["holds_by_class"] == {"long": 2, "short": 2}  # none "unmatched"
+    assert m1["admit_fail_by_class"] == {"short": 1, "long": 3}
+    assert m1["adm_events"] == {"reserve": 6, "wait": 2, "grant_deferred": 2, "release": 2} and m1["grant_deferred_log"] == 2
+    assert (m1["planner_us_p50"], m1["planner_us_p99"]) == pytest.approx((35.0, 191.0))
+    assert m1["join_admission_rows"] == "12/12" and m1["adm_max_waiting"] == 2
+    # case 2: its own extra hold / admit_fail / grant_deferred, its own free pages and planner times (x10), none of case 1's
+    assert (m2["holds"], m2["held_requests"], m2["offloads"], m2["admit_fail_total"]) == (3, 4, 1, 7)
+    assert m2["admit_fail"] == {"AdmissionDeferred": 3, "GrantDeferred": 1, "AllocationFailed": 3}
+    assert m2["min_free_kv_pages"] == 1400 and m2["n_steps"] == 6 and m2["gpu_busy_share"] == pytest.approx(41.0 / 82.0)
+    assert m2["join_new_request"] == "6/6" and m2["holds_by_class"] == {"long": 1, "short": 3}
+    assert m2["adm_events"] == {"reserve": 6, "wait": 2, "grant_deferred": 3, "release": 2} and m2["grant_deferred_log"] == 3
+    us = 10 * np.array([10, 20, 30, 40, 50, 60, 100, 200, 5, 15, 7.0])
+    assert (m2["planner_us_p50"], m2["planner_us_p99"]) == pytest.approx((np.percentile(us, 50), np.percentile(us, 99)))
+    assert m2["join_admission_rows"] == "13/13"
+    # the figure series follow: seconds from each case's own trace start, its own minimum
+    for name, low in (("bagel_burst_r1", 900), ("bagel_burst_r2", 1400)):
+        ser = shared[name].series
+        assert ser["free_t"].min() >= 0 and ser["free_t"].max() <= 90 and ser["free_v"].min() == low
+    assert shared["bagel_burst_r1"].flags == set()
+    # dropped rows: case 2's window only
+    assert m1["telemetry_dropped"] == 0 and m2["telemetry_dropped"] == 3
+    assert "TEL_DROPS" not in shared["bagel_burst_r1"].flags and shared["bagel_burst_r2"].flags == {"TEL_DROPS"}
+
+
+def test_shared_server_resolves_startup_and_index_through_symlinks(shared, result):
+    for name in ("bagel_burst_r1", "bagel_burst_r2", "bagel_control_r1"):
+        m = shared[name].m
+        assert (m["server_index"], m["server_shared_by"]) == (1, 3), name
+        assert "NO_START" not in shared[name].flags
+    assert shared["bagel_burst_r1"].m["startup_s"] == shared["bagel_burst_r2"].m["startup_s"] == 71.3
+    r3 = shared["bagel_burst_r3"].m
+    assert (r3["server_index"], r3["server_shared_by"], r3["startup_s"]) == (2, 1, 80.5)
+    ctl = shared["bagel_control_r1"]  # no bench.json, but its server started: only NO_BENCH, and no window for the telemetry
+    assert ctl.flags == {"NO_BENCH"} and "holds" not in ctl.m and "completed_server_side" not in ctl.m
+    assert any("telemetry window is unknown" in n for n in ctl.notes)
+    assert ctl.m["startup_s"] == 71.3
+    assert "server_index" not in rep(result[1], "bagel_burst", "ac", 0)  # the older layout has none
+
+
+def test_shared_server_log_is_windowed_per_case(shared):
+    c1, c2, c3, ctl = (shared[n] for n in ("bagel_burst_r1", "bagel_burst_r2", "bagel_burst_r3", "bagel_control_r1"))
+    assert c1.m["server_error_lines"] == 1 and c2.m["server_error_lines"] == 2  # the Traceback bodies take their line's time
+    assert any("in the run window" in n for n in c1.notes) and not any("per server" in n for n in c1.notes + c2.notes)
+    assert c3.m["server_error_lines"] == 1 and not any("server.log" in n and "window" in n for n in c3.notes)  # alone: whole file
+    assert ctl.m["server_error_lines"] == 5  # no window for it: the whole shared file, said so, and no flag from it
+    assert "server.log shared by 3 cases; log counts are per server" in ctl.notes
+
+
+def test_job_gpu_mem_is_windowed_per_case(shared):
+    c1, c2, ctl = (shared[n] for n in ("bagel_burst_r1", "bagel_burst_r2", "bagel_control_r1"))
+    # before-the-run (99999) and between-the-runs (90000) samples are in neither window; 84 s is inside the drain
+    assert (c1.m["gpu_mem_peak_mib"], c1.m["gpu_util_mean_pct"]) == (71500, 50.0)
+    assert (c2.m["gpu_mem_peak_mib"], c2.m["gpu_util_mean_pct"]) == (75000, 40.0)
+    assert "gpu_mem_peak_mib" not in ctl.m and any("t0_wall" in n for n in ctl.notes)
+
+
+def test_shared_server_without_a_trustworthy_wall_clock(tmp_path):
+    no_anchor = analyze_shared(tmp_path, 1, t0_wall=False)["bagel_burst_r1"]
+    assert no_anchor.m["holds"] == 3 and no_anchor.m["min_free_kv_pages"] == 900  # telemetry uses the monotonic clock
+    assert no_anchor.m["server_error_lines"] == 5 and "gpu_mem_peak_mib" not in no_anchor.m
+    assert "server.log shared by 3 cases; log counts are per server" in no_anchor.notes
+    assert any("t0_wall" in n for n in no_anchor.notes) and no_anchor.flags == set()
+    # a log whose clock is 5 h off does not reach any run window: skipped rather than counted
+    off = analyze_shared(tmp_path, 2, log_hours=5)
+    for name in ("bagel_burst_r1", "bagel_burst_r2"):
+        assert "server_error_lines" not in off[name].m and any("do not reach the run window" in n for n in off[name].notes)
 
 
 # ------------------------------------------------------------------------------------------------ units
