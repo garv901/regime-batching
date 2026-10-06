@@ -13,6 +13,8 @@
 #   sum_bf     ours, MSTAR_KV_ADMISSION_FIT=sum  ORDER=backfill  (bench-peak)
 #   peak_fifo  ours, MSTAR_KV_ADMISSION_FIT=peak ORDER=fifo      (bench-peak)
 #   peak_bf    ours, MSTAR_KV_ADMISSION_FIT=peak ORDER=backfill  (bench-peak): EASY backfill + grant guard
+#   ac_fast, peak_bf_fast  ac / peak_bf plus the incremental evictable set (bench-ac-fast / bench-peak-fast): same
+#              decisions, less host time per admission check; kept apart so the policy A/B stays clean
 # The client is always the trace-replay client from regime-harness, so every config is driven identically.
 # WORKLOADS (default below) is the v1 set. The v2 set has every requested output <= 2048 (BAGEL stops a request at 2,049
 # tokens) and the longs carry their KV in the prompt; see experiments/mstar/README.md. --export=ALL passes the list on:
@@ -33,6 +35,8 @@ case $CONFIG in
     sum_bf)    MSTAR_DIR=$WT/bench-peak;     ADM_ENV="MSTAR_KV_ADMISSION_FIT=sum MSTAR_KV_ADMISSION_ORDER=backfill" ;;
     peak_fifo) MSTAR_DIR=$WT/bench-peak;     ADM_ENV="MSTAR_KV_ADMISSION_FIT=peak MSTAR_KV_ADMISSION_ORDER=fifo" ;;
     peak_bf)   MSTAR_DIR=$WT/bench-peak;     ADM_ENV="MSTAR_KV_ADMISSION_FIT=peak MSTAR_KV_ADMISSION_ORDER=backfill" ;;
+    ac_fast)   MSTAR_DIR=$WT/bench-ac-fast;  ADM_ENV= ;;
+    peak_bf_fast) MSTAR_DIR=$WT/bench-peak-fast; ADM_ENV="MSTAR_KV_ADMISSION_FIT=peak MSTAR_KV_ADMISSION_ORDER=backfill" ;;
     *) echo "unknown CONFIG=$CONFIG"; exit 2 ;;
 esac
 CLIENT_DIR=$WT/regime-harness
