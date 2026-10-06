@@ -69,7 +69,9 @@ WORKLOAD_ORDER = ["bagel_control", "bagel_burst", "bagel_stag_r0.5", "bagel_stag
 LONG_OUT = 1024  # output tokens: long class (make_workload / trace_replay.LONG_OUTPUT_TOKENS)
 STALL_S = 60.0
 DRAIN_S = 5.0  # rows (events, admission, log lines, gpu samples) still belong to a run this long after its last request ends
-TIMEOUT_RE = re.compile(r"time.?out|timed out", re.I)
+# the server times a request out at 600 s by aborting its chunked stream, which the client reports as an incomplete
+# payload (TransferEncodingError), not as a timeout
+TIMEOUT_RE = re.compile(r"time.?out|timed out|payload is not completed", re.I)
 # trace_replay.build_bench writes "request failed" for an exception with an empty message, which is what
 # asyncio.TimeoutError (the client's --request-timeout) is
 EMPTY_MSG_ERROR = "request failed"

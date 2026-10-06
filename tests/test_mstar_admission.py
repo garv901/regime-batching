@@ -720,3 +720,10 @@ def test_streaming_reader_skips_garbage(tmp_path):
     p.write_text('{"a":1}\n\nnot json\n{"a":2}\n{"a":')
     bad = [0]
     assert list(ma.iter_jsonl(str(p), bad)) == [{"a": 1}, {"a": 2}] and bad[0] == 2
+
+
+def test_an_aborted_stream_counts_as_a_server_timeout():
+    # the server's 600 s timeout aborts the chunked response; aiohttp reports an incomplete payload
+    err = "Response payload is not completed: <TransferEncodingError: 400, message='Not enough data to satisfy transfer length header.'>"
+    assert ma.TIMEOUT_RE.search(err)
+    assert not ma.TIMEOUT_RE.search("[Errno 104] Connection reset by peer")
