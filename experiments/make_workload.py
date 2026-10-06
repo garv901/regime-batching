@@ -85,6 +85,8 @@ def main():
     ap.add_argument("--prompt-sigma", type=float, default=0.0, help="lognormal sigma for prompt length")
     ap.add_argument("--prompt-lo", type=int, default=0, help="if >0: prompts ~U[prompt-lo, prompt] (overrides sigma)")
     ap.add_argument("--long-prompt", type=int, default=0, help="if >0: prompt length of long requests (long context)")
+    ap.add_argument("--long-prompt-lo", type=int, default=0,
+                    help="if >0 (needs --long-prompt): long prompts ~U[long-prompt-lo, long-prompt] instead of fixed")
     ap.add_argument("--n-long", type=int, default=0, help="if >0: exactly this many long requests (with --long-first)")
     ap.add_argument("--short-lo", type=int, default=16)
     ap.add_argument("--short-hi", type=int, default=48)
@@ -138,9 +140,14 @@ def main():
             long_out = np.clip(rdf.output_tokens.to_numpy(), 1024, args.max_out)
         else:
             long_out = np.full(n, int(args.long))
+        if args.long_prompt_lo > 0:  # drawn last, and only here, so every other flag set keeps its random stream
+            assert args.long_prompt >= args.long_prompt_lo, "--long-prompt-lo needs --long-prompt >= it"
+            long_in = rng.integers(args.long_prompt_lo, args.long_prompt + 1, n)
+        else:
+            long_in = np.full(n, args.long_prompt)
         for i in range(n):
             out = int(long_out[i] if is_long[i] else short_out[i])
-            inp = args.long_prompt if (is_long[i] and args.long_prompt > 0) else ins[i]
+            inp = int(long_in[i]) if (is_long[i] and args.long_prompt > 0) else ins[i]
             inp = int(min(inp, args.max_model_len - out - 1))
             t = float(ts[i])
             if is_long[i] and args.long_first:
