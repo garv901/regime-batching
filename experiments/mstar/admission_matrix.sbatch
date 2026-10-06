@@ -14,6 +14,12 @@
 #   peak_fifo  ours, MSTAR_KV_ADMISSION_FIT=peak ORDER=fifo      (bench-peak)
 #   peak_bf    ours, MSTAR_KV_ADMISSION_FIT=peak ORDER=backfill  (bench-peak): EASY backfill + grant guard
 # The client is always the trace-replay client from regime-harness, so every config is driven identically.
+# WORKLOADS (default below) is the v1 set. The v2 set has every requested output <= 2048 (BAGEL stops a request at 2,049
+# tokens) and the longs carry their KV in the prompt; see experiments/mstar/README.md. --export=ALL passes the list on:
+#   export WORKLOADS="bagel_control bagel_burst_v2 bagel_stag_v2_r1.5 bagel_stag_v2_r2.5 bagel_stag_v2_r3 bagel_burst_v2"
+#   for c in main ac sum_bf peak_fifo peak_bf; do sbatch --export=ALL,CONFIG=$c experiments/mstar/admission_matrix.sbatch; done
+# Time: 6 workloads take ~45 min (v1 jobs: 51-77 min with the 6-32 min startup); each run ends by RUN_LIMIT=2400 s (a v2 run
+# needs <= 1,500 s even if its last request waits out the 900 s client timeout). --time=03:00:00 leaves room for two server restarts.
 cd "${SLURM_SUBMIT_DIR:-/shared/home/garv901-55613a/regime-batching/regime-batching}"
 source /data/mstar/env-laude.sh
 export HF_HOME=/data/garv901-55613a/hf
