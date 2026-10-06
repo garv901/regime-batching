@@ -1,0 +1,37 @@
+{
+ "path": "data/workloads/bagel_stag_r0.5.jsonl",
+ "n": 300,
+ "duration": 595.012283,
+ "rate": 0.504191272300172,
+ "in_p50": 714.0,
+ "out_p50": 45.0,
+ "out_mean": 1048.9366666666667,
+ "out_max": 8000,
+ "cls_counts": {
+  "short": 262,
+  "long": 38
+ },
+ "total_out_tokens": 314681,
+ "total_in_tokens": 213857,
+ "kv": {
+  "pool_tokens": 262144,
+  "template_overhead": 20,
+  "max_seq_len": 32768,
+  "max_request_kv": 8532,
+  "per_class": {
+   "short": {
+    "n": 262,
+    "final_kv_tokens": 210322,
+    "ratio_to_pool": 0.802
+   },
+   "long": {
+    "n": 38,
+    "final_kv_tokens": 324216,
+    "ratio_to_pool": 1.237
+   }
+  },
+  "total_final_kv_tokens": 534538,
+  "total_ratio_to_pool": 2.039,
+  "peak_inflight_kv_ratio_itl20ms": 0.309
+ }
+}

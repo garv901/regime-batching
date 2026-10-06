@@ -19,6 +19,8 @@ mkdir -p "$OUT"
 echo "job $SLURM_JOB_ID on $(hostname), GPUs: ${CUDA_VISIBLE_DEVICES:-?}, mstar $(git -C "$MSTAR_DIR" rev-parse --short HEAD) ($MSTAR_DIR)"
 nvidia-smi --query-gpu=index,name,memory.used,memory.total --format=csv
 
+# the KV pool the server will build (main does not log it)
+(cd "$MSTAR_DIR" && HF_HUB_OFFLINE=1 .venv/bin/python -I "$OLDPWD/experiments/mstar/kv_probe.py" 2>&1 | tail -2) | tee "$OUT/kv_probe.txt"
 # prompts with 450-1000 tokens (the short class), deterministic
 HF_HUB_OFFLINE=1 "$MSTAR_DIR/.venv/bin/python" -I experiments/mstar/make_prompt_file.py --out "$OUT/short_450_1000.txt" --n 64 | tail -1
 PF=$OUT/short_450_1000.txt
