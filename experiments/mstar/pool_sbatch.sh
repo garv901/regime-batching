@@ -11,7 +11,7 @@ POOL=/data/garv901-55613a/results/mstar/pool/$POOL_JOB
 script=${!#}
 [[ $script == *admission_matrix.sbatch ]] || { echo "pool_sbatch: only runs admission_matrix.sbatch, got $script" >&2; exit 1; }
 exec 9> "$POOL/.lock"; flock 9
-n=$(( $(ls "$POOL"/queue "$POOL"/running "$POOL"/done 2>/dev/null | grep -c '\.task$') + 1 ))
+n=$(( $(ls "$POOL"/queue "$POOL"/running "$POOL"/done 2>/dev/null | grep -c '\.task$' || true) + 1 ))
 id=$(printf '%s%03d' "$POOL_JOB" "$n")
 tmp=$POOL/.$id.tmp
 {
