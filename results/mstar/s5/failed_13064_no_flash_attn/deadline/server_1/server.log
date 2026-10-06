@@ -1,0 +1,135 @@
+
+  ✓ mstar serving 'qwen3_omni' on http://127.0.0.1:23064
+
+  Python SDK:
+    from mstar import MStarClient
+    client = MStarClient("http://127.0.0.1:23064")
+    print(client.chat("Hello!").text)
+    client.chat("Say hi", output_modalities=("text","audio")).save_audio("out.wav")
+    client.tts("Hello there", voice="Ethan").to_wav("out.wav")
+
+  OpenAI-compatible:
+    from openai import OpenAI
+    oai = OpenAI(base_url="http://127.0.0.1:23064/v1", api_key="none")
+    oai.chat.completions.create(model="qwen3_omni", messages=[{"role":"user","content":"hi"}])
+    oai.audio.speech.create(model="qwen3_omni", input="hi", voice="Ethan")
+
+The image processor of type `Qwen2VLImageProcessor` is now loaded as a fast processor by default, even if the model checkpoint was saved with a slow processor. This is a breaking change and may produce slightly different outputs. To continue using the slow processor, instantiate this class with `use_fast=False`. Note that this behavior will be extended to all models in a future release.
+2026-10-06 15:26:18,146 INFO [api_server] mstar.communication.communicator: control mesh transport: pyzmq (MSTAR_RUST_ZMQ=AUTO)
+2026-10-06 15:26:18,168 INFO [api_server] mstar.communication.communicator: control mesh transport: pyzmq (MSTAR_RUST_ZMQ=AUTO)
+2026-10-06 15:26:18,171 INFO [api_server] mstar.api_server.entrypoint: Conductor process started (pid=3689733, model=qwen3_omni)
+2026-10-06 15:26:18,171 INFO [api_server] mstar.api_server.entrypoint: Waiting for workers to finish setup (loading weights, capturing CUDA graphs)...
+2026-10-06 15:26:21,017 INFO [conductor] mstar.api_server.entrypoint: yaml /shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/configs/qwen3omni_colocated.yaml has no model_kwargs section; using model defaults
+The image processor of type `Qwen2VLImageProcessor` is now loaded as a fast processor by default, even if the model checkpoint was saved with a slow processor. This is a breaking change and may produce slightly different outputs. To continue using the slow processor, instantiate this class with `use_fast=False`. Note that this behavior will be extended to all models in a future release.
+2026-10-06 15:26:25,669 INFO [conductor] mstar.conductor.conductor: Detected worker device type: cuda
+2026-10-06 15:26:33,004 INFO [conductor] mstar.communication.communicator: control mesh transport: pyzmq (MSTAR_RUST_ZMQ=AUTO)
+2026-10-06 15:26:33,034 INFO [conductor] mstar.conductor.conductor: Conductor waiting for 1 worker(s) to finish setup
+2026-10-06 15:26:33,405 INFO [worker_0] mstar.communication.communicator: control mesh transport: pyzmq (MSTAR_RUST_ZMQ=AUTO)
+2026-10-06 15:26:33,605 INFO [worker_0] mstar.graph.runtime.utils: graph runtime: python (MSTAR_RUST_GRAPH=AUTO)
+2026-10-06 15:26:33,605 INFO [worker_0] mstar.engine.resources.spec: Resource specs after YAML overrides: [KVSpec(resource_key='thinker_kv', nodes={'Thinker'}, config=PagedKVConfig(num_layers=48, num_kv_heads=4, head_dim=128, num_qo_heads=32, max_seq_len=65536, max_num_pages=256, page_size=128, layout=<KVLayout.NHD: 'NHD'>, cpu_offload_pages=0, prefix_cache_salt='', prefix_cache=True)), KVSpec(resource_key='talker_kv', nodes={'Talker'}, config=PagedKVConfig(num_layers=20, num_kv_heads=2, head_dim=128, num_qo_heads=16, max_seq_len=65536, max_num_pages=256, page_size=128, layout=<KVLayout.NHD: 'NHD'>, cpu_offload_pages=0, prefix_cache_salt='', prefix_cache=True)), AttentionSpec(resource_key='thinker_attn', nodes={'Thinker'}, config=AttentionConfig(kv_cache='thinker_kv', backend=<AttnBackend.FLASHINFER: 'flashinfer'>, flashinfer_backend='auto')), AttentionSpec(resource_key='talker_attn', nodes={'Talker'}, config=AttentionConfig(kv_cache='talker_kv', backend=<AttnBackend.FLASHINFER: 'flashinfer'>, flashinfer_backend='auto')), PositionSpec(resource_key='thinker_pos', nodes={'Thinker'}, config=PositionConfig(kv_cache='thinker_kv', backend=<PosBackend.ROPE: 'rope'>, scheme=<PosScheme.SEQUENTIAL: 'sequential'>, block_step=1, rotary_dim=None, interleave=False, rope_scale=1.0, rope_theta=10000.0, rope_dtype=None, low_freq_factor=None, high_freq_factor=None, old_context_len=None)), PositionSpec(resource_key='talker_pos', nodes={'Talker'}, config=PositionConfig(kv_cache='talker_kv', backend=<PosBackend.ROPE: 'rope'>, scheme=<PosScheme.SEQUENTIAL: 'sequential'>, block_step=1, rotary_dim=None, interleave=False, rope_scale=1.0, rope_theta=10000.0, rope_dtype=None, low_freq_factor=None, high_freq_factor=None, old_context_len=None)), SamplerSpec(resource_key='thinker_sampler', nodes={'Thinker'}, vocab_size=152064, enable_repetion_penalty=True, enable_min_p=False), SamplerSpec(resource_key='talker_sampler', nodes={'Talker'}, vocab_size=3072, enable_repetion_penalty=True, enable_min_p=False), SamplerSpec(resource_key='code_sampler', nodes={'Talker'}, vocab_size=2048, enable_repetion_penalty=False, enable_min_p=False)]
+2026-10-06 15:26:54,750 INFO [worker_0] mstar.model.qwen3_omni.submodules: TalkerSubmodule: pre-computed TTS special embeddings via Thinker embed_tokens + Talker text_projection
+2026-10-06 15:26:54,767 INFO [worker_0] mstar.model.qwen3_omni.qwen3_omni_model: Successfully loaded Qwen3-Omni submodule for Talker
+Unrecognized keys in `rope_scaling` for 'rope_type'='default': {'interleaved', 'mrope_section', 'mrope_interleaved'}
+Unrecognized keys in `rope_scaling` for 'rope_type'='default': {'interleaved', 'mrope_section'}
+2026-10-06 15:26:54,835 ERROR [worker_0] mstar.conductor.conductor: Worker worker_0 failed to initialize: FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.
+Traceback (most recent call last):
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/conductor/conductor.py", line 172, in _worker_process_target
+    worker = Worker(
+             ^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/worker/worker.py", line 331, in __init__
+    self.engine_manager = EngineManager.build(
+                          ^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/worker/engine_manager.py", line 151, in build
+    submodule = model.get_submodule(
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/model/qwen3_omni/qwen3_omni_model.py", line 1283, in get_submodule
+    submodule = self._create_submodule(
+                ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/model/qwen3_omni/qwen3_omni_model.py", line 1326, in _create_submodule
+    return self._create_vision_encoder_submodule(device)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/model/qwen3_omni/qwen3_omni_model.py", line 1627, in _create_vision_encoder_submodule
+    vision_encoder = Qwen3OmniMoeVisionEncoder._from_config(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 277, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 2311, in _from_config
+    model = cls(config, **kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/models/qwen3_omni_moe/modeling_qwen3_omni_moe.py", line 1029, in __init__
+    super().__init__(config, *inputs, **kwargs)
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 2076, in __init__
+    self.config._attn_implementation_internal = self._check_and_adjust_attn_implementation(
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 2686, in _check_and_adjust_attn_implementation
+    applicable_attn_implementation = self.get_correct_attn_implementation(
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 2714, in get_correct_attn_implementation
+    self._flash_attn_2_can_dispatch(is_init_check)
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 2422, in _flash_attn_2_can_dispatch
+    raise ImportError(f"{preface} the package flash_attn seems to be not installed. {install_message}")
+ImportError: FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.
+Process SpawnProcess-1:1:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/conductor/conductor.py", line 196, in _worker_process_target
+    raise e
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/conductor/conductor.py", line 172, in _worker_process_target
+    worker = Worker(
+             ^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/worker/worker.py", line 331, in __init__
+    self.engine_manager = EngineManager.build(
+                          ^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/worker/engine_manager.py", line 151, in build
+    submodule = model.get_submodule(
+                ^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/model/qwen3_omni/qwen3_omni_model.py", line 1283, in get_submodule
+    submodule = self._create_submodule(
+                ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/model/qwen3_omni/qwen3_omni_model.py", line 1326, in _create_submodule
+    return self._create_vision_encoder_submodule(device)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/model/qwen3_omni/qwen3_omni_model.py", line 1627, in _create_vision_encoder_submodule
+    vision_encoder = Qwen3OmniMoeVisionEncoder._from_config(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 277, in _wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 2311, in _from_config
+    model = cls(config, **kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/models/qwen3_omni_moe/modeling_qwen3_omni_moe.py", line 1029, in __init__
+    super().__init__(config, *inputs, **kwargs)
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 2076, in __init__
+    self.config._attn_implementation_internal = self._check_and_adjust_attn_implementation(
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 2686, in _check_and_adjust_attn_implementation
+    applicable_attn_implementation = self.get_correct_attn_implementation(
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 2714, in get_correct_attn_implementation
+    self._flash_attn_2_can_dispatch(is_init_check)
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 2422, in _flash_attn_2_can_dispatch
+    raise ImportError(f"{preface} the package flash_attn seems to be not installed. {install_message}")
+ImportError: FlashAttention2 has been toggled on, but it cannot be used due to the following error: the package flash_attn seems to be not installed. Please refer to the documentation of https://huggingface.co/docs/transformers/perf_infer_gpu_one#flashattention-2 to install Flash Attention 2.
+2026-10-06 15:26:57,324 ERROR [conductor] mstar.conductor.conductor: Worker worker_0 (pid 3701267) exited with exit code 1. It hosted nodes ['Code2Wav', 'Talker', 'Thinker', 'audio_encoder', 'vision_encoder']. Shutting the deployment down.
+2026-10-06 15:26:57,324 INFO [conductor] mstar.conductor.conductor: Shutting down conductor...
+Process SpawnProcess-1:
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/api_server/entrypoint.py", line 139, in _conductor_process_target
+    conductor.run()
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/conductor/conductor.py", line 1539, in run
+    self._wait_for_workers_ready()
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/conductor/conductor.py", line 1532, in _wait_for_workers_ready
+    self._poll_worker_liveness()
+  File "/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline/mstar/conductor/conductor.py", line 607, in _poll_worker_liveness
+    raise DeadWorkerError(worker_id, p.pid, p.exitcode)
+mstar.conductor.conductor.DeadWorkerError: worker worker_0 (pid 3701267) exited with exit code 1
+2026-10-06 15:26:58,721 ERROR [api_server] mstar.api_server.entrypoint: conductor process exited with exit code 1 before the workers finished setup

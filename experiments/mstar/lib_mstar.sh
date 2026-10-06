@@ -10,6 +10,9 @@
 # Env (all optional except PORT):
 #   PORT          server port (required)
 #   MSTAR_DIR     mstar worktree that has its own .venv   (default: bench-main = pristine origin/main)
+#   MSTAR_VENV    venv the SERVER runs in                 (default: $MSTAR_DIR/.venv). Set it to run the worktree's code in
+#                 another venv, e.g. one with flash-attn for Qwen3-Omni; pair it with EXTRA_ENV="PYTHONPATH=$MSTAR_DIR"
+#                 so `import mstar` resolves to the worktree rather than the venv's editable install
 #   MSTAR_MODEL   model name for `mstar serve` / benchmark.runner   (default: bagel)
 #   MSTAR_CONFIG  YAML, absolute or relative to MSTAR_DIR   (default: configs/bagel_single_gpu.yaml)
 #   TENSOR_PROTO  --tensor-comm-protocol                    (default: SHM)
@@ -27,7 +30,7 @@ export PYTHONUNBUFFERED=1
 # (trust_remote_code) calls the hub API even for a cached repo and fails offline, which only costs the per-token ITL.
 : "${MSTAR_DIR:=/shared/home/garv901-55613a/mstar-worktrees/bench-main}"
 : "${MSTAR_MODEL:=bagel}" "${MSTAR_CONFIG:=configs/bagel_single_gpu.yaml}" "${TENSOR_PROTO:=SHM}"
-: "${HEALTH_TIMEOUT:=1500}" "${EXTRA_ENV:=}" "${LOG_STATS:=0}"
+: "${HEALTH_TIMEOUT:=1500}" "${EXTRA_ENV:=}" "${LOG_STATS:=0}" "${MSTAR_VENV:=$MSTAR_DIR/.venv}"
 
 wait_health() {  # <pid> <port> <timeout_s>; the API server only binds after all workers finished setup + capture
     local t=0
@@ -73,9 +76,9 @@ start_server() {  # <case_dir> [mstar serve args...]; sets SRV; returns 0 iff /h
     SOCK_DIR=/tmp/mstar_${SLURM_JOB_ID:-$$}_$PORT/; UPLOAD_DIR=/tmp/mstar_up_${SLURM_JOB_ID:-$$}_$PORT/
     SERVER_T0=$(date +%s.%N)
     # the venv bin must be on PATH: FlashInfer JIT-compiles kernels on first use and runs `ninja` from there
-    setsid env -C "$MSTAR_DIR" PATH="$MSTAR_DIR/.venv/bin:$PATH" VIRTUAL_ENV="$MSTAR_DIR/.venv" \
+    setsid env -C "$MSTAR_DIR" PATH="$MSTAR_VENV/bin:$PATH" VIRTUAL_ENV="$MSTAR_VENV" \
         HF_HUB_OFFLINE=1 MSTAR_STEP_TELEMETRY_DIR="$d/telemetry" $EXTRA_ENV \
-        "$MSTAR_DIR/.venv/bin/mstar" serve "$MSTAR_MODEL" --config "$cfg" --host 127.0.0.1 --port "$PORT" \
+        "$MSTAR_VENV/bin/mstar" serve "$MSTAR_MODEL" --config "$cfg" --host 127.0.0.1 --port "$PORT" \
         --tensor-comm-protocol "$TENSOR_PROTO" --socket-path-prefix "$SOCK_DIR" --upload-dir "$UPLOAD_DIR" \
         $([ "$LOG_STATS" = 1 ] && echo --log-stats-file "$d/server_stats.log") \
         "$@" >> "$d/server.log" 2>&1 &

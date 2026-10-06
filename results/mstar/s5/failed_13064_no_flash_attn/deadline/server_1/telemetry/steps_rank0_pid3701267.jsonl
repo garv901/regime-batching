@@ -1,0 +1,3 @@
+{"kind":"meta","phase":"process","schema":1,"rank":0,"pid":3701267,"detail":false,"ts":1791300393.4049842,"tm":2497921.734187508,"env":{"MSTAR_DIR":"/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline","MSTAR_MODEL":"qwen3_omni","MSTAR_CONFIG":"configs/qwen3omni_colocated.yaml","MSTAR_STEP_TELEMETRY_DIR":"/shared/home/garv901-55613a/regime-batching/regime-batching/results/mstar/s5/run1/deadline/server_1/telemetry","MSTAR_STEP_TELEMETRY_DETAIL":"0","MSTAR_SCHED_POLICY":"deadline","MSTAR_SCHED_MAX_WAIT_MS":"200"}}
+{"kind":"meta","phase":"worker","worker_id":"worker_0","rank":0,"pid":3701267,"ts":1791300393.4050932,"tm":2497921.734295622}
+{"kind":"end","rows":2,"dropped":0,"ts":1791300414.8458443,"tm":2497943.175047025}

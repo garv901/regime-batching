@@ -28,21 +28,30 @@ S5=experiments/mstar/s5
 source /data/mstar/env-laude.sh
 export HF_HOME=/data/garv901-55613a/hf
 export MSTAR_DIR=${MSTAR_DIR:-/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline}
+# The server runs this worktree's code in the cu129 venv: it has flash-attn (the Qwen3-Omni vision encoder needs it; the
+# worktree's own .venv does not, and is cu132 against the node's CUDA 12.9 toolkit). PYTHONPATH (set per arm below) makes
+# `import mstar` resolve to $MSTAR_DIR instead of the venv's editable install of another worktree.
+export MSTAR_VENV=${MSTAR_VENV:-/data/garv901-55613a/venvs/mstar-cu129}
 export MSTAR_MODEL=qwen3_omni MSTAR_CONFIG=configs/qwen3omni_colocated.yaml
 export HEALTH_TIMEOUT=${HEALTH_TIMEOUT:-2400}
 : "${RES:=$PWD/results/mstar/s5/run1}" "${ARMS:=round_robin deadline}" "${REPS:=2}"
 : "${CASE_TIMEOUT:=1500}" "${WARMUP_TIMEOUT:=1200}"
 PROMPTS=$PWD/results/mstar/s5/prompts_long_1k2k.txt
 export PORT=$((20000 + ${SLURM_JOB_ID:-$$} % 10000))
-for need in /data/mstar/env-laude.sh "$HF_HOME/hub/models--Qwen--Qwen3-Omni-30B-A3B-Instruct/snapshots" "$PROMPTS" "$MSTAR_DIR/.venv/bin/mstar"; do
+for need in /data/mstar/env-laude.sh "$HF_HOME/hub/models--Qwen--Qwen3-Omni-30B-A3B-Instruct/snapshots" "$PROMPTS" "$MSTAR_VENV/bin/mstar" "$MSTAR_DIR/.venv/bin/python"; do
     [ -e "$need" ] || { echo "preflight: $need missing on $(hostname)"; exit 3; }
 done
 source experiments/mstar/lib_mstar.sh
+PYTHONPATH="$MSTAR_DIR" "$MSTAR_VENV/bin/python" -c "
+import os, sys, flash_attn, mstar
+assert os.path.realpath(mstar.__file__).startswith(os.path.realpath(sys.argv[1])), mstar.__file__
+print('preflight: mstar from', mstar.__file__, 'flash_attn', flash_attn.__version__)" "$MSTAR_DIR" \
+    || { echo "preflight: the server venv cannot import flash_attn and the worktree's mstar"; exit 3; }
 mkdir -p "$RES"
 {
     echo "job=${SLURM_JOB_ID:-?} host=$(hostname) gpu=${CUDA_VISIBLE_DEVICES:-?} restart=${SLURM_RESTART_COUNT:-0} date=$(date -Is)"
     echo "server=$MSTAR_DIR @ $(git -C "$MSTAR_DIR" rev-parse --short HEAD) ($(git -C "$MSTAR_DIR" rev-parse --abbrev-ref HEAD))"
-    echo "arms=$ARMS reps=$REPS config=$MSTAR_CONFIG"
+    echo "arms=$ARMS reps=$REPS config=$MSTAR_CONFIG server venv=$MSTAR_VENV"
 } | tee -a "$RES/meta.txt"
 nvidia-smi --query-gpu=index,name,memory.used,memory.total --format=csv
 
@@ -57,7 +66,7 @@ case_args() {
     esac
 }
 arm_env() {  # server-side env of an arm
-    local common="MSTAR_STEP_TELEMETRY_DETAIL=0"
+    local common="MSTAR_STEP_TELEMETRY_DETAIL=0 PYTHONPATH=$MSTAR_DIR"
     case $1 in
         round_robin) echo "$common MSTAR_SCHED_POLICY=round_robin" ;;
         deadline) echo "$common MSTAR_SCHED_POLICY=deadline MSTAR_SCHED_MAX_WAIT_MS=200" ;;
