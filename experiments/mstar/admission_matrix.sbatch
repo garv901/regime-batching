@@ -19,7 +19,7 @@ source /data/mstar/env-laude.sh
 export HF_HOME=/data/garv901-55613a/hf
 WT=/shared/home/garv901-55613a/mstar-worktrees
 : "${CONFIG:?set CONFIG}"
-: "${WORKLOADS:=bagel_control bagel_burst bagel_stag_r1 bagel_stag_r2 bagel_stag_r3 bagel_burst}"
+: "${WORKLOADS:=bagel_control bagel_burst bagel_stag_r1 bagel_stag_r1.5 bagel_stag_r2 bagel_burst}"
 : "${REQ_TIMEOUT:=900}" "${RUN_LIMIT:=2400}"
 case $CONFIG in
     main)      MSTAR_DIR=$WT/regime-harness; ADM_ENV= ;;
