@@ -1,0 +1,16 @@
+
+  ✓ mstar serving 'qwen3_omni' on http://127.0.0.1:23085
+
+  Python SDK:
+    from mstar import MStarClient
+    client = MStarClient("http://127.0.0.1:23085")
+    print(client.chat("Hello!").text)
+    client.chat("Say hi", output_modalities=("text","audio")).save_audio("out.wav")
+    client.tts("Hello there", voice="Ethan").to_wav("out.wav")
+
+  OpenAI-compatible:
+    from openai import OpenAI
+    oai = OpenAI(base_url="http://127.0.0.1:23085/v1", api_key="none")
+    oai.chat.completions.create(model="qwen3_omni", messages=[{"role":"user","content":"hi"}])
+    oai.audio.speech.create(model="qwen3_omni", input="hi", voice="Ethan")
+

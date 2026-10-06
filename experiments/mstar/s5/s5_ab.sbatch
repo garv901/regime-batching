@@ -15,6 +15,9 @@
 #   round_robin        MSTAR_SCHED_POLICY=round_robin (today's behaviour)
 #   deadline           MSTAR_SCHED_POLICY=deadline, MSTAR_SCHED_MAX_WAIT_MS=200
 #   deadline_w<ms>     the same with that aging guard, e.g. deadline_w1000
+#   deadline_pa[_w<ms>]  deadline + MSTAR_SCHED_PIPELINE_AWARE=1 (Thinker decode carries the stream's deadline; the chain
+#                      yields on urgency, not priority): the fix for what the first `deadline` arm showed
+#   round_robin_<x>    another round_robin server (same env), to measure server-to-server noise
 # Per server: one throwaway warm-up run (a mixed one: audio conc 8 + text conc 8), then REPS rounds of the four cases
 #   a4  audio only, conc 4         a8  audio only, conc 8
 #   b4  a4 + text-only long prompts at conc 8      b8  a8 + the same text load
@@ -70,8 +73,10 @@ arm_env() {  # server-side env of an arm
     # other CUDA graphs then fail to capture and the first request OOMs (job 13068). Same value in every arm.
     local common="MSTAR_STEP_TELEMETRY_DETAIL=0 PYTHONPATH=$MSTAR_DIR MSTAR_CODE2WAV_MAX_GRAPH_BS=${CODE2WAV_MAX_GRAPH_BS:-8}"
     case $1 in
-        round_robin) echo "$common MSTAR_SCHED_POLICY=round_robin" ;;
+        round_robin|round_robin_*) echo "$common MSTAR_SCHED_POLICY=round_robin" ;;   # round_robin_b: a second server, for the noise floor
         deadline) echo "$common MSTAR_SCHED_POLICY=deadline MSTAR_SCHED_MAX_WAIT_MS=200" ;;
+        deadline_pa) echo "$common MSTAR_SCHED_POLICY=deadline MSTAR_SCHED_MAX_WAIT_MS=200 MSTAR_SCHED_PIPELINE_AWARE=1" ;;
+        deadline_pa_w*) echo "$common MSTAR_SCHED_POLICY=deadline MSTAR_SCHED_MAX_WAIT_MS=${1#deadline_pa_w} MSTAR_SCHED_PIPELINE_AWARE=1" ;;
         deadline_w*) echo "$common MSTAR_SCHED_POLICY=deadline MSTAR_SCHED_MAX_WAIT_MS=${1#deadline_w}" ;;
         *) return 1 ;;
     esac

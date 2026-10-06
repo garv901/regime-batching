@@ -1,0 +1,3 @@
+# raw step telemetry is ~12 MB per server; regenerate the tables with experiments/mstar/s5/analyze.py on the job output
+**/telemetry
+**/telemetry/

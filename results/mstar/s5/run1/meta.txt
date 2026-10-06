@@ -1,0 +1,6 @@
+job=13084 host=brev-tffbb7a2o gpu=0 restart=0 date=2026-10-06T15:49:55+00:00
+server=/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline @ d9a91e512 (garv/s5-stage-deadline)
+arms=round_robin deadline reps=2 config=configs/qwen3omni_colocated.yaml server venv=/data/garv901-55613a/venvs/mstar-cu129
+job=13085 host=brev-tffbb7a2o gpu=0 restart=0 date=2026-10-06T16:17:30+00:00
+server=/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline @ af11cd3c3 (garv/s5-stage-deadline)
+arms=deadline_pa round_robin_b deadline_pa_w50 reps=2 config=configs/qwen3omni_colocated.yaml server venv=/data/garv901-55613a/venvs/mstar-cu129
