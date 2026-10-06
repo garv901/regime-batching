@@ -72,7 +72,9 @@ start_server() {  # <case_dir> [mstar serve args...]; sets SRV; returns 0 iff /h
     # (other agents run mstar servers too), so give each server its own ZMQ socket dir and upload dir.
     SOCK_DIR=/tmp/mstar_${SLURM_JOB_ID:-$$}_$PORT/; UPLOAD_DIR=/tmp/mstar_up_${SLURM_JOB_ID:-$$}_$PORT/
     SERVER_T0=$(date +%s.%N)
-    setsid env -C "$MSTAR_DIR" HF_HUB_OFFLINE=1 MSTAR_STEP_TELEMETRY_DIR="$d/telemetry" $EXTRA_ENV \
+    # the venv bin must be on PATH: FlashInfer JIT-compiles kernels on first use and runs `ninja` from there
+    setsid env -C "$MSTAR_DIR" PATH="$MSTAR_DIR/.venv/bin:$PATH" VIRTUAL_ENV="$MSTAR_DIR/.venv" \
+        HF_HUB_OFFLINE=1 MSTAR_STEP_TELEMETRY_DIR="$d/telemetry" $EXTRA_ENV \
         "$MSTAR_DIR/.venv/bin/mstar" serve "$MSTAR_MODEL" --config "$cfg" --host 127.0.0.1 --port "$PORT" \
         --tensor-comm-protocol "$TENSOR_PROTO" --socket-path-prefix "$SOCK_DIR" --upload-dir "$UPLOAD_DIR" \
         $([ "$LOG_STATS" = 1 ] && echo --log-stats-file "$d/server_stats.log") \
@@ -89,7 +91,7 @@ run_client() {  # <case_dir> [benchmark.runner args...]; runs mstar's own client
     local d=$1; shift
     mkdir -p "$d/cache"
     # cwd must be the worktree (benchmark/ is not part of the installed package).
-    env -C "$MSTAR_DIR" "$MSTAR_DIR/.venv/bin/python" -m benchmark.runner \
+    env -C "$MSTAR_DIR" PATH="$MSTAR_DIR/.venv/bin:$PATH" "$MSTAR_DIR/.venv/bin/python" -m benchmark.runner \
         --url "http://127.0.0.1:$PORT" --model "$MSTAR_MODEL" --local-cache "$d/cache" "$@"
 }
 
