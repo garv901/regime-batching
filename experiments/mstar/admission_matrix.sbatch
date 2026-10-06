@@ -20,7 +20,8 @@
 # Partitions: -p team1,guest starts the job on whichever of them can run it first (team1 = node1; guest = node1,2,4,5, and a
 # guest job can be preempted and REQUEUED). A requeued job restarts this script from the top: with the default OUT it writes a
 # new dir <job>_<label>_rq<SLURM_RESTART_COUNT>, so it never overwrites its earlier one (the analysis pools it with its label),
-# and --open-mode=append keeps both attempts in the slurm log. Probe a guest node first: experiments/mstar/probe_guest.sbatch.
+# and --open-mode=append keeps both attempts in the slurm log. A guest node (2, 4, 5) has no /data of its own to match node1's
+# (no env-laude.sh, no BAGEL weights, no results/): the preflight below ends the job at once there. Check with probe_guest.sbatch.
 # Arms on one config (several jobs, repeats, interleaved arms): experiments/mstar/submit_matrix.sh.
 # The client is always the trace-replay client from regime-harness, so every config is driven identically.
 # WORKLOADS (default below) is the v1 set. The v2 set has every requested output <= 2048 (BAGEL stops a request at 2,049
@@ -57,6 +58,12 @@ PORT=$((20000 + SLURM_JOB_ID % 10000))
 LABEL=${LABEL:-$CONFIG}
 RQ=${SLURM_RESTART_COUNT:-0}   # > 0: slurm requeued this job (a guest-partition preemption); keep the earlier attempt's dir
 OUT=${OUT:-/data/garv901-55613a/results/mstar/${SLURM_JOB_ID}_$LABEL$([ "$RQ" -gt 0 ] && echo "_rq$RQ")}
+# Preflight: fail in seconds, not after a 1 h /health timeout, on a node that cannot run this. /shared (repo, worktrees, venvs) is
+# NFS from node1 on every node, but /data (env-laude.sh + CUDA toolkit, the HF weights, results/) is node-local: node2/4/5 have
+# none of it (probe_guest.sbatch, jobs 13056-13058). A guest node needs those staged first; see experiments/mstar/README.md.
+for need in /data/mstar/env-laude.sh "$(dirname "$OUT")" "$HF_HOME/hub/models--ByteDance-Seed--BAGEL-7B-MoT/snapshots"; do
+    [ -e "$need" ] || { echo "preflight: $need missing on $(hostname); this node cannot run the matrix"; exit 3; }
+done
 source experiments/mstar/lib_mstar.sh
 mkdir -p "$OUT"
 {
