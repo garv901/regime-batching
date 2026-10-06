@@ -2,7 +2,7 @@
 #SBATCH -J mstar_adm
 #SBATCH -p team1
 #SBATCH --gres=gpu:1
-#SBATCH --time=03:30:00
+#SBATCH --time=03:00:00
 #SBATCH -o /data/garv901-55613a/logs/mstar/%x_%j.out
 # KV admission A/B on BAGEL text-to-text: one admission config per job, every workload, fresh server per run.
 # Submit from the study repo root, one job per config:
@@ -43,25 +43,46 @@ mkdir -p "$OUT"
 } | tee "$OUT/meta.txt"
 nvidia-smi --query-gpu=index,name,memory.used,memory.total --format=csv
 
+# One server per job: BAGEL compiles its prefill graphs with max-autotune at every start (15-22 min, the compile
+# cache barely helps), so the server is restarted only when a run leaves it unhealthy or with timed-out requests.
+# Telemetry and server.log live in $OUT/server_<k>/ and are symlinked into each case dir; the analysis restricts
+# telemetry to each run's trace window.
+server_ok() { kill -0 "$SRV" 2>/dev/null && curl -sf -m 10 "http://127.0.0.1:$PORT/health" > /dev/null; }
+run_timed_out() {  # <bench.json>: any request that failed with a timeout or the client's empty "request failed"
+    python3 -c "import json,sys; b=json.load(open(sys.argv[1])); sys.exit(0 if any(e and ('request failed' in e or 'imeout' in e) for e in b['errors']) else 1)" "$1" 2>/dev/null
+}
+HEALTH_TIMEOUT=${HEALTH_TIMEOUT_JOB:-3600}
+SRV=; nsrv=0
 declare -A seen
+start_gpu_sampler "$OUT/gpu_mem.csv"
 for wl in $WORKLOADS; do
     rep=$(( ${seen[$wl]:-0} + 1 )); seen[$wl]=$rep
     case_dir=$OUT/${wl}_r$rep
     mkdir -p "$case_dir"
-    echo "=== [$(date +%T)] $CONFIG $wl rep $rep -> $case_dir"
-    start_gpu_sampler "$case_dir/gpu_mem.csv"
-    if ! start_server "$case_dir"; then
-        echo "server failed to start; see $case_dir/server.log"; tail -30 "$case_dir/server.log"
-        stop_server $SRV; stop_gpu_sampler; continue
+    if [ -z "$SRV" ] || ! server_ok; then
+        [ -n "$SRV" ] && { echo "server unhealthy; restarting"; stop_server $SRV; }
+        nsrv=$((nsrv + 1)); sdir=$OUT/server_$nsrv
+        echo "=== [$(date +%T)] start server $nsrv -> $sdir"
+        if ! start_server "$sdir"; then
+            echo "server failed to start; see $sdir/server.log"; tail -30 "$sdir/server.log"
+            stop_server $SRV; SRV=; continue
+        fi
+        echo "$SERVER_STARTUP_S" > "$sdir/startup_s.txt"
     fi
-    echo "$SERVER_STARTUP_S" > "$case_dir/startup_s.txt"
+    ln -sfn "$sdir/telemetry" "$case_dir/telemetry"; ln -sf "$sdir/server.log" "$case_dir/server.log"
+    echo "=== [$(date +%T)] $CONFIG $wl rep $rep -> $case_dir (server $nsrv)"
     timeout "$RUN_LIMIT" env -C "$CLIENT_DIR" HF_HUB_OFFLINE=1 "$CLIENT_DIR/.venv/bin/python" -m benchmark.runner \
         --url "http://127.0.0.1:$PORT" --model bagel --trace "$PWD/data/workloads/$wl.jsonl" \
         --bench-json "$case_dir/bench.json" --request-timeout "$REQ_TIMEOUT" --num-warmup 2 \
         --trace-run-id "${CONFIG}-${wl}-r$rep" --local-cache "$case_dir/cache" > "$case_dir/client.log" 2>&1
-    echo "client rc=$? ($(date +%T))"; tail -12 "$case_dir/client.log"
-    stop_server $SRV
-    stop_gpu_sampler
+    echo "client rc=$? ($(date +%T))"; tail -6 "$case_dir/client.log"
     rm -rf "$case_dir/cache"
+    if run_timed_out "$case_dir/bench.json"; then
+        echo "run had timed-out requests; restarting the server before the next workload"
+        stop_server $SRV; SRV=
+    fi
+    sleep 15   # let completed requests' REMOVE_REQUESTs drain before the next trace
 done
+[ -n "$SRV" ] && stop_server $SRV
+stop_gpu_sampler
 echo "=== [$(date +%T)] done: $OUT"
