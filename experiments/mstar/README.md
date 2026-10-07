@@ -15,6 +15,7 @@ Baselines run from the pristine worktree `mstar-worktrees/bench-main` (`origin/m
 | `make_bagel_workloads.sh`, `kv_report.py` | Generate the BAGEL workloads and add their KV pressure to the `.meta.json` files |
 | `make_bagel_workloads_v2.sh` | The v2 workloads (below); writes only the v2 files and their `.meta.json` |
 | `make_bagel_workloads_v3.sh` | The v3 workloads (below); writes only the v3 files and their `.meta.json` |
+| `make_bagel_workloads_v4.sh`, `declare_max_tokens.py`, `arms_v4.txt` | The v4 workloads (below): copies of four Phase 1c traces with a declared `max_tokens` above the generated output, and the four arms to run them under |
 | `admission_matrix.sbatch`, `submit_matrix.sh` | One admission config per job (one server, every workload); `submit_matrix.sh` submits REPS jobs per arm, interleaved, and logs them in `manifest.tsv` (section "Admission matrix") |
 | `probe_guest.sbatch` | CPU-only check of what a guest node (node2, node4, node5) sees; result in section "Admission matrix" |
 
@@ -214,6 +215,136 @@ holds, the size is 0.56-0.76x (bf) and 0.30-0.48x (fifo) over seeds 1-3. Stag r5
 Submit: `WORKLOADS="bagel_burst_v3 bagel_stag_v3_r4.5 bagel_stag_v3_r5.5 bagel_stag_v3_r6.5 bagel_burst_v3"` (the burst twice is the
 first-run check, as in v2; the default WARMUP replays `bagel_burst_v2`, set `WARMUP=bagel_burst_v3` to warm up on the v3 burst).
 The analysis orders the v3 files after v2 (`WORKLOAD_ORDER`).
+
+## Workloads v4 (declared max_tokens above the generated output)
+
+v1-v3 are ORACLE traces: the replay client sends `max_tokens = output_length` (and ignores EOS), so a summed reservation
+(prompt + `max_tokens`) and a future-peak fit see every request's exact length. A production client over-declares `max_tokens` or
+omits it (the server then assumes 2,048 for BAGEL). v4 asks what that costs each arm. A trace row may carry a declared
+`max_tokens` (>= `output_length`, <= 2,048); the client sends it as `max_tokens` / `max_output_tokens`, and the server stops the
+request after `output_length` tokens (emulated EOS), so the KV a request really uses is the base's and only what admission
+reserves grows. A row without the field behaves as before. `make_bagel_workloads_v4.sh` derives two variants of each Phase 1c
+base with `declare_max_tokens.py` and writes them to `data/workloads/` (the v1-v3 files are only read; the script rebuilds the
+same bytes every time):
+
+- `<base>_mtx2`: `max_tokens = min(2048, 2 x output_length)` (`--id-offset 1000000000`): a predictor with a 2x margin.
+- `<base>_mt2048`: `max_tokens = 2048` for every request (`--id-offset 2000000000`): no information about the output length, or a
+  client that omits `max_tokens`.
+
+The id offset shifts every `hash_id`, so a variant replayed on the server that served its base builds different prompt tokens and
+cannot hit the prefix cache the base left behind. (The same offset is used for every base, so variants of different bases share ids
+as the bases already do among themselves.) Arrivals, prompts and generated outputs are the base's, so a `_mtx2` / `_mt2048` run generates
+exactly the base's tokens (the tok/s a policy can reach is the base's). `kv_report.py` annotates
+each variant's `.meta.json` (a copy of the base's with a `declared` block) with the declared figures next to the generated ones: per
+class and total `declared_final_kv_tokens` / `declared_ratio_to_pool` (sum of prompt + 20 + declared) and `decl_kv_ratio`
+(declared / generated), `decl_ratio_mean` (mean declared / output per request), and three fluid peaks (`--itl-ms 15` to `20`, every
+request admitted on arrival, no queueing): with the generated lengths (the base's number), with every request running for its
+DECLARED length (`peak_declared_inflight_kv_ratio_*`: what a planner must be ready for if nothing stops early), and of the summed
+reservation (`peak_reserved_inflight_kv_ratio_*`: each in-flight request holds prompt + 20 + declared until it finishes; this is
+what a summed fit sees). Oracle files get none of these keys (their output is byte-identical to before).
+
+| File | Requests | Mean declared / generated | Declared / generated KV: all / short / long | Total final KV / P: generated -> declared | Fluid peak / P: generated lengths | declared lengths | summed reservation |
+|---|---|---|---|---|---|---|---|
+| `bagel_burst_v2_mtx2` | 2,700 (46 long) | 1.98 | 1.04 / 1.05 / 1.01 | 9.42 -> 9.83 | 1.52-1.53 | 1.54-1.55 | 1.54-1.55 |
+| `bagel_burst_v2_mt2048` | 2,700 (46 long) | 58.82 | 3.16 / 3.57 / 1.01 | 9.42 -> 29.76 | 1.52-1.53 | 3.13-3.78 | 1.62-1.67 |
+| `bagel_stag_v2_r3_mtx2` | 1,800 (295 long) | 1.84 | 1.01 / 1.05 / 1.00 | 20.46 -> 20.74 | 1.39-1.66 | 1.40-1.66 | 1.47-1.75 |
+| `bagel_stag_v2_r3_mt2048` | 1,800 (295 long) | 49.81 | 1.57 / 3.55 / 1.00 | 20.46 -> 32.04 | 1.39-1.66 | 1.91-2.35 | 1.49-1.78 |
+| `bagel_burst_v3_mtx2` | 2,700 (90 long) | 1.99 | 1.07 / 1.05 / 1.18 | 9.01 -> 9.62 | 0.96-0.97 | 1.10 | 1.44-1.45 |
+| `bagel_burst_v3_mt2048` | 2,700 (90 long) | 57.88 | 3.26 / 3.56 / 1.30 | 9.01 -> 29.36 | 0.96-0.97 | 3.15-3.79 | 1.66-1.68 |
+| `bagel_stag_v3_r5.5_mtx2` | 3,300 (480 long) | 1.95 | 1.06 / 1.05 / 1.06 | 25.30 -> 26.80 | 0.84-1.02 | 1.24-1.48 | 0.96-1.17 |
+| `bagel_stag_v3_r5.5_mt2048` | 3,300 (480 long) | 52.19 | 1.92 / 3.56 / 1.10 | 25.30 -> 48.56 | 0.84-1.02 | 2.52-3.08 | 1.01-1.24 |
+
+The longs of v2 already ask for 2,000 of the 2,048 cap, so v2 variants over-declare the SHORTS (16-64 tokens -> 32-128, or 2,048)
+and barely the longs (1.00-1.01x); the v3 longs (output U[256, 2,000]) are over-declared up to 2x (1.06-1.30x by KV).
+The "total" column sums every request of the 305-600 s trace and says little about pressure; the fluid peaks do. The fluid peak of
+the summed reservation is 1.02-1.21x the fluid peak of the KV in use (`burst_v3`: 1.49x for `_mtx2`, 1.72x for `_mt2048`), so a
+summed fit books only a few percent to a fifth more than the KV in use on most files.
+
+Policy check on CPU (`python analysis/admit_sim_bagel.py data/workloads/bagel_*_v2*.jsonl data/workloads/bagel_*_v3*.jsonl`;
+same calibration as v2; unchanged for the oracle rows, which were checked to give bit-identical results before and after the
+change). `admit_sim_bagel.py` now reserves and plans with the declared `max_tokens` of a row that has one (sum: prompt + declared;
+peak: growth up to declared) while the request still finishes after `output_length` tokens and frees its KV then. Short E2E mean
+(p99) in seconds; `sum_fifo` is Gaurav's AC, `sum_bf` (AC with backfill) is added to separate head-of-line blocking from
+over-reservation:
+
+| Workload | sum_fifo (AC) | sum_bf | peak_bf | open |
+|---|---|---|---|---|
+| `bagel_burst_v2` | 9.21 (56.6) | 4.29 (28.5) | 1.11 (10.3) | 1.43 (12.4) |
+| `bagel_burst_v2_mtx2` | 9.17 (56.3) | 5.53 (35.9) | 0.94 (7.4) | 1.43 (12.4) |
+| `bagel_burst_v2_mt2048` | 9.12 (50.8) | 5.96 (33.0) | 7.41 (38.6) | 1.43 (12.4) |
+| `bagel_stag_v2_r3` | 43.67 (88.4) | 1.65 (7.9) | 1.34 (6.9) | 2.65 (7.0) |
+| `bagel_stag_v2_r3_mtx2` | 43.78 (88.9) | 1.49 (7.4) | 1.22 (4.8) | 2.65 (7.0) |
+| `bagel_stag_v2_r3_mt2048` | 44.36 (88.0) | 7.25 (24.8) | 2.48 (14.2) | 2.65 (7.0) |
+| `bagel_burst_v3` | 6.40 (38.7) | 3.81 (20.8) | 1.62 (9.9) | 1.25 (11.0) |
+| `bagel_burst_v3_mtx2` | 6.58 (39.9) | 3.10 (16.7) | 1.25 (9.3) | 1.25 (11.0) |
+| `bagel_burst_v3_mt2048` | 7.77 (40.8) | 7.00 (36.0) | 6.42 (36.4) | 1.25 (11.0) |
+| `bagel_stag_v3_r5.5` | 36.46 (67.9) | 2.13 (7.3) | 6.76 (21.2) | 4.13 (10.5) |
+| `bagel_stag_v3_r5.5_mtx2` | 37.85 (69.5) | 2.13 (5.9) | 1.51 (3.6) | 4.13 (10.5) |
+| `bagel_stag_v3_r5.5_mt2048` | 39.65 (72.5) | 22.32 (63.8) | 3.15 (10.8) | 4.13 (10.5) |
+
+Long E2E mean (s) / output tok/s (nothing is unfinished or over 600 s in any cell):
+
+| Workload | sum_fifo (AC) | sum_bf | peak_bf | open |
+|---|---|---|---|---|
+| `bagel_burst_v2` | 76.8 / 648 | 88.1 / 648 | 94.6 / 648 | 121.6 / 648 |
+| `bagel_burst_v2_mtx2` | 76.8 / 648 | 85.1 / 648 | 95.6 / 648 | 121.6 / 648 |
+| `bagel_burst_v2_mt2048` | 76.1 / 648 | 83.2 / 648 | 81.4 / 648 | 121.6 / 648 |
+| `bagel_stag_v2_r3` | 81.8 / 933 | 85.8 / 933 | 86.9 / 932 | 121.1 / 976 |
+| `bagel_stag_v2_r3_mtx2` | 81.8 / 931 | 85.9 / 934 | 86.9 / 933 | 121.1 / 976 |
+| `bagel_stag_v2_r3_mt2048` | 81.7 / 931 | 85.0 / 935 | 86.2 / 933 | 121.1 / 976 |
+| `bagel_burst_v3` | 64.9 / 634 | 67.2 / 634 | 72.0 / 634 | 72.4 / 634 |
+| `bagel_burst_v3_mtx2` | 58.6 / 634 | 65.6 / 634 | 72.0 / 634 | 72.4 / 634 |
+| `bagel_burst_v3_mt2048` | 53.8 / 634 | 54.4 / 634 | 57.2 / 634 | 72.4 / 634 |
+| `bagel_stag_v3_r5.5` | 69.2 / 993 | 73.9 / 991 | 74.5 / 995 | 108.9 / 1020 |
+| `bagel_stag_v3_r5.5_mtx2` | 68.9 / 991 | 74.5 / 988 | 76.8 / 994 | 108.9 / 1020 |
+| `bagel_stag_v3_r5.5_mt2048` | 69.0 / 987 | 71.7 / 986 | 75.6 / 992 | 108.9 / 1020 |
+
+What each variant is meant to show (simulator only; the real engine has to confirm it):
+- **AC (`sum_fifo`) hardly cares about the declared bound on these workloads** (short E2E within 4% of the oracle row for `_mtx2`
+  and within 9% for `_mt2048`, except `burst_v3_mt2048` +21%): strict FIFO is already bound by the long at the head of the queue,
+  and the peak of the summed reservation is only 2-21% above the peak KV in use (49-72% on `burst_v3`, the file where AC moves most). So
+  `ac/main` should stay where it is on every variant, and the cost of not knowing the length shows up in the arm that used the
+  length: `peak_bf`.
+- **`_mtx2` (a 2x margin) should NOT separate the arms differently from the oracle**: peak_bf / AC short E2E is 0.10 (burst_v2),
+  0.028 (stag_v2_r3), 0.19 (burst_v3), 0.040 (stag_v3_r5.5) against 0.12 / 0.031 / 0.25 / 0.185 for the oracle: it is the same or
+  better. An over-declared growth makes the peak planner more conservative; on `stag_v3_r5.5`, where the oracle peak_bf is WORSE
+  than sum_bf (6.76 vs 2.13 s, README v3), a 2x margin makes it better (1.51 vs 2.13 s). Hypothesis, not checked: peak_bf at the
+  oracle fills the pool to 1.00 and a short waits for pages; the margin leaves some free.
+- **`_mt2048` (no information) is the case that can separate them.** peak_bf loses most of its gain on the two bursts (peak_bf /
+  AC 0.81 on burst_v2, 0.83 on burst_v3; the oracle 0.12 and 0.25; peak_bf is then worse than sum_bf on burst_v2, 7.41 vs 5.96 s,
+  and only 8% better on burst_v3, 6.42 vs 7.00 s). Reading, not checked: with every short planned to grow 2,048 tokens the planner
+  can no longer see that the shorts finish within a second, so it plans like the summed fit. On the two staggered workloads it
+  keeps almost all of its gain (peak_bf / AC 0.056 on stag_v2_r3, 0.079 on stag_v3_r5.5): there the oracle sum_bf is already as good
+  (1.65 and 2.13 s), so the gain is backfill (not blocking the shorts behind a long head), not the length. `sum_bf` degrades most
+  on those files (stag_v3_r5.5 2.13 -> 22.3 s, stag_v2_r3 1.65 -> 7.25 s).
+- **tok/s does not separate anything** (within 0.6% of the oracle row in every cell): the trace sets it. Long E2E moves the other way
+  for the strict summed AC on `burst_v3`: 64.9 s -> 58.6 (`_mtx2`) -> 53.8 s (`_mt2048`), while its mean admitted falls 33.4 -> 24.0
+  and its peak KV / pool 0.91 -> 0.68: fewer requests decode together, so each long decodes faster, at the shorts' expense.
+- On the GPU `burst_v3` is bound by the 64-row decode cap as much as by KV (Phase 1c finding 2), so its variants are expected
+  to be flat there; use `burst_v2` and the two staggered files for the separation.
+- `main` ignores `max_tokens` for admission, so its ratio variant / base is the control: it should be 1 within noise.
+
+Run (WORKLOADS can mix bases and variants in one job; run the oracle base under the same arms, `arms_v4.txt` = `main`, `ac`,
+`ac_park`, `peak_bf_pc_park`), then the cost of not knowing and the arm ratios on the variants:
+
+```bash
+bash experiments/mstar/make_bagel_workloads_v4.sh
+REPS=3 WORKLOADS="bagel_burst_v2 bagel_burst_v2_mtx2 bagel_burst_v2_mt2048 bagel_stag_v2_r3 bagel_stag_v2_r3_mtx2 bagel_stag_v2_r3_mt2048" \
+  SBATCH_OPTS="-p team1" ./experiments/mstar/submit_matrix.sh -f experiments/mstar/arms_v4.txt
+uv run --no-project --with numpy --with pandas --with matplotlib python analysis/mstar_admission.py <result dirs> --out <out>
+uv run --no-project --with numpy --with pandas --with matplotlib python analysis/mstar_declared.py <out>/summary.json --md <out>/declared.md
+uv run --no-project --with numpy --with pandas --with matplotlib python analysis/mstar_step_gains.py <out>/summary.json \
+  ac/main peak_bf_pc_park/ac peak_bf_pc_park/main ac_park/ac --workloads '*_mtx2' '*_mt2048' --md <out>/step_gains_v4.md
+```
+
+`mstar_admission.py` reads the client's new `declared_max_tokens` list and `n_overrun_outputs` from bench.json when present (absent
+in older runs: declared = intended). New per-case scalars `decl_ratio_mean` and `decl_kv_ratio` (over the completed requests), an
+`OVERRUN` flag (a request generated MORE than its intended length; TRUNCATED, fewer, is unchanged), and all-request metrics (E2E
+mean / p50 / p99, TTFT p50 / p99 over every completed request, whatever its class; `mid` requests of the public-trace workloads
+`pub_mooncake_conv_*` / `pub_azure_conv_*` count there and get their own columns when present). `mstar_declared.py` writes
+metric(variant) / metric(base) per arm with the same "≈ when the min-max rep ranges overlap" rule as `mstar_step_gains.py`.
+`WORKLOAD_ORDER` is pattern-based: the v1-v3 files first, then the v4 variants (base order, `_mtx2` before `_mt2048`), then the
+public traces (each base followed by its variants), then anything else.
 
 ## Admission matrix: repeats, warmup, guest nodes
 
