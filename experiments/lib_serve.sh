@@ -1,7 +1,8 @@
 #!/bin/bash
 # Shared helpers for server+client benchmark jobs (sourced from sbatch scripts).
 # Usage: run_case <name> <workload.jsonl> <num_prompts> [extra vllm serve args...]
-# Env: MODEL, OUT (run root), PORT, EXTRA_ENV (space-separated VAR=val applied to the server only)
+# Env: MODEL, OUT (run root), PORT, EXTRA_ENV (space-separated VAR=val applied to the server only),
+#      CLIENT_ARGS (extra `vllm bench serve` args, e.g. --timed-trace-chunk-hash-size 512), CLIENT_TIMEOUT (s)
 set -uo pipefail
 ROOT="${ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "$ROOT/.venv/bin/activate"
@@ -48,7 +49,7 @@ start_server() {  # <case_dir> [vllm serve args...]; sets SRV
 run_case() {
     local name=$1 wl=$2 n=$3; shift 3
     local d="$OUT/$name"; mkdir -p "$d/telemetry"
-    echo "=== [$(date +%T)] case $name  wl=$(basename "$wl") n=$n env=[$EXTRA_ENV] args=$*"
+    echo "=== [$(date +%T)] case $name  wl=$(basename "$wl") n=$n env=[$EXTRA_ENV] args=$* client=[${CLIENT_ARGS:-}] load=[$(cut -d' ' -f1-3 /proc/loadavg)]"
     if ! start_server "$d" "$@"; then
         echo "!!! server failed for $name, retrying once"; tail -5 "$d/server.log"; stop_server $SRV
         rm -f "$d"/telemetry/*
@@ -56,12 +57,12 @@ run_case() {
             echo "!!! server failed again for $name"; tail -40 "$d/server.log"; stop_server $SRV; return 1
         fi
     fi
-    OPENAI_API_KEY="${VLLM_API_KEY:-}" vllm bench serve --backend vllm --model "$MODEL" --base-url "http://127.0.0.1:$PORT" \
+    OPENAI_API_KEY="${VLLM_API_KEY:-}" ${CLIENT_TIMEOUT:+timeout $CLIENT_TIMEOUT} vllm bench serve --backend vllm --model "$MODEL" --base-url "http://127.0.0.1:$PORT" \
         --dataset-name timed_trace --dataset-path "$wl" --num-prompts "$n" \
         --percentile-metrics ttft,tpot,itl,e2el --metric-percentiles 50,90,99 \
-        --save-result --save-detailed --result-dir "$d" --result-filename bench.json \
+        --save-result --save-detailed --result-dir "$d" --result-filename bench.json ${CLIENT_ARGS:-} \
         > "$d/client.log" 2>&1
-    echo "client rc=$?"; grep -E "Successful|throughput|Mean TTFT|P99 TTFT|Mean TPOT|P99 TPOT|P99 E2EL" "$d/client.log"
+    echo "client rc=$? load=[$(cut -d' ' -f1-3 /proc/loadavg)]"; grep -E "Successful|throughput|Mean TTFT|P99 TTFT|Mean TPOT|P99 TPOT|P99 E2EL" "$d/client.log"
     stop_server $SRV
     ls -la "$d/telemetry"
 }

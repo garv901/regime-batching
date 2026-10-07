@@ -52,15 +52,16 @@ def _load_lengths(name: str) -> pd.DataFrame:
     raise ValueError(name)
 
 
-def write(reqs: list[dict], path: str):
+def write(reqs: list[dict], path: str, keep_hash_ids: bool = False):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     reqs.sort(key=lambda r: r["timestamp"])
     base = 1
     with open(path, "w") as f:
         for r in reqs:
-            n_ids = math.ceil(r["input_length"] / HASH_CHUNK)
-            r["hash_ids"] = list(range(base, base + n_ids))
-            base += n_ids
+            if not keep_hash_ids:
+                n_ids = math.ceil(r["input_length"] / HASH_CHUNK)
+                r["hash_ids"] = list(range(base, base + n_ids))
+                base += n_ids
             f.write(json.dumps(r) + "\n")
     s = pd.DataFrame(reqs)
     meta = dict(path=path, n=len(s), duration=float(s.timestamp.max()), rate=len(s) / max(s.timestamp.max(), 1e-9),
@@ -99,6 +100,9 @@ def main():
     ap.add_argument("--long-at", type=float, default=-1.0, help="if >=0: long requests arrive at this time (burst)")
     ap.add_argument("--wave-size", type=int, default=32)
     ap.add_argument("--wave-period", type=float, default=2.0)
+    ap.add_argument("--keep-hash-ids", action="store_true",
+                    help="replay: keep the trace's hash_ids (Mooncake: 512-token KV blocks shared across turns -> prefix "
+                         "reuse; replay with --timed-trace-chunk-hash-size 512). Inputs are not clipped.")
     args = ap.parse_args()
     rng = np.random.default_rng(args.seed)
 
@@ -152,7 +156,7 @@ def main():
     else:
         df = _load_lengths(args.src)
         if "timestamp" in df.columns and len(df) > 1:
-            t = pd.to_datetime(df.timestamp, errors="coerce") if df.timestamp.dtype == object else df.timestamp
+            t = df.timestamp if pd.api.types.is_numeric_dtype(df.timestamp) else pd.to_datetime(df.timestamp, errors="coerce")
             t = (t - t.min()).dt.total_seconds() if hasattr(t, "dt") else (t - t.min()).astype(float)
             df = df.assign(t=t.to_numpy()).sort_values("t")
             native_rate = len(df) / max(df.t.max(), 1e-9)
@@ -163,9 +167,13 @@ def main():
         for _, r in df.iterrows():
             out = int(min(max(r.output_tokens, 1), args.max_out))
             inp = int(min(max(r.input_tokens, 16), args.max_in, args.max_model_len - out - 1))
-            reqs.append(dict(timestamp=round(float(r.t), 6), input_length=inp, output_length=out,
-                             cls="long" if out >= 1024 else "short", src=args.src))
-    write(reqs, args.out)
+            row = dict(timestamp=round(float(r.t), 6), input_length=inp, output_length=out,
+                       cls="long" if out >= 1024 else "short", src=args.src)
+            if args.keep_hash_ids:
+                assert inp == int(r.input_tokens), "--keep-hash-ids needs unclipped inputs (raise --max-in)"
+                row["hash_ids"] = list(r.hash_ids)
+            reqs.append(row)
+    write(reqs, args.out, keep_hash_ids=args.keep_hash_ids)
 
 
 if __name__ == "__main__":

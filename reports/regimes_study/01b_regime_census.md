@@ -238,8 +238,8 @@ Ranked by step-level loss. Ranking by production impact needs Stage 2-3 shares.
 
 | # | Change | Kind | Recovers (census) | Notes |
 |---|---|---|---|---|
-| 1 | Pass a split bound (32) to FA3 in eager steps too, not only graph-sized ones | kernel config (vLLM FA backend) | X: up to 3.36x (<= 2,048), 1.78x (> 2,048) | capture 2048 is the config-only version, up to 2,048 tokens |
-| 2 | Launch long decodes separately from an expensive prefill | attention backend | A+L up to 1.48x; X > 2,048 up to 1.76x (within 0.05x of a split bound there) | Stage 1's C3 backend has this path |
+| 1 | Pass a split bound (32) to FA3 in eager steps too, not only graph-sized ones | kernel config (vLLM FA backend) | X: up to 3.36x (<= 2,048), 1.78x (> 2,048) | capture 2048 is the config-only version, up to 2,048 tokens; the C3 backend (`REGIME_ATTN=1`) does this for X steps |
+| 2 | Launch long decodes separately from an expensive prefill | attention backend | A+L up to 1.48x; X > 2,048 up to 1.76x (within 0.05x of a split bound there) | not implemented in the engine yet (C3 only changes the split bound) |
 | 3 | Wave-aware chunk sizing: aligned chunk now, remainder with other work; pair chunks to fill waves; never tip an aligned launch over an edge | scheduler (batch formation) | H5 1.14-1.53x attention; 1.27-1.48x whole step if the remainder rides along | needs per-launch tile counts in the scheduler |
 | 4 | Budget steps by cost (new tokens x context), not tokens | scheduler (batch formation) | bounds decode stalls (up to 1.1 s per 8k chunk on 120k) | the TTFT cost must be measured (Stage 3 `mnbt512`) |
 | - | Decode attention kernel choice; FlashInfer or Triton instead of FA3; larger capture for launch overhead | - | <= 1.9%; rarely best; median 0.3 ms | not worth pursuing at this load |

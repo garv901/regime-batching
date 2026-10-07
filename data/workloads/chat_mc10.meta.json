@@ -1,0 +1,16 @@
+{
+ "path": "data/workloads/chat_mc10.jsonl",
+ "n": 307,
+ "duration": 357.154469,
+ "rate": 0.8595720525619406,
+ "in_p50": 8770.0,
+ "out_p50": 396.0,
+ "out_mean": 376.4657980456026,
+ "out_max": 2000,
+ "cls_counts": {
+  "short": 305,
+  "long": 2
+ },
+ "total_out_tokens": 115575,
+ "total_in_tokens": 4356808
+}
