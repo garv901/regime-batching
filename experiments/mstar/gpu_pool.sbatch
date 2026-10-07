@@ -16,6 +16,8 @@
 # (STEP_CPUS=0) the tasks share the pool's CPUs: in the v4 matrix (pool 13181) all 16 were 76-100% busy, the per-task core pin did not
 # hold (server and client processes widened their affinity to the pool's CPUs), and burst_v2 warmups ran at 185 out tok/s against
 # 647 for the same arm in a job of its own. Steps keep the task's processes inside its CPUs, whatever affinity they set.
+# A task file may set its own STEP_CPUS/STEP_MEM (pool_sbatch.sh passes them). Use 2 CPUs per task for admission runs: with 4 or 8
+# the API server misses its 15 s result-delivery TTL under ac and main and the server stalls (queue_v4b.sh has the numbers).
 # A task is <pool dir>/queue/<id>.task (VAR=value lines, written by pool_sbatch.sh). <id> = <pool job id><3-digit seq>, a number,
 # so the sbatch's OUT (<id>_<label>), PORT (20000 + id % 10000) and socket dirs stay unique per task. Tasks start in id order.
 REPO=${SLURM_SUBMIT_DIR:-/shared/home/garv901-55613a/regime-batching/regime-batching}
