@@ -414,7 +414,8 @@ and `--cgroup`. envmon.py reads each step's CPUs from the cgroup, so it needs no
 ## Public traces (Mooncake conversation, Azure conversation 2023)
 
 Two public production traces, replayed through the same harness as the synthetic workloads. Raw data is downloaded, never committed;
-the converted `data/workloads/pub_*` files are derived and committed (184 MB, 33 MB gzipped, largest file 16.3 MB).
+the converted `data/workloads/pub_*` files are derived. Only the files of the v4b report are committed (27 MB):
+`pub_mooncake_conv_r0.5` with `_mtx2` and `_mt2048`, and `pub_azure_conv_r1.25`. `make_public_workloads.sh` makes the other rates and variants.
 
 ### Provenance
 

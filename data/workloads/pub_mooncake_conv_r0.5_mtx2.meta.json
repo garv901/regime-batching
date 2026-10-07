@@ -1,0 +1,92 @@
+{
+ "path": "data/workloads/pub_mooncake_conv_r0.5_mtx2.jsonl",
+ "n": 1036,
+ "duration": 594.0,
+ "rate": 1.7441077441077442,
+ "in_p50": 6810.5,
+ "out_p50": 353.5,
+ "out_mean": 344.3426640926641,
+ "out_max": 2000,
+ "cls_counts": {
+  "short": 518,
+  "mid": 414,
+  "long": 104
+ },
+ "total_out_tokens": 356739,
+ "total_in_tokens": 10733802,
+ "source": {
+  "name": "mooncake",
+  "file": "mooncake_conversation.jsonl",
+  "sha256": "b8cbb061a85206d729d91cdc2981f43c9e0d99209dce588d3af5f7934408b9df",
+  "rows": 12031,
+  "last_request_s": 3536.999
+ },
+ "window": {
+  "start_s": 1350.0,
+  "length_s": 300.0,
+  "rate_multiplier": 0.5,
+  "out_span_s": 600.0,
+  "rule": "out timestamp = (t - start) / rate; window = [start, start + length) of the original trace"
+ },
+ "clamps": {
+  "max_output": 2000,
+  "max_seq_len": 32768,
+  "overhead": 20,
+  "output_clamped": 0,
+  "output_tokens_cut": 0,
+  "input_clamped": 74,
+  "input_tokens_cut": 1689081
+ },
+ "cls_rule": {
+  "basis": "final KV = input_length + overhead + output_length of the output file",
+  "short": "<= p50",
+  "long": ">= p90",
+  "mid": "otherwise",
+  "p50_kv": 7286.5,
+  "p90_kv": 28695.0
+ },
+ "hash_ids": {
+  "id_offset": 3000000000,
+  "tokens_per_id": 16,
+  "prefix_reuse_token_frac": 0.2163239083411451,
+  "prefix_reuse_page128_token_frac": 0.2162588801246753
+ },
+ "kv": {
+  "pool_tokens": 262144,
+  "template_overhead": 20,
+  "max_seq_len": 32768,
+  "max_request_kv": 32768,
+  "per_class": {
+   "mid": {
+    "n": 414,
+    "final_kv_tokens": 6080441,
+    "ratio_to_pool": 23.195
+   },
+   "short": {
+    "n": 518,
+    "final_kv_tokens": 1675973,
+    "ratio_to_pool": 6.393
+   },
+   "long": {
+    "n": 104,
+    "final_kv_tokens": 3354847,
+    "ratio_to_pool": 12.798
+   }
+  },
+  "total_final_kv_tokens": 11111261,
+  "total_ratio_to_pool": 42.386,
+  "peak_inflight_kv_ratio_itl20ms": 1.765
+ },
+ "variant_of": "pub_mooncake_conv_r0.5.jsonl",
+ "declared": {
+  "mode": "x2",
+  "cap": 2048,
+  "id_offset_vs_base": 1000000000,
+  "n_over_declared": 1036,
+  "declared_kv_tokens": 11458830,
+  "generated_kv_tokens": 11111261,
+  "declared_over_generated": 1.031,
+  "max_tokens_over_output": 1.974,
+  "note": "declared KV = input + 20 + max_tokens summed over all rows; the server stops each request after output_length tokens"
+ }
+}

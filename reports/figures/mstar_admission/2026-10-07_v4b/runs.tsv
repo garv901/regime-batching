@@ -1,0 +1,187 @@
+task	arm	run	outsider_mean_pct	status
+13218056	main	pub_azure_conv_r1.25_mt2048_r1	2.22	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218056	main	pub_azure_conv_r1.25_mtx2_r1	1.79	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218056	main	pub_azure_conv_r1.25_r1	1.77	kept
+13218057	main	pub_mooncake_conv_r0.5_mt2048_r1	3.07	kept
+13218057	main	pub_mooncake_conv_r0.5_mtx2_r1	1.83	kept
+13218057	main	pub_mooncake_conv_r0.5_r1	1.78	kept
+13218058	main	bagel_burst_v2_mt2048_r1	4.01	kept
+13218058	main	bagel_burst_v2_mtx2_r1	3.63	kept
+13218058	main	bagel_burst_v2_r1	1.78	kept
+13218059	main	bagel_stag_v3_r5.5_mt2048_r1	8.1	kept
+13218059	main	bagel_stag_v3_r5.5_mtx2_r1	1.98	kept
+13218059	main	bagel_stag_v3_r5.5_r1	1.78	kept
+13218060	ac	pub_azure_conv_r1.25_mt2048_r1	1.91	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218060	ac	pub_azure_conv_r1.25_mtx2_r1	1.79	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218060	ac	pub_azure_conv_r1.25_r1	1.7	kept
+13218061	ac_park	pub_azure_conv_r1.25_mt2048_r1	1.86	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218061	ac_park	pub_azure_conv_r1.25_mtx2_r1	1.79	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218061	ac_park	pub_azure_conv_r1.25_r1	1.69	kept
+13218062	peak_bf_pc_park	pub_azure_conv_r1.25_mt2048_r1	2.01	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218062	peak_bf_pc_park	pub_azure_conv_r1.25_mtx2_r1	1.79	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218062	peak_bf_pc_park	pub_azure_conv_r1.25_r1	1.72	kept
+13218063	ac	pub_mooncake_conv_r0.5_mt2048_r1	2.08	kept
+13218063	ac	pub_mooncake_conv_r0.5_mtx2_r1	1.79	kept
+13218063	ac	pub_mooncake_conv_r0.5_r1	1.73	kept
+13218064	ac_park	pub_mooncake_conv_r0.5_mt2048_r1	8.61	kept
+13218064	ac_park	pub_mooncake_conv_r0.5_mtx2_r1	7.1	kept
+13218064	ac_park	pub_mooncake_conv_r0.5_r1	3.26	kept
+13218065	peak_bf_pc_park	pub_mooncake_conv_r0.5_mt2048_r1	7.5	kept
+13218065	peak_bf_pc_park	pub_mooncake_conv_r0.5_mtx2_r1	7.76	kept
+13218065	peak_bf_pc_park	pub_mooncake_conv_r0.5_r1	3.71	kept
+13218066	ac	bagel_burst_v2_mt2048_r1	6.32	kept
+13218066	ac	bagel_burst_v2_mtx2_r1	5.75	kept
+13218066	ac	bagel_burst_v2_r1	3.19	kept
+13218067	ac_park	bagel_burst_v2_mt2048_r1	7.63	kept
+13218067	ac_park	bagel_burst_v2_mtx2_r1	6.32	kept
+13218067	ac_park	bagel_burst_v2_r1	3.28	kept
+13218068	peak_bf_pc_park	bagel_burst_v2_mt2048_r1	10.46	kept
+13218068	peak_bf_pc_park	bagel_burst_v2_mtx2_r1	6.32	kept
+13218068	peak_bf_pc_park	bagel_burst_v2_r1	5.15	kept
+13218069	ac	bagel_stag_v3_r5.5_mt2048_r1	5.29	kept
+13218069	ac	bagel_stag_v3_r5.5_mtx2_r1	3.15	kept
+13218069	ac	bagel_stag_v3_r5.5_r1	10.72	kept
+13218070	ac_park	bagel_stag_v3_r5.5_mt2048_r1	11.86	kept
+13218070	ac_park	bagel_stag_v3_r5.5_mtx2_r1	3.3	kept
+13218070	ac_park	bagel_stag_v3_r5.5_r1	4.81	kept
+13218071	peak_bf_pc_park	bagel_stag_v3_r5.5_mt2048_r1	13.07	kept
+13218071	peak_bf_pc_park	bagel_stag_v3_r5.5_mtx2_r1	3.57	kept
+13218071	peak_bf_pc_park	bagel_stag_v3_r5.5_r1	3.62	kept
+13218072	main	pub_azure_conv_r1.25_mt2048_r1	16.23	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218072	main	pub_azure_conv_r1.25_mtx2_r1	4.49	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218072	main	pub_azure_conv_r1.25_r1	16.4	excluded: outsider load above limit
+13218073	main	pub_mooncake_conv_r0.5_mt2048_r1	16.84	excluded: outsider load above limit
+13218073	main	pub_mooncake_conv_r0.5_mtx2_r1	12.45	kept
+13218073	main	pub_mooncake_conv_r0.5_r1	22.04	excluded: outsider load above limit
+13218074	ac	pub_azure_conv_r1.25_mt2048_r1	14.95	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218074	ac	pub_azure_conv_r1.25_mtx2_r1	5.15	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218074	ac	pub_azure_conv_r1.25_r1	16.5	excluded: outsider load above limit
+13218075	ac_park	pub_azure_conv_r1.25_mt2048_r1	15.39	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218075	ac_park	pub_azure_conv_r1.25_mtx2_r1	5.88	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218075	ac_park	pub_azure_conv_r1.25_r1	16.0	excluded: outsider load above limit
+13218076	peak_bf_pc_park	pub_azure_conv_r1.25_mt2048_r1	15.62	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218076	peak_bf_pc_park	pub_azure_conv_r1.25_mtx2_r1	14.86	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218076	peak_bf_pc_park	pub_azure_conv_r1.25_r1	23.45	excluded: outsider load above limit
+13218077	ac	pub_mooncake_conv_r0.5_mt2048_r1	17.49	excluded: outsider load above limit
+13218077	ac	pub_mooncake_conv_r0.5_mtx2_r1	19.29	excluded: outsider load above limit
+13218077	ac	pub_mooncake_conv_r0.5_r1	21.81	excluded: outsider load above limit
+13218078	ac_park	pub_mooncake_conv_r0.5_mt2048_r1	28.58	excluded: outsider load above limit
+13218078	ac_park	pub_mooncake_conv_r0.5_mtx2_r1	14.41	kept
+13218078	ac_park	pub_mooncake_conv_r0.5_r1	14.56	kept
+13218079	peak_bf_pc_park	pub_mooncake_conv_r0.5_mt2048_r1	26.97	excluded: outsider load above limit
+13218079	peak_bf_pc_park	pub_mooncake_conv_r0.5_mtx2_r1	13.75	kept
+13218079	peak_bf_pc_park	pub_mooncake_conv_r0.5_r1	15.79	excluded: outsider load above limit
+13218080	ac	bagel_burst_v2_mt2048_r1	16.16	excluded: outsider load above limit
+13218080	ac	bagel_burst_v2_mtx2_r1	28.91	excluded: outsider load above limit
+13218080	ac	bagel_burst_v2_r1	12.26	kept
+13218081	ac_park	bagel_burst_v2_mt2048_r1	12.26	kept
+13218081	ac_park	bagel_burst_v2_mtx2_r1	28.91	excluded: outsider load above limit
+13218081	ac_park	bagel_burst_v2_r1	15.3	excluded: outsider load above limit
+13218082	peak_bf_pc_park	bagel_burst_v2_mt2048_r1	38.39	excluded: outsider load above limit
+13218082	peak_bf_pc_park	bagel_burst_v2_mtx2_r1	25.62	excluded: outsider load above limit
+13218082	peak_bf_pc_park	bagel_burst_v2_r1	57.13	excluded: outsider load above limit
+13218083	ac	bagel_stag_v3_r5.5_mt2048_r1	43.07	excluded: outsider load above limit
+13218083	ac	bagel_stag_v3_r5.5_mtx2_r1	35.79	excluded: outsider load above limit
+13218083	ac	bagel_stag_v3_r5.5_r1	34.44	excluded: outsider load above limit
+13218084	ac_park	bagel_stag_v3_r5.5_mt2048_r1	37.45	excluded: outsider load above limit
+13218084	ac_park	bagel_stag_v3_r5.5_mtx2_r1	46.44	excluded: outsider load above limit
+13218084	ac_park	bagel_stag_v3_r5.5_r1	23.68	excluded: outsider load above limit
+13218085	peak_bf_pc_park	bagel_stag_v3_r5.5_mt2048_r1	35.93	excluded: outsider load above limit
+13218085	peak_bf_pc_park	bagel_stag_v3_r5.5_mtx2_r1	50.96	excluded: outsider load above limit
+13218085	peak_bf_pc_park	bagel_stag_v3_r5.5_r1	36.04	excluded: outsider load above limit
+13218086	main	pub_azure_conv_r1.25_mt2048_r1	39.04	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218086	main	pub_azure_conv_r1.25_mtx2_r1	9.14	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218086	main	pub_azure_conv_r1.25_r1	39.68	excluded: outsider load above limit
+13218087	ac	pub_azure_conv_r1.25_mt2048_r1	49.93	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218087	ac	pub_azure_conv_r1.25_mtx2_r1	34.54	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218087	ac	pub_azure_conv_r1.25_r1	32.52	excluded: outsider load above limit
+13218088	ac_park	pub_azure_conv_r1.25_mt2048_r1	49.95	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218088	ac_park	pub_azure_conv_r1.25_mtx2_r1	34.61	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218088	ac_park	pub_azure_conv_r1.25_r1	31.95	excluded: outsider load above limit
+13218089	peak_bf_pc_park	pub_azure_conv_r1.25_mt2048_r1	44.8	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218089	peak_bf_pc_park	pub_azure_conv_r1.25_mtx2_r1	38.89	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218089	peak_bf_pc_park	pub_azure_conv_r1.25_r1	25.36	excluded: outsider load above limit
+13218090	ac	pub_mooncake_conv_r0.5_mt2048_r1	34.73	excluded: outsider load above limit
+13218090	ac	pub_mooncake_conv_r0.5_mtx2_r1	37.6	excluded: outsider load above limit
+13218090	ac	pub_mooncake_conv_r0.5_r1	22.92	excluded: outsider load above limit
+13218091	ac_park	pub_mooncake_conv_r0.5_mt2048_r1	5.03	kept
+13218091	ac_park	pub_mooncake_conv_r0.5_mtx2_r1	1.3	kept
+13218091	ac_park	pub_mooncake_conv_r0.5_r1	1.42	kept
+13218092	peak_bf_pc_park	pub_mooncake_conv_r0.5_mt2048_r1	5.06	kept
+13218092	peak_bf_pc_park	pub_mooncake_conv_r0.5_mtx2_r1	1.3	kept
+13218092	peak_bf_pc_park	pub_mooncake_conv_r0.5_r1	1.44	kept
+13218093	ac	bagel_burst_v2_mt2048_r1	6.88	kept
+13218093	ac	bagel_burst_v2_mtx2_r1	1.44	kept
+13218093	ac	bagel_burst_v2_r1	2.29	kept
+13218094	ac_park	bagel_burst_v2_mt2048_r1	2.3	kept
+13218094	ac_park	bagel_burst_v2_mtx2_r1	1.47	kept
+13218094	ac_park	bagel_burst_v2_r1	2.23	kept
+13218095	peak_bf_pc_park	bagel_burst_v2_mt2048_r1	2.31	kept
+13218095	peak_bf_pc_park	bagel_burst_v2_mtx2_r1	1.46	kept
+13218095	peak_bf_pc_park	bagel_burst_v2_r1	2.24	kept
+13218096	ac	bagel_stag_v3_r5.5_mt2048_r1	5.11	kept
+13218096	ac	bagel_stag_v3_r5.5_mtx2_r1	1.06	kept
+13218096	ac	bagel_stag_v3_r5.5_r1	1.41	kept
+13218097	ac_park	bagel_stag_v3_r5.5_mt2048_r1	5.13	kept
+13218097	ac_park	bagel_stag_v3_r5.5_mtx2_r1	1.06	kept
+13218097	ac_park	bagel_stag_v3_r5.5_r1	1.41	kept
+13218098	peak_bf_pc_park	bagel_stag_v3_r5.5_mt2048_r1	1.28	kept
+13218098	peak_bf_pc_park	bagel_stag_v3_r5.5_mtx2_r1	17.4	excluded: outsider load above limit
+13218098	peak_bf_pc_park	bagel_stag_v3_r5.5_r1	1.29	kept
+13218099	main	pub_azure_conv_r1.25_mt2048_r1	3.93	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218099	main	pub_azure_conv_r1.25_mtx2_r1	1.27	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218099	main	pub_azure_conv_r1.25_r1	9.02	excluded: outsider load above limit
+13218100	ac	pub_azure_conv_r1.25_mt2048_r1	4.46	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218100	ac	pub_azure_conv_r1.25_mtx2_r1	6.39	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218100	ac	pub_azure_conv_r1.25_r1	1.08	kept
+13218101	ac_park	pub_azure_conv_r1.25_mt2048_r1	4.27	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218101	ac_park	pub_azure_conv_r1.25_mtx2_r1	6.21	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218101	ac_park	pub_azure_conv_r1.25_r1	1.08	kept
+13218102	peak_bf_pc_park	pub_azure_conv_r1.25_mt2048_r1	4.68	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218102	peak_bf_pc_park	pub_azure_conv_r1.25_mtx2_r1	6.57	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218102	peak_bf_pc_park	pub_azure_conv_r1.25_r1	1.04	kept
+13218120	ac	pub_azure_conv_r1.25_mt2048_r1	4.18	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218120	ac	pub_azure_conv_r1.25_mtx2_r1	6.36	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218120	ac	pub_azure_conv_r1.25_r1	1.09	kept
+13218121	ac_park	pub_azure_conv_r1.25_mt2048_r1	4.06	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218121	ac_park	pub_azure_conv_r1.25_mtx2_r1	6.38	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218121	ac_park	pub_azure_conv_r1.25_r1	1.12	kept
+13218122	peak_bf_pc_park	pub_azure_conv_r1.25_mt2048_r1	4.6	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218122	peak_bf_pc_park	pub_azure_conv_r1.25_mtx2_r1	6.45	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218122	peak_bf_pc_park	pub_azure_conv_r1.25_r1	1.08	kept
+13218123	ac_park	pub_mooncake_conv_r0.5_mt2048_r1	1.35	kept
+13218124	peak_bf_pc_park	pub_mooncake_conv_r0.5_mt2048_r1	1.34	kept
+13218125	ac	bagel_burst_v2_mtx2_r1	1.16	kept
+13218126	ac_park	bagel_burst_v2_mtx2_r1	3.89	kept
+13218127	peak_bf_pc_park	bagel_burst_v2_mt2048_r1	7.51	kept
+13218127	peak_bf_pc_park	bagel_burst_v2_mtx2_r1	27.88	excluded: outsider load above limit
+13218127	peak_bf_pc_park	bagel_burst_v2_r1	1.95	kept
+13218128	ac	bagel_stag_v3_r5.5_mt2048_r1	19.52	excluded: outsider load above limit
+13218128	ac	bagel_stag_v3_r5.5_mtx2_r1	1.57	kept
+13218128	ac	bagel_stag_v3_r5.5_r1	1.87	kept
+13218129	ac_park	bagel_stag_v3_r5.5_mt2048_r1	19.47	excluded: outsider load above limit
+13218129	ac_park	bagel_stag_v3_r5.5_mtx2_r1	1.45	kept
+13218129	ac_park	bagel_stag_v3_r5.5_r1	1.86	kept
+13218130	peak_bf_pc_park	bagel_stag_v3_r5.5_mt2048_r1	19.3	excluded: outsider load above limit
+13218130	peak_bf_pc_park	bagel_stag_v3_r5.5_mtx2_r1	1.45	kept
+13218130	peak_bf_pc_park	bagel_stag_v3_r5.5_r1	1.87	kept
+13218131	ac	pub_mooncake_conv_r0.5_mt2048_r1	18.11	excluded: outsider load above limit
+13218131	ac	pub_mooncake_conv_r0.5_mtx2_r1	1.1	kept
+13218131	ac	pub_mooncake_conv_r0.5_r1	1.69	kept
+13218132	main	pub_mooncake_conv_r0.5_mt2048_r1	1.43	kept
+13218132	main	pub_mooncake_conv_r0.5_r1	1.85	kept
+13218133	ac	pub_mooncake_conv_r0.5_mt2048_r1	1.46	kept
+13218133	ac	pub_mooncake_conv_r0.5_mtx2_r1	1.81	kept
+13218133	ac	pub_mooncake_conv_r0.5_r1	1.4	kept
+13218134	peak_bf_pc_park	pub_mooncake_conv_r0.5_r1	1.78	kept
+13218135	ac	bagel_burst_v2_mt2048_r1	2.59	kept
+13218136	ac_park	bagel_burst_v2_r1	1.15	kept
+13218137	main	pub_azure_conv_r1.25_mt2048_r1	3.94	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218137	main	pub_azure_conv_r1.25_mtx2_r1	1.24	dropped: Azure over-declared variant (only 1 valid run per arm)
+13218137	main	pub_azure_conv_r1.25_r1	9.12	excluded: outsider load above limit
+13218138	peak_bf_pc_park	bagel_stag_v3_r5.5_mtx2_r1	1.24	kept
+13218139	peak_bf_pc_park	bagel_burst_v2_mtx2_r1	1.19	kept
+13218140	ac	bagel_stag_v3_r5.5_mt2048_r1	1.28	kept
+13218141	ac_park	bagel_stag_v3_r5.5_mt2048_r1	1.25	kept
+13218142	peak_bf_pc_park	bagel_stag_v3_r5.5_mt2048_r1	1.29	kept
+13218143	ac	pub_mooncake_conv_r0.5_mt2048_r1	1.32	kept
