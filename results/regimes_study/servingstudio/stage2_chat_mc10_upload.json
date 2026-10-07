@@ -1,0 +1,1 @@
+{"detail":"trace.csv is not a canonical session-execution-v2 trace: line 3: round 0 of session \"s1\" declares prefix_len 512, but a session's first round has no previous context to copy from"}

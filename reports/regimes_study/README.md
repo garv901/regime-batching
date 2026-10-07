@@ -19,7 +19,7 @@ observed, H1-H5 verdicts, optimization areas, caveats.
 |---|---|---|
 | 1 | [Foundations: regimes in a vLLM step and what each costs](01_foundations.md) | done, reviewed |
 | 1b | [Regime census: every kind of step, whole-step cost, best reachable alternative](01b_regime_census.md) | done |
-| 2 | [Chat baseline: Azure and Mooncake conversation traces](02_chat_baseline.md) | running (jobs 1459, 1460) |
+| 2 | [Chat baseline: Azure and Mooncake conversation traces](02_chat_baseline.md) | done |
 | 3 | Coding agents (TraceLab replay on H100, UltraLong-1M model) | model checked (job 1461); not started |
 | 4 | MoE (ServingStudio simulation) | not started |
 | 5 | Synthesis: regimes x scenarios -> optimization areas | not started |
@@ -67,11 +67,11 @@ Hypotheses describe what can go wrong:
 
 | | Stage 1 (kernel level) | Stage 1b (whole step, designed grid; evidence, not verdicts) | Stage 2 chat | Stage 3 agents | Stage 4 MoE sim |
 |---|---|---|---|---|---|
-| H1 | confirmed, prefix-dependent: 2.3-7.7x at prefix <= 8k, 1.2-1.9x at 32k, none at 128k ([01](01_foundations.md#h1-h5-verdicts)) | whole step up to 3.36x (<= 2,048 tokens; capture 2048 fixes) and 1.78x (> 2,048); at 120k prefixes up to 1.48x, fixed only by separate launches (A+L) | | | n/a (MLA/DSA) |
-| H2 | not tested at kernel level (CPU launch cost) | launch cost median 0.3 ms at load 86-173; the 512 boundary costs through the split bound (H1) and the wave edge (H5) | | | |
-| H3 | shape-level evidence only (ServingStudio) | an 8,192-token step: 211 ms fresh, 1,110 ms on a 120k prefix; co-scheduled decodes wait it out | | | |
-| H4 | confirmed: cold short-prefix chunks are X steps; 8k cold chunks lose 1.15-1.41x vs separate launches | 1.6-3.4x for 512-1,057-token chunks at prefix 0-8k next to 120k decodes | | | |
-| H5 | confirmed: 55-62% efficiency at 513-544-token appends on 8k-128k; no split bound helps | revised kernel-level clause met: same tokens 1.14-1.53x faster as aligned chunk + remainder (8 of 9 shapes >= 1.15x); trace-weighted clause pending Stage 3 | | | n/a (MLA/DSA) |
+| H1 | confirmed, prefix-dependent: 2.3-7.7x at prefix <= 8k, 1.2-1.9x at 32k, none at 128k ([01](01_foundations.md#h1-h5-verdicts)) | whole step up to 3.36x (<= 2,048 tokens; capture 2048 fixes) and 1.78x (> 2,048); at 120k prefixes up to 1.48x, fixed only by separate launches (A+L) | killed: X_cost 0 (Azure) and 0.5% of GPU time (Mooncake); X shapes 42% but hidden under 8k long-prefix chunks; capture 2048 / C3 move per-request medians <= 1.3% ([02](02_chat_baseline.md#h1-h5-verdicts-chat)) | | n/a (MLA/DSA) |
+| H2 | not tested at kernel level (CPU launch cost) | launch cost median 0.3 ms at load 86-173; the 512 boundary costs through the split bound (H1) and the wave edge (H5) | killed: launch-bound steps above 512 tokens <= 0.8% of GPU time | | |
+| H3 | shape-level evidence only (ServingStudio) | an 8,192-token step: 211 ms fresh, 1,110 ms on a 120k prefix; co-scheduled decodes wait it out | not killed: prefill-bearing steps hold 53% of decode-weighted time; ITL p99 17.6-26x p50. Support clause not met: `mnbt512` cuts ITL p99 6-8x but costs +54% / +120% mean TTFT | | |
+| H4 | confirmed: cold short-prefix chunks are X steps; 8k cold chunks lose 1.15-1.41x vs separate launches | 1.6-3.4x for 512-1,057-token chunks at prefix 0-8k next to 120k decodes | killed: eviction re-prefills <= 5.7% of Mooncake input tokens | | |
+| H5 | confirmed: 55-62% efficiency at 513-544-token appends on 8k-128k; no split bound helps | revised kernel-level clause met: same tokens 1.14-1.53x faster as aligned chunk + remainder (8 of 9 shapes >= 1.15x); trace-weighted clause pending Stage 3 | Azure 77-87% efficiency but <= 0.8% of GPU time recoverable; Mooncake 96-97% (killed) | | n/a (MLA/DSA) |
 
 ## Kill / support criteria
 
