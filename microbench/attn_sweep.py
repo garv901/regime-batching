@@ -112,6 +112,12 @@ def build_specs():
                 specs.append((name, "F6_append", dec + [(q, P + q)]))
                 SPEC_META[name] = dict(P=P, q=q, n_long=nl, L_long=Ll, dec_set=dn,
                                        tiles=NKV * math.ceil(q / 32))
+    # F7 Stage 1b regime census: the in-engine census shapes plus Stage 1 gaps (experiments/census_shapes.py)
+    sys.path.insert(0, str(ROOT / "experiments"))
+    from census_shapes import kernel_specs
+    for name, reqs, meta in kernel_specs():
+        specs.append((name, "F7_census", reqs))
+        SPEC_META[name] = dict(meta, tiles=sum(NKV * math.ceil(q / 32) for q, _ in reqs if q > 1))
     for dn, nl, Ll in F6_DEC:  # decodes alone (straggler reference)
         if nl:
             name = f"app_decalone_{dn}"
@@ -542,7 +548,7 @@ def main():
                     row["eager_time_us"] = eager_time(fn)
                 row["bw_GBps"] = stats["kv_tokens_total"] * KV_BYTES_PER_TOKEN / (med * 1e-6) / 1e9
                 row["notes"] = ";".join(notes)
-                if fam in ("F6_append", "replay"):
+                if fam in ("F6_append", "replay", "F7_census"):
                     from regime_batching.features import fa3_static_splits
                     mq = max(r[0] for r in reqs); mk = max(r[1] for r in reqs)
                     row["default_splits"] = fa3_static_splits(mq, mk, stats["num_actual_tokens"], 4, NKV, HD, BS,

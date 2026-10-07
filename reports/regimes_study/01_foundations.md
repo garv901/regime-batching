@@ -147,7 +147,7 @@ alternative. Model-only shapes: `figures/atlas_model.md`; all F6 cells: `figures
 | X, 32k prefix | 513-1,024 chunk + 1 x 128k | eager, 1 split | 1.56-1.61 ms | 0.85-1.30 ms | 1.2-1.9x | split bound |
 | X, cold big chunk (H4) | 8k chunk at prefix 0 + 1 x 128k | eager, 1 split | 1.63 ms | 1.15 ms (separate launches) | 1.41x | separate launches only (split bound: 1.02x) |
 | A, wave-aligned | 512 / 1,056 / 2,112 append on 8k-128k | 1 split | 98-100% efficient | | 1.0x | |
-| A, misaligned (H5) | 513-544 append on 8k-128k | 1 split | 55-62% efficient | aligned size | 1.6-1.8x per unit of work | wave-aligned chunk size or smaller tiles; no split bound |
+| A, misaligned (H5) | 513-544 append on 8k-128k | 1 split | 55-62% efficient | aligned chunk + remainder later | 1.85x for 544 tokens (model) | wave-aligned chunk size, co-scheduled work, or smaller tiles; no split bound |
 | A + long decodes | 1,024 append on 128k + 3 x 128k | 1 split | 4.97 ms | 4.26 ms (separate launches) | 1.17x | separate launches; no split bound (1.00x) |
 | A + long decodes, decodes in wave slack | 513 append on 128k + 3 x 128k | 1 split | 3.20 ms | 3.20 ms | 1.0x (separate: 0.88x) | the mixed launch is already the best |
 | P / M | chunk + short decodes, no long decode | eager, 1 split | | | <= 1.05x | |
@@ -262,12 +262,22 @@ Kernel-level verdicts only. The production verdicts need the GPU-time shares fro
 | H4 re-prefill bursts | **Confirmed at the kernel level.** A short-prefix chunk next to 128k decodes is an X step (2.7-7.7x at prefix 0); an 8k cold chunk hides the split loss but still loses 1.15-1.41x against separate launches. | F6 |
 | H5 wave quantization | **Confirmed at the kernel level:** 55-62% efficiency at 513-544 tokens, below 80% for 513-640 and 1,057 tokens (768 and 1,088: 79-82%), at prefixes of 8k and more. | F6 |
 
-**Deviation from the fixed criteria (H5).** The support test was "efficiency < 80%, and a forced split gains >=
-1.15x". Section 2 shows that no split bound can split a long-prefix prefill, and F6 confirms it (at most 1.07x),
-so the second clause cannot be met by any configuration. The loss is recoverable, but by a different chunk size:
-an aligned chunk is 1.28-1.79x cheaper per unit of work than the next misaligned one. I propose to replace the
-clause with "a wave-aligned chunk size gains >= 1.15x per unit of work". This is for your decision; until then
-H5 is reported against both versions.
+**Change to the fixed criteria (H5), approved 2026-10-07.**
+
+- **Original wording** (fixed before the runs): kill if trace-weighted FA3 prefill efficiency is >= 90%; support
+  if it is < 80% **"and a forced split gains >= 1.15x"**.
+- **Revised wording**: kill unchanged; support if trace-weighted FA3 prefill efficiency is < 80% **and an
+  alternative that processes the same tokens is >= 1.15x faster in total attention time, measured**. The
+  alternative is either an aligned chunk now with the remainder in a later step of <= 512 tokens, or other work
+  (another request's chunk, decodes) filling the idle wave.
+
+Why: section 2 shows that FA3 treats the split setting as a cap and picks 1 split for any expensive prefill, and
+F6 confirms it (at most 1.07x). No configuration can meet the original second clause, so it cannot tell whether
+the loss is recoverable. Comparing per unit of work alone would overstate the gain, because the remainder tokens
+still cost a tile each. The tile model predicts that the remainder is cheap when it runs in a step of <= 512
+tokens, where FA3's rule does split it: 544 tokens on a 128k prefix cost 3.27 ms in one step, against
+1.64 + 0.13 ms for 512 now and 32 later (1.85x); 1,057 cost 4.90 ms, against 3.29 + 0.20 ms (1.40x). The
+remainder's cost is measured in Stage 1b. The efficiency clause is scored in Stage 3 on traffic.
 
 ## Optimization areas
 
@@ -276,7 +286,7 @@ Ranked here by kernel-level size; Stages 2-3 re-rank them by how much GPU time e
 | Area | Kind | Fixes | Size at kernel level | Notes |
 |---|---|---|---|---|
 | Keep steps that hold a long decode at <= 512 tokens (step shaping) | scheduling | H1 at short prefixes, H2 | 1.25x E2E measured earlier | known; no oracle needed |
-| Wave-aligned chunk sizes: end chunks at or just below 512, 1,056, 1,568, 2,112, ... tokens, where 8 x ceil(q/32) tiles just fill whole waves of 132 | scheduling | H5 | up to 1.8x per unit of attention work | TraceLab's median adjusted append (~1k tokens) sits next to the 1,056 edge; Stage 3 measures the size distribution |
+| Wave-aligned chunk sizes: end chunks at or just below 512, 1,056, 1,568, 2,112, ... tokens, where 8 x ceil(q/32) tiles just fill whole waves of 132 | scheduling | H5 | 1.4-1.85x for the same tokens (model: aligned chunk now, remainder in a later step of <= 512 tokens) | TraceLab's median adjusted append (~1k tokens) sits next to the 1,056 edge; Stage 3 measures the size distribution |
 | Separate decode and prefill attention launches when it pays (per-step choice with the tile model) | scheduling + launch | H4 cold chunks, A + long decodes | 1.15-1.41x attention per step; can lose (0.88x) when decodes fill wave slack | needs a per-step decision, which `attn_step_model` provides |
 | Split decodes independently of the prefill in a mixed launch | kernel (FA3 split rule) | H1 at 32k, H4 | up to 1.4x | FA3's rule sizes splits from the whole launch |
 | Smaller m-tiles or split-KV prefill for few-tile, long-prefix appends | kernel | H5 | up to perfect packing (t_ideal) | FlashInfer fa2's KV split shows the effect at 128-256-token appends |

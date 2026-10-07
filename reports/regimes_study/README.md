@@ -16,7 +16,8 @@ observed, H1-H5 verdicts, optimization areas, caveats.
 
 | Stage | Report | Status |
 |---|---|---|
-| 1 | [Foundations: regimes in a vLLM step and what each costs](01_foundations.md) | done, awaiting review |
+| 1 | [Foundations: regimes in a vLLM step and what each costs](01_foundations.md) | done, reviewed |
+| 1b | Regime census: every kind of step, whole-step cost, best reachable alternative | in progress |
 | 2 | Chat baseline (Azure conversation lengths) | not started |
 | 3 | Coding agents (TraceLab replay on H100) | not started |
 | 4 | MoE (ServingStudio simulation) | not started |
@@ -58,7 +59,9 @@ Hypotheses describe what can go wrong:
 
 ## Kill / support criteria
 
-Fixed before the runs (plan of 2026-10-07). Stage 1 records one deviation for H5 (see 01).
+Fixed before the runs (plan of 2026-10-07). One change, approved 2026-10-07: H5's second support clause could not be
+met by any configuration (FA3 treats the split setting as a cap), so it was reworded; both versions are below and
+the reason is in [01](01_foundations.md#h1-h5-verdicts).
 
 | Hyp. | Kill (not a production issue) | Support |
 |---|---|---|
@@ -66,4 +69,4 @@ Fixed before the runs (plan of 2026-10-07). Stage 1 records one deviation for H5
 | H2 | launch-bound steps with T > 512 are < 2% of GPU time | >= 10% |
 | H3 | prefill-bearing steps are < 10% of decode-weighted wall time | >= 20%, and `mnbt512` improves decode ITL p99 by >= 1.5x at <= 10% TTFT cost |
 | H4 | forced cold/miss/compaction rounds are < 10% of prefill attention FLOPs | >= 30% |
-| H5 | trace-weighted FA3 prefill efficiency >= 90% | < 80%, and a forced split gains >= 1.15x |
+| H5 | trace-weighted FA3 prefill efficiency >= 90% | original: < 80%, and a forced split gains >= 1.15x. **Revised (2026-10-07):** < 80%, and an alternative that processes the same tokens (aligned chunk now + remainder in a later step of <= 512 tokens, or other work filling the idle wave) is >= 1.15x faster in total attention time, measured |
