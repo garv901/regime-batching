@@ -8,7 +8,10 @@ Policies (the four configs of experiments/mstar/admission_matrix.sbatch; KV unit
   peak_fifo  admit while the future peak KV of the admitted set <= pool (requests free KV when done); strict FIFO
   peak_bf    future-peak fit test + backfill
   open       reference only: no limit, so its KV peak is the demand the pool would have to carry
-A trace's max_tokens is its output_length (the oracle), and prompt = input_length + template overhead (20 tokens).
+Prompt = input_length + template overhead (20 tokens). A row without `max_tokens` is an ORACLE row: its declared bound is its
+output_length. A row with `max_tokens` (experiments/mstar/declare_max_tokens.py: the client declares a bound >= output_length) is
+reserved and planned with the DECLARED value (sum: prompt + declared; peak: the request is assumed to grow up to declared),
+while it still finishes after output_length tokens and frees its KV then (an emulated EOS). `open` ignores both.
 
 The loop is the one of the throwaway vLLM-study simulator /tmp/admit_sim/admit_sim.py (fcfs and Qwen3-8B step cost
 dropped, one set of per-step bookkeeping added); the future-peak test is analysis/pen_and_paper._PeakPlanner.
@@ -60,16 +63,23 @@ def decode_time(c: int, kv_tokens: float = 0.0) -> float:
 
 
 def load_trace(path: str, overhead: int = OVERHEAD):
+    """(arrival, prompt tokens, output tokens, is_long, declared max_tokens); declared == output for a row without max_tokens."""
     rows = sorted((json.loads(line) for line in open(path)), key=lambda r: r["timestamp"])
     arr = np.array([r["timestamp"] for r in rows])
     prompts = np.array([r["input_length"] + overhead for r in rows], dtype=np.int64)
     outs = np.array([r["output_length"] for r in rows], dtype=np.int64)
+    decl = np.array([r["output_length"] if r.get("max_tokens") is None else r["max_tokens"] for r in rows], dtype=np.int64)
+    if (decl < outs).any():
+        raise ValueError(f"{path}: a row declares max_tokens below its output_length (the server would stop it there)")
     is_long = np.array([r.get("cls") == "long" for r in rows])
-    return arr, prompts, outs, is_long
+    return arr, prompts, outs, is_long, decl
 
 
-def simulate(arr, prompts, outs, is_long, sched: str, cap: float, prefill_tok_s: float = PREFILL_TOK_S) -> dict:
+def simulate(arr, prompts, outs, is_long, sched: str, cap: float, prefill_tok_s: float = PREFILL_TOK_S, decl=None) -> dict:
+    """decl: declared max_tokens per request (what sum/peak reserve and plan with); None = outs (oracle). A request finishes
+    after outs[r] tokens whatever decl says."""
     n_req = len(arr)
+    decl = outs if decl is None else decl
     if sched == "open":
         base, fifo, cap = "sum", False, float("inf")
     else:
@@ -95,22 +105,22 @@ def simulate(arr, prompts, outs, is_long, sched: str, cap: float, prefill_tok_s:
         dec_ids = running
         tok = len(dec_ids)
         planner = None
-        reserved = float(sum(int(prompts[r]) + int(outs[r]) for r in admitted)) if base == "sum" else 0.0
+        reserved = float(sum(int(prompts[r]) + int(decl[r]) for r in admitted)) if base == "sum" else 0.0
         pre_q, pre_ids = [], []
         for rid in list(waiting):
             if tok >= BUDGET:
                 break
             if rid not in admitted:
-                need = int(prompts[rid]) + int(outs[rid])
+                need = int(prompts[rid]) + int(decl[rid])
                 if base == "sum":
                     ok = reserved + need <= cap
                 else:
                     if planner is None:
                         ids = list(admitted)
                         u = np.array([float(prompts[i]) + gen.get(i, 0) for i in ids])
-                        rr = np.array([int(outs[i]) - gen.get(i, 0) for i in ids], dtype=np.int64)
+                        rr = np.array([int(decl[i]) - gen.get(i, 0) for i in ids], dtype=np.int64)
                         planner = _PeakPlanner(u, rr)
-                    ok = planner.fits(float(prompts[rid]), int(outs[rid]), cap)
+                    ok = planner.fits(float(prompts[rid]), int(decl[rid]), cap)
                 if not ok:
                     if fifo:
                         break  # head of line: nothing passes a request that does not fit
@@ -187,10 +197,11 @@ def main(argv=None):
     a = ap.parse_args(argv)
     for path in a.traces:
         data = load_trace(path)
-        print(f"\n### {os.path.basename(path)}  ({len(data[0])} requests, {int(data[3].sum())} long)\n")
+        decl_note = f", declared max_tokens {data[4].sum() / data[2].sum():.2f}x the output" if (data[4] != data[2]).any() else ""
+        print(f"\n### {os.path.basename(path)}  ({len(data[0])} requests, {int(data[3].sum())} long{decl_note})\n")
         print("| policy | " + " | ".join(c[1] for c in COLS) + " |\n|" + "---|" * (len(COLS) + 1))
         for p in a.policies:
-            r = simulate(*data, sched=p, cap=a.cap_tokens, prefill_tok_s=a.prefill_tok_s)
+            r = simulate(*data[:4], sched=p, cap=a.cap_tokens, prefill_tok_s=a.prefill_tok_s, decl=data[4])
             print(f"| {p} | " + " | ".join(f"{r[k]:.{nd}f}" for k, _, nd in COLS) + " |", flush=True)
 
 
