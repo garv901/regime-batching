@@ -20,7 +20,7 @@ run_case smoke data/workloads/chat_az14.jsonl 40
 python - "$OUT/smoke" <<'PY' || { echo SMOKE_FAILED; exit 1; }
 import glob, json, sys
 b = json.load(open(f"{sys.argv[1]}/bench.json"))
-n = sum(1 for f in glob.glob(f"{sys.argv[1]}/telemetry/steps_*.jsonl") for l in open(f) if '"kind": "step"' in l)
+n = sum(1 for f in glob.glob(f"{sys.argv[1]}/telemetry/steps_*.jsonl") for l in open(f) if json.loads(l).get("kind") == "step")
 print("smoke completed", b.get("completed"), "steps", n)
 raise SystemExit(0 if b.get("completed") == 40 and n > 50 else 1)
 PY
