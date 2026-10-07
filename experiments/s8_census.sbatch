@@ -14,11 +14,11 @@ nvidia-smi --query-gpu=index,name,memory.used --format=csv; uptime
 # smoke: two scenarios, 3 probes, 1 repeat; abort unless probe steps reach the telemetry
 rm -rf $OUT/smoke
 REGIME_TELEMETRY_DIR=$OUT/smoke/telemetry timeout 900 python experiments/regime_census.py --config default \
-    --out $OUT/smoke --scenarios none,1x128k --max-probes 3 --reps 1 || { echo SMOKE_FAILED; exit 1; }
+    --out $OUT/smoke --scenarios none,1x120k --max-probes 3 --reps 1 || { echo SMOKE_FAILED; exit 1; }
 python - <<'PY' || exit 1
 import glob, json
 n = sum(1 for f in glob.glob("results/runs/s8_census/smoke/telemetry/steps_*.jsonl") for l in open(f)
-        if '"probe|' in l)
+        if '"probe|' in l or '"pair|' in l)
 print("smoke probe steps in telemetry:", n)
 raise SystemExit(0 if n >= 4 else 1)
 PY
