@@ -11,7 +11,7 @@ export HF_HUB_OFFLINE=1
 nvidia-smi --query-gpu=index,name,memory.used --format=csv; uptime
 C=fa3_auto,fa3_cg,fa3_s1,fa3_s2,fa3_s4,fa3_s8,fa3_s16,fa3_phase_split,fi_native,triton
 # smoke: three specs (prefill alone, long-prefix + decodes, a pair), abort on error
-for f in c_none_P131072_q1057 c_1x128k_P131072_q1024 c_none_pair544+512_P131072; do
+for f in c_none_P122880_q1057 c_1x120k_P122880_q1024 c_none_pair544+512_P122880; do
   python microbench/attn_sweep.py --families F7_census --spec-filter $f --configs $C \
       --out results/microbench/attn_f7_smoke.jsonl || exit 1
 done
