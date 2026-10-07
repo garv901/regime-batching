@@ -19,6 +19,7 @@ Baselines run from the pristine worktree `mstar-worktrees/regime-batching/bench-
 | `admission_matrix.sbatch`, `submit_matrix.sh` | One admission config per job (one server, every workload); `submit_matrix.sh` submits REPS jobs per arm, interleaved, and logs them in `manifest.tsv` (section "Admission matrix") |
 | `probe_guest.sbatch` | CPU-only check of what a guest node (node2, node4, node5) sees; result in section "Admission matrix" |
 | `fetch_public_traces.sh`, `convert_public_trace.py`, `make_public_workloads.sh`, `public_trace_report.py` | Download (SHA-256 checked) and convert the Mooncake and Azure production traces into `data/workloads/pub_*` files, characterise them and run the admission simulator on them (section "Public traces") |
+| `env/` | Outsider CPU load on a shared node and the validity of each measured run: `envmon.py`, `speedprobe.py`, `gate.py`, `sar_poolidle.py`, `env_valid.py`, `summ.py`, `requeue_env.py` (section "Outsider load on node1") |
 
 ## How to run
 
@@ -373,6 +374,42 @@ public traces (each base followed by its variants), then anything else.
 metrics), marks a ratio row "within noise" when the min-max ranges of the two configs overlap (a range-overlap rule, not a
 significance test; the rule is in the header of `compare.md`), takes `--exclude GLOB` (repeatable, on case names), and reports host
 ms per decode step overall and by waiting depth [0, 50), [50, 200), [200, 400), [400, inf) in `compare.md` and `summary.json`.
+
+## Outsider load on node1
+
+node1 is also the login node, so other users' processes (outsiders) run on the CPUs of our 2-CPU servers and slow them. `env/` measures
+that load, holds the pool queue while it is high, and marks each measured run valid or invalid (`--help` on each; all but `sar_poolidle.py` take
+`--job` or `--pool` and `--results`, and a file name is relative to the pool dir unless absolute).
+- `envmon.py`: every 2 s, per Slurm step of the pool job (cgroup) the busy time of its CPUs that is not ours (`outsider`), plus the busy share of
+  CPU groups (`poolidle` 8-35,112-139; `n0rest` 36-51,140-155; `n1` 52-103,156-207; `--group NAME=CPUS`). Appends `<pool>/envmon.jsonl`.
+- `speedprobe.py --cpu N`: every 10 s on one idle CPU, CPU time of a fixed Python loop and a 64 MB numpy pass (higher = slower host);
+  `<pool>/speedprobe_cpu<N>.jsonl`.
+- `gate.py`: moves `queue/*.task` to `held/` when the 2-min mean `poolidle` > `HOLD` (.06) and back when the 10-min mean <= `RELEASE` (.035)
+  and the 2-min mean <= `RELEASE2` (.04). `--dry-run --once` logs the decision and moves nothing.
+- `sar_poolidle.py`: mean busy % of a CPU set per sar sample, from a sysstat day file; env_valid.py reads it for runs from before envmon started
+  (`--file /var/log/sysstat/sa07 --cpus 8-35,112-139 --out <pool>/sar_poolidle.txt`; give env_valid.py `--sar-day` = that file's date).
+- `env_valid.py`: per run (`<results>/<job>*/<task>_<arm>/<run>/bench.json`, no smoke/diag/warmup) the mean and p90 of the `poolidle` busy % (the pool's idle CPUs, so all of it is outsider)
+  over the run window, from envmon when it covers the start of the run, else from sar. `--tsv` prints task, arm, run, mean, 1/0.
+  **Valid** = mean <= limit and p90 <= 2 x limit (envmon) or 4 x limit (sar). Azure runs (`azure` in the workload name): `AZ_LIMIT` 3.5, so mean <= 3.5% and
+  p90 <= 7% (envmon) or 14% (sar). Every other workload: `LIMIT=15`, so mean <= 15% and p90 <= 30% (envmon) or 60% (sar).
+- `summ.py`: per family x variant x arm, short/long/all E2E means and completed/total, valid runs vs invalid ones in braces;
+  also writes the per-run cells to `<pool>/summ.json` (`--json`). `requeue_env.py`: one replacement task per task with invalid runs (Azure first,
+  into `deferred_azure/`, the rest into `held/`) through `submit_matrix.sh`, listed in the replaced manifest; without `--submit` it only prints the plan.
+
+```bash
+P=13218; POOL=/data/garv901-55613a/results/mstar/pool/$P; E=experiments/mstar/env          # on node1, from the repo root, with the pool running
+nohup python3 $E/envmon.py --job $P > /dev/null 2>&1 &
+nohup python3 $E/speedprobe.py --job $P --cpu 35 > /dev/null 2>&1 &                          # one per probed idle CPU, e.g. --cpu 33 as well
+HOLD=.06 RELEASE=.035 RELEASE2=.04 nohup python3 $E/gate.py --job $P > $POOL/gate.log 2>&1 &
+touch $POOL/STOP_ENVMON                                                                      # stops all three (within 2 s, 10 s and 30 s)
+python3 $E/sar_poolidle.py --file /var/log/sysstat/sa07 --out $POOL/sar_poolidle.txt         # runs from before envmon started
+LIMIT=15 python3 $E/env_valid.py --job $P --sar-day 2026-10-07 [--tsv]
+LIMIT=15 python3 $E/summ.py --job $P --sar-day 2026-10-07
+LIMIT=15 python3 $E/requeue_env.py --job $P --sar-day 2026-10-07 --manifest manifest_v4b.tsv [--submit]
+```
+
+The CPU groups, the sar CPU set and the cgroup path are those of node1 and pool 13218's steps; for another node or pool set `--group`, `--cpus`
+and `--cgroup`. envmon.py reads each step's CPUs from the cgroup, so it needs no step-CPU list.
 
 ## Public traces (Mooncake conversation, Azure conversation 2023)
 
