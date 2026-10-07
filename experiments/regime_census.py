@@ -7,6 +7,8 @@ decode-only steps, then add the probes one at a time (prompt = cached prefix[:P]
 
 Usage (one engine config per process):
   REGIME_TELEMETRY_DIR=<out>/telemetry python experiments/regime_census.py --config default|cap2048 --out <out>
+Another model: --model NAME --dtype bfloat16. Long-context checks before the census: --long-check 140000,250000 (one
+random-token prompt per length, 32 output tokens) and --passkey N (an N-token passkey retrieval prompt, greedy).
 """
 import argparse, hashlib, json, os, sys, time
 from pathlib import Path
@@ -77,12 +79,16 @@ def main():
     ap.add_argument("--reps", type=int, default=3)
     ap.add_argument("--scenarios", default="", help="comma-separated subset (default: all)")
     ap.add_argument("--max-probes", type=int, default=0, help="smoke test: probes per scenario")
+    ap.add_argument("--model", default=MODEL)
+    ap.add_argument("--dtype", default="auto")
+    ap.add_argument("--long-check", default="", help="comma-separated prompt lengths, each run alone first")
+    ap.add_argument("--passkey", type=int, default=0, help="prompt length of a passkey retrieval check (0: off)")
     a = ap.parse_args()
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     assert os.environ.get("REGIME_TELEMETRY_DIR"), "set REGIME_TELEMETRY_DIR"
 
     from vllm import LLM
-    kw = dict(model=MODEL, max_model_len=262144, enable_prefix_caching=True, gpu_memory_utilization=0.92, seed=0,
+    kw = dict(model=a.model, dtype=a.dtype, max_model_len=262144, enable_prefix_caching=True, gpu_memory_utilization=0.92, seed=0,
               max_num_batched_tokens=MAX_BATCHED, max_num_seqs=1024)
     if a.config == "cap2048":
         kw["compilation_config"] = {"max_cudagraph_capture_size": 2048}
@@ -93,6 +99,29 @@ def main():
     log.write(json.dumps(dict(kind="meta", config=a.config, engine_kw={k: str(v) for k, v in kw.items()},
                               loadavg=os.getloadavg(), t=time.time())) + "\n")
     d = Driver(llm, log)
+    for n in [int(x) for x in a.long_check.split(",") if x]:
+        rid, ts = f"long|{n}", time.time()
+        d.add(rid, toks(seed_of(rid), n), 32, kind="long", n=n)
+        d.run_until(lambda: rid in d.done, 2000, rid)
+        print(f"long check {n} tokens: {d.ntok[rid]} output tokens in {time.time() - ts:.1f}s", flush=True)
+        log.write(json.dumps(dict(kind="long_check", n=n, out_tokens=d.ntok[rid], s=time.time() - ts)) + "\n")
+    if a.passkey:
+        from vllm import SamplingParams
+        from vllm.inputs import TokensPrompt
+        tok = llm.get_tokenizer()
+        enc = lambda t: tok.encode(t, add_special_tokens=False)  # noqa: E731
+        head = enc("There is a pass key hidden inside a lot of irrelevant text. Find it and memorize it.\n")
+        key = enc("The pass key is 71432. Remember it. 71432 is the pass key.\n")
+        tail = enc("What is the pass key? The pass key is")
+        fill = enc("The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. ")
+        n_fill = (a.passkey - len(head) - len(key) - len(tail) - 1) // len(fill)
+        ids = [tok.bos_token_id] + head + fill * (n_fill * 3 // 5) + key + fill * (n_fill - n_fill * 3 // 5) + tail
+        ts = time.time()
+        o = llm.generate([TokensPrompt(prompt_token_ids=ids)], SamplingParams(max_tokens=8, temperature=0.0))[0]
+        text = o.outputs[0].text
+        print(f"passkey check {len(ids)} tokens (key at {len(head) + len(fill) * (n_fill * 3 // 5)}): {text!r} "
+              f"{'PASS' if '71432' in text else 'FAIL'} in {time.time() - ts:.1f}s", flush=True)
+        log.write(json.dumps(dict(kind="passkey", n=len(ids), text=text, ok="71432" in text)) + "\n")
     prefix = {"A": toks(1, 128 * K), "B": toks(2, 128 * K)}
     want = set(a.scenarios.split(",")) if a.scenarios else None
 

@@ -6,7 +6,8 @@ the 512-token step boundary on synthetic workloads. This study checks them again
 coding-agent sessions (TraceLab), and extends the regime set to long cached prefixes.
 
 Setting: vLLM 0.30.0, FA3, one H100-80GB, Llama-3.1-8B-Instruct; ServingStudio (H200 simulator) for the
-regime-separated counterfactual and for MoE. Plan and fixed kill/support criteria:
+regime-separated counterfactual and for MoE. Stage 3 uses Llama-3.1-Nemotron-8B-UltraLong-1M-Instruct (see
+[the Stage 3 model](#stage-3-model)). Plan and fixed kill/support criteria:
 [plan](#kill--support-criteria).
 
 ## Stages
@@ -18,10 +19,24 @@ observed, H1-H5 verdicts, optimization areas, caveats.
 |---|---|---|
 | 1 | [Foundations: regimes in a vLLM step and what each costs](01_foundations.md) | done, reviewed |
 | 1b | [Regime census: every kind of step, whole-step cost, best reachable alternative](01b_regime_census.md) | done |
-| 2 | Chat baseline (Azure conversation lengths) | not started |
-| 3 | Coding agents (TraceLab replay on H100) | not started |
+| 2 | [Chat baseline: Azure and Mooncake conversation traces](02_chat_baseline.md) | running (jobs 1459, 1460) |
+| 3 | Coding agents (TraceLab replay on H100, UltraLong-1M model) | model checked (job 1461); not started |
 | 4 | MoE (ServingStudio simulation) | not started |
 | 5 | Synthesis: regimes x scenarios -> optimization areas | not started |
+
+### Stage 3 model
+
+Coding-agent sessions reach 120k-260k tokens of context. vLLM's RoPE table for Llama-3.1-8B ends at 131,072
+positions (positions past it assert; Stage 1b job 1448), so Stage 3 uses `nvidia/Llama-3.1-Nemotron-8B-UltraLong-1M-Instruct`:
+the Llama-3.1-8B architecture (32 layers, 32 query / 8 KV heads, head dim 128, hidden 4,096, MLP 14,336) continued-
+pretrained with a llama3 RoPE scaling factor of 128 (1,073,152 positions). Differences: vocabulary 129,024 (vs
+128,256), weights stored in float32 (served with `--dtype bfloat16`), license cc-by-nc-4.0 (research use).
+Check (job 1461, `experiments/s10_ultralong_probe.sbatch`, `analysis/model_compare_census.py`):
+- 140,000- and 250,000-token prompts run (32 output tokens each); a passkey 119,970 tokens deep in a 200,000-token
+  prompt is retrieved.
+- The Stage 1b default-config census (393 shapes) runs at Llama-3.1-8B's step times: median ratio 1.001 (p10 0.986,
+  p90 1.017), 98% of shapes within 5% (Llama against its own repeat: 81%). So the Stage 1/1b cost models carry over.
+- KV cache: 441,264 tokens at max-model-len 262,144 and utilization 0.92 (Llama-3.1-8B: 452,816).
 
 ## Vocabulary
 
