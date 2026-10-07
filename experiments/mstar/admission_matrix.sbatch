@@ -55,6 +55,10 @@ case $CONFIG in
     *) echo "unknown CONFIG=$CONFIG"; exit 2 ;;
 esac
 CLIENT_DIR=$WT_OLD/regime-harness
+# FlashInfer's JIT cache, one per server worktree: its build.ninja files hold the venv's include paths, so one cache shared by two venvs
+# is rebuilt (nvcc and gcc on the task's CPUs, next to running benchmarks) each time a server of the other venv starts (v4 matrix).
+export FLASHINFER_WORKSPACE_BASE=${FLASHINFER_WORKSPACE_BASE:-/data/garv901-55613a/.cache/flashinfer_ws/$(basename "$MSTAR_DIR")}
+mkdir -p "$FLASHINFER_WORKSPACE_BASE"
 EXTRA_ENV="$ADM_ENV ${EXTRA_ENV:-}"
 PORT=$((20000 + SLURM_JOB_ID % 10000))
 # LABEL names the arm in the results dir and meta.txt (default CONFIG); set it when only EXTRA_ENV differs
@@ -90,7 +94,7 @@ if [ "${POOL_PIN:-0}" = 1 ]; then
 fi
 mkdir -p "$OUT"
 {
-    echo "job=$SLURM_JOB_ID host=$(hostname) gpu=${CUDA_VISIBLE_DEVICES:-?} config=$LABEL cpus=${CPUS:-job}"
+    echo "job=$SLURM_JOB_ID host=$(hostname) gpu=${CUDA_VISIBLE_DEVICES:-?} config=$LABEL cpus=${CPUS:-job} cpus_allowed=$(sed -n 's/^Cpus_allowed_list:[[:space:]]*//p' /proc/self/status)${SLURM_STEP_ID:+ step=$SLURM_STEP_ID}"
     echo "server=$MSTAR_DIR @ $(git -C "$MSTAR_DIR" rev-parse --short HEAD) ($(git -C "$MSTAR_DIR" rev-parse --abbrev-ref HEAD))"
     echo "client=$CLIENT_DIR @ $(git -C "$CLIENT_DIR" rev-parse --short HEAD)"
     echo "extra_env=$EXTRA_ENV workloads=$WORKLOADS warmup=${WARMUP:-none} req_timeout=$REQ_TIMEOUT restart=$RQ"
