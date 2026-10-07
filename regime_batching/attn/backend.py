@@ -10,7 +10,10 @@ is built exactly as in vLLM; forcing splits costs ~8% on non-straggler mixed ste
 
 Decision inputs are CPU-side metadata only (query_start_loc_cpu, seq_lens_cpu_upper_bound): no GPU sync.
 Env:
-  REGIME_ATTN_POLICY  x_split (default) | always_split | off
+  REGIME_ATTN_POLICY  x_split (default) | x_split_tile | always_split | off
+                      x_split_tile prices the default and forced splits with the FA3 tile model
+                      (features.fa3_tile_time) instead of the additive straggler model; costs ~1-3 ms CPU on the
+                      steps it evaluates (T past the CG range, prefill + decode, heuristic split < REGIME_X_SPLITS)
   REGIME_X_THRESH     predicted baseline/balanced attention ratio that triggers splitting (default 1.2)
   REGIME_X_SPLITS     split upper bound for X steps (default: flash_attn_max_num_splits_for_cuda_graph)
   REGIME_X_MIN_GAIN_US  predicted per-layer saving required to split (default 8 us: the in-engine cost of a
@@ -28,7 +31,7 @@ import numpy as np
 from vllm.v1.attention.backends.flash_attn import FlashAttentionBackend, FlashAttentionMetadataBuilder
 
 from regime_batching import state
-from regime_batching.features import BETA_X, BW_CTA, BW_KV, F_ATT, NUM_SMS, fa3_static_splits
+from regime_batching.features import BETA_X, BW_CTA, BW_KV, F_ATT, NUM_SMS, fa3_static_splits, fa3_tile_time
 
 
 class RegimeFlashAttentionMetadataBuilder(FlashAttentionMetadataBuilder):
@@ -74,6 +77,15 @@ class RegimeFlashAttentionMetadataBuilder(FlashAttentionMetadataBuilder):
                                      page_size=self.block_size, full_cg=False)
             if s >= self._x_splits:
                 return dec
+        if self._policy == "x_split_tile":
+            t_def = fa3_tile_time(q, kv, s, self._g, self.num_heads_kv, self.headdim)[0]  # launch order as given
+            t_x = fa3_tile_time(q, kv, self._x_splits, self._g, self.num_heads_kv, self.headdim)[0]
+            gain, x_ratio = t_def - t_x, t_def / t_x
+            dec.update(x_ratio=round(x_ratio, 3), heur_splits=s, maxL=maxL, max_q=max_q, gain_us=round(gain * 1e6, 1))
+            if x_ratio > self._x_thresh and gain > self._min_gain:
+                dec.update(splits=self._x_splits, path="x_split")
+            dec["decide_us"] = round((time.perf_counter() - t0) * 1e6, 1)
+            return dec
         qp, kp = q[~is_dec].astype(np.float64), kv[~is_dec]
         t_pre = float((4.0 * qp * (kp - qp / 2)).sum()) * self.headdim * self.num_heads_q / F_ATT
         t_bal = float(L.sum()) * self._tok_bytes / BW_KV + t_pre

@@ -25,3 +25,9 @@ results/runs/**/server.log
 results/runs/**/*.parquet
 results/runs/**/trace.json.gz
 reports/figures/**/trace.json.gz
+
+# large text corpus for TraceLab session_runner (enwik9)
+data/corpus/
+
+# regenerate with analysis/relabel_telemetry.py; committed gzipped
+results/regimes_study/relabel_prior_runs.jsonl

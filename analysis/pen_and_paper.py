@@ -28,7 +28,7 @@ from multiprocessing import Pool
 import numpy as np
 
 sys.path.insert(0, __file__.rsplit("/analysis/", 1)[0])
-from regime_batching.features import fa3_static_splits  # noqa: E402
+from regime_batching.features import fa3_static_splits, fa3_tile_time  # noqa: E402
 
 NSM = 132
 BW_W = 2.29e12     # weight streaming, in-engine fit (xstress_16k B0: decode floor 6.6 ms for 15.1 GB)
@@ -67,8 +67,12 @@ class Scenario:
     seed: int = 0
 
 
-def step_cost(m, dec_L: np.ndarray, pre_q: list[int], pre_ctx: list[int], policy: str, bw_cta: float):
-    """Return (step_time_s, regime, info). dec_L: KV lengths of decode reqs (after appending this token)."""
+def step_cost(m, dec_L: np.ndarray, pre_q: list[int], pre_ctx: list[int], policy: str, bw_cta: float,
+              attn_model: str = "additive"):
+    """Return (step_time_s, regime, info). dec_L: KV lengths of decode reqs (after appending this token).
+
+    attn_model: "additive" (original straggler model) or "tile" (FA3 tile-scheduler model, features.fa3_tile_time).
+    """
     L, hq, hkv, hd = m["L"], m["hq"], m["hkv"], m["hd"]
     g = hq // hkv
     n_dec = len(dec_L)
@@ -100,6 +104,15 @@ def step_cost(m, dec_L: np.ndarray, pre_q: list[int], pre_ctx: list[int], policy
         att = t_bal + (OVH_SPLIT_PER_LAYER if is_x else 0.0) if x_time > t_bal else x_time
     excess = att - t_bal
     split_ovh = 0.0
+    if attn_model == "tile" and T:  # same policies, priced by the tile model; X = default split >= 1.2x the 32-split bound
+        qv = np.array([1] * n_dec + list(pre_q), dtype=np.int64)
+        kvv = np.array(list(dec_L.astype(np.int64)) + [c + q for q, c in zip(pre_q, pre_ctx)], dtype=np.int64)
+        t_def = fa3_tile_time(qv, kvv, n_split, g, hkv, hd)[0]
+        t_32 = fa3_tile_time(qv, kvv, 32, g, hkv, hd)[0] if n_split < 32 else t_def
+        is_x = bool(pre_q) and n_dec > 0 and t_def > 1.2 * t_32
+        att = {"baseline": t_def, "static_split": t_32}.get(policy, min(t_def, t_32 + OVH_SPLIT_PER_LAYER))
+        t_bal, excess = min(t_def, t_32), att - min(t_def, t_32)
+        t_dec_bal, t_pre = 0.0, t_bal  # tile model prices the launch as a whole: attn_pre carries all of it
     t_att = L * (t_dec_bal + t_pre + excess + split_ovh)
     mixed = bool(pre_q)
     ovh = OVH_PIECEWISE if (mixed or T > 512) else OVH_FULLCG

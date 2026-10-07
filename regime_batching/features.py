@@ -19,6 +19,20 @@ BW_CTA = 58e9      # one FA3 CTA streaming one kv-head of one sequence (B/s)
 BW_KV = 2.6e12     # balanced paged-KV decode streaming
 F_ATT = 450e12     # prefill attention FLOP/s
 BETA_X = 0.8       # unsplit mixed step: t ~= t_strag + BETA_X * t_bal
+# Tile model (reports/regimes_study/01_foundations.md): greedy list scheduling of FA3's persistent varlen tiles
+# over NUM_SMS CTAs in launch order (decodes first, longest m-block first within a sequence). Replaces the additive
+# straggler model for offline analysis. Fit by microbench/validate_tile_model.py --fit decode mixed on F1-F5 (job 1008):
+# mixed launches (F3) mean |err| 4.7%, decode-only launches 4-11%.
+F_SM_TILE = 5.3e12     # attention FLOP/s of one CTA on a prefill tile
+BW_CTA_MIXED = 40.5e9  # decode tile in a launch with kBlockM = 128 (max_q * g > 64)
+BW_CTA_DEC = 59.4e9    # decode tile in a decode-only launch (kBlockM = 64)
+BW_HBM_ATT = 2.85e12   # floor: all decode KV bytes / HBM bandwidth
+TILE_OVH = 8.4e-6      # per tile, mixed launch
+LAUNCH_OVH = 6.0e-6    # per mixed launch
+DEC_TILE_OVH = 0.0     # per tile, decode-only launch (fit -> 0)
+DEC_LAUNCH_OVH = 8.8e-6  # per decode-only launch
+COMBINE_OVH = 2.3e-6   # split-KV combine kernel, when any sequence splits
+FORCED_SPLITS = (1, 2, 4, 8, 16, 32)
 
 
 @dataclass
@@ -49,6 +63,9 @@ class RegimeConfig:
     ds_min_maxL: int = 2048
     cg_capture_max: int = 512     # vLLM max_cudagraph_capture_size default on H100
     fa_cg_max_splits: int = 32
+    x_struct_min_L: int = 16384   # structural X: shortest "long" decode
+    a_min_prefix: int = 16384     # regime A: prefill appended to at least this many cached tokens
+    x_cost_ratio: float = 1.2     # regime2 X: default / best-split attention time
 
     @classmethod
     def load(cls) -> "RegimeConfig":
@@ -118,6 +135,10 @@ class StepFeatures:
     straggler_risk: float = 0.0  # maxL / sumL (decode KV share of the longest sequence)
     t_att_bal_us: float = 0.0    # predicted per-layer attention time with a balanced kernel
     x_ratio: float = 1.0         # predicted baseline(FA3 heuristic) / balanced attention time per layer
+    pre_prefix: int = 0          # longest cached prefix under a prefill chunk (kv - q)
+    pre_tiles: int = 0           # FA3 prefill tiles (m-blocks x kv heads) at 1 split
+    pre_wave_eff: float = 1.0    # pre_tiles / (NUM_SMS * waves) when FA3 runs 1 split, else 1
+    structural_x: bool = False   # T past the CG path, FA3 1 split, prefill present, decode >= x_struct_min_L
 
     def to_dict(self):
         return asdict(self)
@@ -173,8 +194,111 @@ def compute_features(reqs: list[tuple[str, int, int, int, int]], geom: ModelGeom
     if f.n_dec and f.fa3_splits < cfg.fa_cg_max_splits and t_bal > 0:
         t_strag = f.maxL * geom.head_dim * 2 * geom.kv_dtype_bytes / (BW_CTA * max(f.fa3_splits, 1))
         f.x_ratio = max(1.0, (t_strag + BETA_X * t_bal) / t_bal)
+    if f.n_pre:
+        f.pre_prefix = int((kv[~dec] - q[~dec]).max())
+        if f.fa3_path == "nosplit":
+            kbm = 64 if f.max_q * g <= 64 else 128
+            f.pre_tiles = int(sum(geom.num_kv_heads * math.ceil(int(x) * g / kbm) for x in q[~dec]))
+            f.pre_wave_eff = f.pre_tiles / (NUM_SMS * math.ceil(f.pre_tiles / NUM_SMS))
+        f.structural_x = bool(f.n_dec and f.fa3_path == "nosplit" and f.maxL >= cfg.x_struct_min_L)
     f.regime = classify(f, geom, cfg)
     return f
+
+
+def fa3_seq_splits(kv: np.ndarray, mblocks: np.ndarray, s_static: int, h_kv: int) -> np.ndarray:
+    """Per-sequence KV splits FA3 uses under a static bound s_static (FA3 prepare_varlen_num_blocks_kernel).
+
+    kBlockN = 128 (paged KV, page 16, is non-TMA); PackGQA, so heads = h_kv. Batches are not sorted
+    (vLLM's FA3 build sets varlen_sort_batches = false).
+    """
+    if s_static <= 1:
+        return np.ones_like(kv)
+    nblk = np.ceil(kv / 128.0)
+    blocks_per_sm = math.ceil(float((nblk * mblocks).sum()) * 1.1 * h_kv / NUM_SMS)
+    return np.clip(np.ceil(nblk / blocks_per_sm), 1, s_static).astype(np.int64)
+
+
+def fa3_tile_time(q: np.ndarray, kv: np.ndarray, s_static: int, g: int, h_kv: int,
+                  head_dim: int = 128, ideal: bool = False) -> tuple[float, int, float]:
+    """Predicted time of one FA3 varlen launch (one layer) in seconds, its tile count, and SM efficiency.
+
+    q, kv: per-sequence query and KV lengths in launch order (vLLM puts decodes first).
+    Efficiency = summed tile time / (NUM_SMS * makespan).
+    """
+    import heapq
+    q = np.asarray(q, dtype=np.int64)
+    kv = np.asarray(kv, dtype=np.int64)
+    mixed = int(q.max()) * g > 64
+    rows = 128 if mixed else 64
+    mblocks = np.ceil(q * g / rows).astype(np.int64)
+    splits = fa3_seq_splits(kv, mblocks, s_static, h_kv)
+    bw_dec = BW_CTA_MIXED if mixed else BW_CTA_DEC
+    durs = []
+    for qi, ki, mi, si in zip(q.tolist(), kv.tolist(), mblocks.tolist(), splits.tolist()):
+        if qi == 1:
+            durs += [ki * head_dim * 2 * 2 / si / bw_dec + (TILE_OVH if mixed else DEC_TILE_OVH)] * (h_kv * si)
+        else:
+            prefix = ki - qi
+            seq = [4.0 * rows * (prefix + min(qi, (m + 1) * rows // g)) * head_dim / si / F_SM_TILE + TILE_OVH
+                   for m in range(mi)][::-1]
+            durs += [d for d in seq for _ in range(si)] * h_kv
+    free = [0.0] * NUM_SMS
+    end = 0.0
+    for d in durs:
+        t = heapq.heappop(free) + d
+        heapq.heappush(free, t)
+        end = max(end, t)
+    eff = sum(durs) / (NUM_SMS * end) if end else 1.0
+    if ideal:  # perfect packing of the same work: lower bound for any re-tiling or re-splitting fix
+        end = sum(durs) / NUM_SMS
+    end = max(end, float(kv[q == 1].sum()) * h_kv * head_dim * 2 * 2 / BW_HBM_ATT)
+    launch = LAUNCH_OVH if mixed else DEC_LAUNCH_OVH
+    return end + launch + (COMBINE_OVH if int(splits.max()) > 1 else 0.0), len(durs), eff
+
+
+def attn_step_model(q: np.ndarray, kv: np.ndarray, geom: ModelGeom, cfg: RegimeConfig,
+                    full_cg: bool = True) -> dict:
+    """Offline per-step attention model (per layer, seconds): what vLLM's FA3 path costs and what better choices cost.
+
+    t_default: the split vLLM picks; t_best: best split upper bound for the same launch (C3-like; FA3 treats the
+    bound as a cap on its own per-sequence rule, so this cannot split a long prefill); t_ideal: the default launch's
+    work packed perfectly over the SMs (bound for re-tiling fixes, H5); t_sep: prefill and decodes as separate
+    launches, each with its best split bound (regime-separated counterfactual).
+    """
+    q = np.asarray(q, dtype=np.int64)
+    kv = np.asarray(kv, dtype=np.int64)
+    g = geom.num_q_heads // geom.num_kv_heads
+    T = int(q.sum())
+    s_def, path = fa3_static_splits(int(q.max()), int(kv.max()), T, g, geom.num_kv_heads, geom.head_dim,
+                                    full_cg=full_cg, cfg=cfg)
+    t_def, n_tiles, eff = fa3_tile_time(q, kv, s_def, g, geom.num_kv_heads, geom.head_dim)
+    t_ideal = fa3_tile_time(q, kv, s_def, g, geom.num_kv_heads, geom.head_dim, ideal=True)[0]
+    best = min((fa3_tile_time(q, kv, s, g, geom.num_kv_heads, geom.head_dim)[0], s) for s in FORCED_SPLITS)
+
+    def best_of(mask):
+        if not mask.any():
+            return 0.0
+        return min(fa3_tile_time(q[mask], kv[mask], s, g, geom.num_kv_heads, geom.head_dim)[0] for s in FORCED_SPLITS)
+
+    dec = q == 1
+    t_sep = best_of(dec) + best_of(~dec)
+    n_pre, n_dec = int((~dec).sum()), int(dec.sum())
+    pre_prefix = int((kv[~dec] - q[~dec]).max()) if n_pre else 0
+    maxL = int(kv[dec].max()) if n_dec else 0
+    ratio = t_def / best[0] if best[0] else 1.0
+    if n_pre and n_dec and path == "nosplit" and maxL >= cfg.x_struct_min_L and ratio >= cfg.x_cost_ratio:
+        regime2 = "X"
+    elif n_pre and pre_prefix >= cfg.a_min_prefix:
+        regime2 = "A"
+    elif n_pre:  # an X shape whose straggler costs < x_cost_ratio is priced as an ordinary mixed step
+        regime2 = "P" if int(q[~dec].sum()) >= cfg.prefill_heavy_frac * T else "M"
+    else:
+        regime2 = None  # decode-only: classify() labels apply unchanged
+    return dict(splits_default=s_def, path=path, t_default=t_def, t_best=best[0], s_best=best[1], t_sep=t_sep,
+                t_ideal=t_ideal, pack_gain=t_def / t_ideal,
+                tiles=n_tiles, sm_eff=eff, x_cost=ratio, sep_gain=t_def / t_sep if t_sep else 1.0,
+                pre_prefix=pre_prefix, structural_x=bool(n_pre and n_dec and path == "nosplit"
+                                                          and maxL >= cfg.x_struct_min_L), regime2=regime2)
 
 
 def classify(f: StepFeatures, geom: ModelGeom, cfg: RegimeConfig) -> str:

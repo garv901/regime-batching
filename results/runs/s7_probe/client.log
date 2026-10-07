@@ -1,0 +1,464 @@
+workload summary | sessions=48 steps=303 max_prompt_len=8180 max_prefix_len=7722 max_input_len=2587 max_output_len=320 total_output_len=58678 max_arrival_time_ms=9994.000 total_tool_wait_after_ms=81628.000
+sessions 0/48 | steps 0/303 completed=0 submitted=2 active=2 failed=0 | elapsed=0.5s
+sessions 0/48 | steps 0/303 completed=0 submitted=4 active=4 failed=0 | elapsed=1.0s
+prefix hit rate | request_id=1_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=861
+sessions 0/48 | steps 1/303 completed=1 submitted=7 active=6 failed=0 | elapsed=1.5s
+prefix hit rate | request_id=0_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2318
+prefix hit rate | request_id=4_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1346
+sessions 0/48 | steps 3/303 completed=3 submitted=10 active=7 failed=0 | elapsed=2.0s
+prefix hit rate | request_id=5_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1739
+sessions 0/48 | steps 4/303 completed=4 submitted=11 active=7 failed=0 | elapsed=2.5s
+prefix hit rate | request_id=0_round_000001 planned=0.8786 actual=0.8765 delta=-0.0021 server_cached_prompt_tokens=2512 server_prompt_tokens=2866
+prefix hit rate | request_id=2_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1251
+sessions 0/48 | steps 6/303 completed=6 submitted=12 active=6 failed=0 | elapsed=3.0s
+prefix hit rate | request_id=3_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=888
+prefix hit rate | request_id=4_round_000001 planned=0.6841 actual=0.6831 delta=-0.0009 server_cached_prompt_tokens=1440 server_prompt_tokens=2108
+sessions 0/48 | steps 8/303 completed=8 submitted=14 active=6 failed=0 | elapsed=3.5s
+prefix hit rate | request_id=1_round_000001 planned=0.7300 actual=0.7240 delta=-0.0060 server_cached_prompt_tokens=960 server_prompt_tokens=1326
+prefix hit rate | request_id=0_round_000002 planned=0.7868 actual=0.7855 delta=-0.0013 server_cached_prompt_tokens=2992 server_prompt_tokens=3809
+prefix hit rate | request_id=6_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2020
+sessions 1/48 | steps 11/303 completed=11 submitted=18 active=7 failed=0 | elapsed=4.0s
+prefix hit rate | request_id=5_round_000001 planned=0.8772 actual=0.8697 delta=-0.0075 server_cached_prompt_tokens=1856 server_prompt_tokens=2134
+prefix hit rate | request_id=7_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1165
+prefix hit rate | request_id=2_round_000001 planned=0.9244 actual=0.9220 delta=-0.0024 server_cached_prompt_tokens=1536 server_prompt_tokens=1666
+sessions 1/48 | steps 14/303 completed=14 submitted=21 active=7 failed=0 | elapsed=4.5s
+prefix hit rate | request_id=8_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1890
+prefix hit rate | request_id=6_round_000001 planned=0.8602 actual=0.8546 delta=-0.0056 server_cached_prompt_tokens=2304 server_prompt_tokens=2696
+sessions 1/48 | steps 16/303 completed=16 submitted=22 active=6 failed=0 | elapsed=5.0s
+prefix hit rate | request_id=1_round_000002 planned=0.7032 actual=0.6980 delta=-0.0051 server_cached_prompt_tokens=1632 server_prompt_tokens=2338
+sessions 2/48 | steps 17/303 completed=17 submitted=25 active=8 failed=0 | elapsed=5.5s
+prefix hit rate | request_id=4_round_000002 planned=0.7945 actual=0.7928 delta=-0.0017 server_cached_prompt_tokens=2288 server_prompt_tokens=2886
+prefix hit rate | request_id=3_round_000001 planned=0.8273 actual=0.8168 delta=-0.0105 server_cached_prompt_tokens=1168 server_prompt_tokens=1430
+prefix hit rate | request_id=9_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2249
+sessions 2/48 | steps 20/303 completed=20 submitted=26 active=6 failed=0 | elapsed=6.0s
+prefix hit rate | request_id=7_round_000001 planned=0.6613 actual=0.6560 delta=-0.0053 server_cached_prompt_tokens=1472 server_prompt_tokens=2244
+prefix hit rate | request_id=2_round_000002 planned=0.7943 actual=0.7877 delta=-0.0066 server_cached_prompt_tokens=1792 server_prompt_tokens=2275
+sessions 2/48 | steps 22/303 completed=22 submitted=28 active=6 failed=0 | elapsed=6.5s
+prefix hit rate | request_id=5_round_000002 planned=0.7241 actual=0.7191 delta=-0.0050 server_cached_prompt_tokens=2304 server_prompt_tokens=3204
+prefix hit rate | request_id=6_round_000002 planned=0.7714 actual=0.7689 delta=-0.0025 server_cached_prompt_tokens=2752 server_prompt_tokens=3579
+prefix hit rate | request_id=9_round_000001 planned=0.9252 actual=0.9241 delta=-0.0012 server_cached_prompt_tokens=2336 server_prompt_tokens=2528
+sessions 2/48 | steps 25/303 completed=25 submitted=30 active=5 failed=0 | elapsed=7.0s
+prefix hit rate | request_id=4_round_000003 planned=0.8020 actual=0.8010 delta=-0.0010 server_cached_prompt_tokens=3136 server_prompt_tokens=3915
+prefix hit rate | request_id=8_round_000001 planned=0.7170 actual=0.7120 delta=-0.0050 server_cached_prompt_tokens=2000 server_prompt_tokens=2809
+sessions 2/48 | steps 27/303 completed=27 submitted=33 active=6 failed=0 | elapsed=7.5s
+prefix hit rate | request_id=3_round_000002 planned=0.7107 actual=0.7095 delta=-0.0013 server_cached_prompt_tokens=1680 server_prompt_tokens=2368
+sessions 2/48 | steps 28/303 completed=28 submitted=36 active=8 failed=0 | elapsed=8.0s
+prefix hit rate | request_id=7_round_000002 planned=0.7677 actual=0.7652 delta=-0.0025 server_cached_prompt_tokens=2448 server_prompt_tokens=3199
+prefix hit rate | request_id=2_round_000003 planned=0.8793 actual=0.8747 delta=-0.0046 server_cached_prompt_tokens=2464 server_prompt_tokens=2817
+sessions 2/48 | steps 30/303 completed=30 submitted=37 active=7 failed=0 | elapsed=8.5s
+prefix hit rate | request_id=5_round_000003 planned=0.8767 actual=0.8739 delta=-0.0028 server_cached_prompt_tokens=3472 server_prompt_tokens=3973
+prefix hit rate | request_id=9_round_000002 planned=0.9313 actual=0.9270 delta=-0.0043 server_cached_prompt_tokens=2592 server_prompt_tokens=2796
+prefix hit rate | request_id=6_round_000003 planned=0.9416 actual=0.9379 delta=-0.0037 server_cached_prompt_tokens=3760 server_prompt_tokens=4009
+sessions 3/48 | steps 33/303 completed=33 submitted=40 active=7 failed=0 | elapsed=9.0s
+prefix hit rate | request_id=4_round_000004 planned=0.9585 actual=0.9568 delta=-0.0016 server_cached_prompt_tokens=4080 server_prompt_tokens=4264
+prefix hit rate | request_id=3_round_000003 planned=0.7838 actual=0.7832 delta=-0.0006 server_cached_prompt_tokens=2576 server_prompt_tokens=3289
+prefix hit rate | request_id=7_round_000003 planned=0.8700 actual=0.8659 delta=-0.0041 server_cached_prompt_tokens=3344 server_prompt_tokens=3862
+sessions 3/48 | steps 36/303 completed=36 submitted=43 active=7 failed=0 | elapsed=9.5s
+prefix hit rate | request_id=8_round_000002 planned=0.8884 actual=0.8861 delta=-0.0023 server_cached_prompt_tokens=3104 server_prompt_tokens=3503
+sessions 3/48 | steps 37/303 completed=37 submitted=43 active=6 failed=0 | elapsed=10.0s
+prefix hit rate | request_id=10_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1794
+sessions 3/48 | steps 38/303 completed=38 submitted=46 active=8 failed=0 | elapsed=10.5s
+prefix hit rate | request_id=2_round_000004 planned=0.9344 actual=0.9317 delta=-0.0028 server_cached_prompt_tokens=3040 server_prompt_tokens=3263
+prefix hit rate | request_id=3_round_000004 planned=0.9541 actual=0.9521 delta=-0.0019 server_cached_prompt_tokens=3440 server_prompt_tokens=3613
+sessions 3/48 | steps 40/303 completed=40 submitted=47 active=7 failed=0 | elapsed=11.0s
+prefix hit rate | request_id=5_round_000004 planned=0.8661 actual=0.8659 delta=-0.0002 server_cached_prompt_tokens=4144 server_prompt_tokens=4786
+sessions 3/48 | steps 41/303 completed=41 submitted=49 active=8 failed=0 | elapsed=11.5s
+prefix hit rate | request_id=4_round_000005 planned=0.9093 actual=0.9075 delta=-0.0018 server_cached_prompt_tokens=4432 server_prompt_tokens=4884
+prefix hit rate | request_id=8_round_000003 planned=0.8490 actual=0.8483 delta=-0.0007 server_cached_prompt_tokens=3776 server_prompt_tokens=4451
+prefix hit rate | request_id=6_round_000004 planned=0.9376 actual=0.9351 delta=-0.0024 server_cached_prompt_tokens=4208 server_prompt_tokens=4500
+prefix hit rate | request_id=7_round_000004 planned=0.9709 actual=0.9699 delta=-0.0010 server_cached_prompt_tokens=4000 server_prompt_tokens=4124
+sessions 3/48 | steps 45/303 completed=45 submitted=52 active=7 failed=0 | elapsed=12.0s
+prefix hit rate | request_id=5_round_000005 planned=0.8509 actual=0.8493 delta=-0.0017 server_cached_prompt_tokens=5088 server_prompt_tokens=5991
+sessions 3/48 | steps 46/303 completed=46 submitted=54 active=8 failed=0 | elapsed=12.5s
+prefix hit rate | request_id=3_round_000005 planned=0.9496 actual=0.9464 delta=-0.0033 server_cached_prompt_tokens=3776 server_prompt_tokens=3990
+prefix hit rate | request_id=10_round_000001 planned=0.6954 actual=0.6915 delta=-0.0039 server_cached_prompt_tokens=1952 server_prompt_tokens=2823
+prefix hit rate | request_id=2_round_000005 planned=0.8784 actual=0.8751 delta=-0.0032 server_cached_prompt_tokens=3504 server_prompt_tokens=4004
+sessions 4/48 | steps 49/303 completed=49 submitted=56 active=7 failed=0 | elapsed=13.0s
+prefix hit rate | request_id=4_round_000006 planned=0.9650 actual=0.9625 delta=-0.0024 server_cached_prompt_tokens=5136 server_prompt_tokens=5336
+sessions 4/48 | steps 50/303 completed=50 submitted=57 active=7 failed=0 | elapsed=13.5s
+prefix hit rate | request_id=6_round_000005 planned=0.8480 actual=0.8466 delta=-0.0014 server_cached_prompt_tokens=4784 server_prompt_tokens=5651
+prefix hit rate | request_id=7_round_000005 planned=0.9690 actual=0.9661 delta=-0.0029 server_cached_prompt_tokens=4336 server_prompt_tokens=4488
+prefix hit rate | request_id=5_round_000006 planned=0.9565 actual=0.9548 delta=-0.0017 server_cached_prompt_tokens=6064 server_prompt_tokens=6351
+sessions 5/48 | steps 53/303 completed=53 submitted=60 active=7 failed=0 | elapsed=14.0s
+prefix hit rate | request_id=8_round_000004 planned=0.8973 actual=0.8963 delta=-0.0010 server_cached_prompt_tokens=4608 server_prompt_tokens=5141
+prefix hit rate | request_id=12_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1907
+sessions 5/48 | steps 55/303 completed=55 submitted=62 active=7 failed=0 | elapsed=14.5s
+prefix hit rate | request_id=3_round_000006 planned=0.8912 actual=0.8893 delta=-0.0019 server_cached_prompt_tokens=4160 server_prompt_tokens=4678
+prefix hit rate | request_id=5_round_000007 planned=0.8989 actual=0.8973 delta=-0.0017 server_cached_prompt_tokens=6480 server_prompt_tokens=7222
+sessions 6/48 | steps 57/303 completed=57 submitted=64 active=7 failed=0 | elapsed=15.0s
+prefix hit rate | request_id=10_round_000002 planned=0.8380 actual=0.8367 delta=-0.0013 server_cached_prompt_tokens=3120 server_prompt_tokens=3729
+prefix hit rate | request_id=11_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1898
+prefix hit rate | request_id=7_round_000006 planned=0.9139 actual=0.9113 delta=-0.0026 server_cached_prompt_tokens=4592 server_prompt_tokens=5039
+sessions 6/48 | steps 60/303 completed=60 submitted=65 active=5 failed=0 | elapsed=15.5s
+prefix hit rate | request_id=13_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=919
+prefix hit rate | request_id=12_round_000001 planned=0.6890 actual=0.6869 delta=-0.0021 server_cached_prompt_tokens=1968 server_prompt_tokens=2865
+sessions 6/48 | steps 62/303 completed=62 submitted=69 active=7 failed=0 | elapsed=16.0s
+prefix hit rate | request_id=4_round_000007 planned=0.9423 actual=0.9396 delta=-0.0027 server_cached_prompt_tokens=5488 server_prompt_tokens=5841
+prefix hit rate | request_id=7_round_000007 planned=0.9345 actual=0.9336 delta=-0.0009 server_cached_prompt_tokens=5216 server_prompt_tokens=5587
+sessions 7/48 | steps 64/303 completed=64 submitted=71 active=7 failed=0 | elapsed=16.5s
+prefix hit rate | request_id=10_round_000003 planned=0.9487 actual=0.9456 delta=-0.0031 server_cached_prompt_tokens=3984 server_prompt_tokens=4213
+prefix hit rate | request_id=13_round_000001 planned=0.8502 actual=0.8485 delta=-0.0017 server_cached_prompt_tokens=1008 server_prompt_tokens=1188
+prefix hit rate | request_id=11_round_000001 planned=0.7985 actual=0.7945 delta=-0.0040 server_cached_prompt_tokens=2176 server_prompt_tokens=2739
+sessions 7/48 | steps 67/303 completed=67 submitted=72 active=5 failed=0 | elapsed=17.0s
+prefix hit rate | request_id=8_round_000005 planned=0.8926 actual=0.8899 delta=-0.0026 server_cached_prompt_tokens=5376 server_prompt_tokens=6041
+prefix hit rate | request_id=14_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2018
+prefix hit rate | request_id=3_round_000007 planned=0.8637 actual=0.8609 delta=-0.0028 server_cached_prompt_tokens=4864 server_prompt_tokens=5650
+sessions 7/48 | steps 70/303 completed=70 submitted=78 active=8 failed=0 | elapsed=17.5s
+sessions 7/48 | steps 70/303 completed=70 submitted=78 active=8 failed=0 | elapsed=18.0s
+prefix hit rate | request_id=14_round_000001 planned=0.7985 actual=0.7924 delta=-0.0060 server_cached_prompt_tokens=2096 server_prompt_tokens=2645
+sessions 7/48 | steps 71/303 completed=71 submitted=78 active=7 failed=0 | elapsed=18.5s
+prefix hit rate | request_id=13_round_000002 planned=0.6675 actual=0.6628 delta=-0.0047 server_cached_prompt_tokens=1264 server_prompt_tokens=1907
+prefix hit rate | request_id=12_round_000002 planned=0.8504 actual=0.8487 delta=-0.0017 server_cached_prompt_tokens=3040 server_prompt_tokens=3582
+prefix hit rate | request_id=8_round_000006 planned=0.9444 actual=0.9426 delta=-0.0018 server_cached_prompt_tokens=6320 server_prompt_tokens=6705
+prefix hit rate | request_id=11_round_000002 planned=0.8298 actual=0.8264 delta=-0.0034 server_cached_prompt_tokens=2880 server_prompt_tokens=3485
+sessions 7/48 | steps 75/303 completed=75 submitted=82 active=7 failed=0 | elapsed=19.0s
+prefix hit rate | request_id=7_round_000008 planned=0.8674 actual=0.8664 delta=-0.0011 server_cached_prompt_tokens=5680 server_prompt_tokens=6556
+prefix hit rate | request_id=10_round_000004 planned=0.8997 actual=0.8993 delta=-0.0004 server_cached_prompt_tokens=4320 server_prompt_tokens=4804
+prefix hit rate | request_id=8_round_000007 planned=0.9366 actual=0.9344 delta=-0.0022 server_cached_prompt_tokens=6864 server_prompt_tokens=7346
+sessions 8/48 | steps 78/303 completed=78 submitted=84 active=6 failed=0 | elapsed=19.5s
+prefix hit rate | request_id=14_round_000002 planned=0.7953 actual=0.7913 delta=-0.0040 server_cached_prompt_tokens=2752 server_prompt_tokens=3478
+prefix hit rate | request_id=3_round_000008 planned=0.9220 actual=0.9207 delta=-0.0013 server_cached_prompt_tokens=5888 server_prompt_tokens=6395
+prefix hit rate | request_id=13_round_000003 planned=0.7618 actual=0.7562 delta=-0.0056 server_cached_prompt_tokens=2032 server_prompt_tokens=2687
+sessions 11/48 | steps 81/303 completed=81 submitted=89 active=8 failed=0 | elapsed=20.0s
+prefix hit rate | request_id=11_round_000003 planned=0.8650 actual=0.8631 delta=-0.0019 server_cached_prompt_tokens=3664 server_prompt_tokens=4245
+prefix hit rate | request_id=18_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1675
+sessions 12/48 | steps 83/303 completed=83 submitted=91 active=8 failed=0 | elapsed=20.5s
+prefix hit rate | request_id=10_round_000005 planned=0.8947 actual=0.8933 delta=-0.0014 server_cached_prompt_tokens=5072 server_prompt_tokens=5678
+prefix hit rate | request_id=17_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1933
+sessions 12/48 | steps 85/303 completed=85 submitted=92 active=7 failed=0 | elapsed=21.0s
+prefix hit rate | request_id=15_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2146
+prefix hit rate | request_id=8_round_000008 planned=0.9113 actual=0.9103 delta=-0.0010 server_cached_prompt_tokens=7408 server_prompt_tokens=8138
+prefix hit rate | request_id=19_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=850
+prefix hit rate | request_id=12_round_000003 planned=0.9201 actual=0.9196 delta=-0.0005 server_cached_prompt_tokens=3888 server_prompt_tokens=4228
+prefix hit rate | request_id=18_round_000001 planned=0.8982 actual=0.8926 delta=-0.0057 server_cached_prompt_tokens=1728 server_prompt_tokens=1936
+sessions 13/48 | steps 90/303 completed=90 submitted=95 active=5 failed=0 | elapsed=21.5s
+sessions 13/48 | steps 90/303 completed=90 submitted=98 active=8 failed=0 | elapsed=22.0s
+prefix hit rate | request_id=16_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1236
+prefix hit rate | request_id=17_round_000001 planned=0.8355 actual=0.8323 delta=-0.0032 server_cached_prompt_tokens=2064 server_prompt_tokens=2480
+prefix hit rate | request_id=20_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2151
+sessions 13/48 | steps 93/303 completed=93 submitted=99 active=6 failed=0 | elapsed=22.6s
+prefix hit rate | request_id=18_round_000002 planned=0.8062 actual=0.8031 delta=-0.0031 server_cached_prompt_tokens=2064 server_prompt_tokens=2570
+prefix hit rate | request_id=10_round_000006 planned=0.9694 actual=0.9686 delta=-0.0008 server_cached_prompt_tokens=5760 server_prompt_tokens=5947
+sessions 13/48 | steps 95/303 completed=95 submitted=101 active=6 failed=0 | elapsed=23.1s
+prefix hit rate | request_id=19_round_000001 planned=0.6492 actual=0.6433 delta=-0.0058 server_cached_prompt_tokens=992 server_prompt_tokens=1542
+prefix hit rate | request_id=15_round_000001 planned=0.8780 actual=0.8724 delta=-0.0056 server_cached_prompt_tokens=2352 server_prompt_tokens=2696
+sessions 13/48 | steps 97/303 completed=97 submitted=105 active=8 failed=0 | elapsed=23.6s
+prefix hit rate | request_id=12_round_000004 planned=0.9398 actual=0.9370 delta=-0.0027 server_cached_prompt_tokens=4480 server_prompt_tokens=4781
+prefix hit rate | request_id=18_round_000003 planned=0.9154 actual=0.9151 delta=-0.0003 server_cached_prompt_tokens=2704 server_prompt_tokens=2955
+sessions 13/48 | steps 99/303 completed=99 submitted=106 active=7 failed=0 | elapsed=24.1s
+prefix hit rate | request_id=16_round_000001 planned=0.8591 actual=0.8575 delta=-0.0017 server_cached_prompt_tokens=1552 server_prompt_tokens=1810
+prefix hit rate | request_id=19_round_000002 planned=0.8593 actual=0.8588 delta=-0.0005 server_cached_prompt_tokens=1728 server_prompt_tokens=2012
+prefix hit rate | request_id=17_round_000002 planned=0.8897 actual=0.8874 delta=-0.0024 server_cached_prompt_tokens=2640 server_prompt_tokens=2975
+sessions 13/48 | steps 102/303 completed=102 submitted=107 active=5 failed=0 | elapsed=24.6s
+prefix hit rate | request_id=20_round_000001 planned=0.8351 actual=0.8333 delta=-0.0018 server_cached_prompt_tokens=2304 server_prompt_tokens=2765
+prefix hit rate | request_id=18_round_000004 planned=0.8603 actual=0.8569 delta=-0.0034 server_cached_prompt_tokens=3024 server_prompt_tokens=3529
+prefix hit rate | request_id=10_round_000007 planned=0.9642 actual=0.9634 delta=-0.0008 server_cached_prompt_tokens=6208 server_prompt_tokens=6444
+sessions 14/48 | steps 105/303 completed=105 submitted=112 active=7 failed=0 | elapsed=25.1s
+prefix hit rate | request_id=12_round_000005 planned=0.9066 actual=0.9046 delta=-0.0020 server_cached_prompt_tokens=5024 server_prompt_tokens=5554
+sessions 14/48 | steps 106/303 completed=106 submitted=113 active=7 failed=0 | elapsed=25.6s
+prefix hit rate | request_id=15_round_000002 planned=0.8818 actual=0.8806 delta=-0.0012 server_cached_prompt_tokens=2912 server_prompt_tokens=3307
+sessions 14/48 | steps 107/303 completed=107 submitted=115 active=8 failed=0 | elapsed=26.1s
+prefix hit rate | request_id=17_round_000003 planned=0.8364 actual=0.8359 delta=-0.0005 server_cached_prompt_tokens=3168 server_prompt_tokens=3790
+sessions 14/48 | steps 108/303 completed=108 submitted=115 active=7 failed=0 | elapsed=26.6s
+prefix hit rate | request_id=16_round_000002 planned=0.8470 actual=0.8404 delta=-0.0066 server_cached_prompt_tokens=2032 server_prompt_tokens=2418
+prefix hit rate | request_id=20_round_000002 planned=0.8799 actual=0.8778 delta=-0.0021 server_cached_prompt_tokens=2960 server_prompt_tokens=3372
+prefix hit rate | request_id=21_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2191
+prefix hit rate | request_id=18_round_000005 planned=0.9151 actual=0.9128 delta=-0.0023 server_cached_prompt_tokens=3600 server_prompt_tokens=3944
+sessions 15/48 | steps 112/303 completed=112 submitted=120 active=8 failed=0 | elapsed=27.1s
+prefix hit rate | request_id=19_round_000003 planned=0.9304 actual=0.9239 delta=-0.0066 server_cached_prompt_tokens=2112 server_prompt_tokens=2286
+sessions 15/48 | steps 113/303 completed=113 submitted=120 active=7 failed=0 | elapsed=27.6s
+prefix hit rate | request_id=15_round_000003 planned=0.8156 actual=0.8154 delta=-0.0002 server_cached_prompt_tokens=3568 server_prompt_tokens=4376
+prefix hit rate | request_id=12_round_000006 planned=0.9331 actual=0.9323 delta=-0.0008 server_cached_prompt_tokens=5744 server_prompt_tokens=6161
+sessions 15/48 | steps 115/303 completed=115 submitted=121 active=6 failed=0 | elapsed=28.1s
+prefix hit rate | request_id=22_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1189
+prefix hit rate | request_id=21_round_000001 planned=0.9105 actual=0.9090 delta=-0.0015 server_cached_prompt_tokens=2416 server_prompt_tokens=2658
+sessions 15/48 | steps 117/303 completed=117 submitted=123 active=6 failed=0 | elapsed=28.6s
+prefix hit rate | request_id=17_round_000004 planned=0.9490 actual=0.9466 delta=-0.0024 server_cached_prompt_tokens=3968 server_prompt_tokens=4192
+prefix hit rate | request_id=15_round_000004 planned=0.9120 actual=0.9094 delta=-0.0026 server_cached_prompt_tokens=4576 server_prompt_tokens=5032
+sessions 15/48 | steps 119/303 completed=119 submitted=126 active=7 failed=0 | elapsed=29.1s
+prefix hit rate | request_id=18_round_000006 planned=0.8955 actual=0.8949 delta=-0.0007 server_cached_prompt_tokens=4128 server_prompt_tokens=4613
+prefix hit rate | request_id=16_round_000003 planned=0.9047 actual=0.9009 delta=-0.0037 server_cached_prompt_tokens=2656 server_prompt_tokens=2948
+sessions 15/48 | steps 121/303 completed=121 submitted=128 active=7 failed=0 | elapsed=29.6s
+prefix hit rate | request_id=17_round_000005 planned=0.9644 actual=0.9635 delta=-0.0009 server_cached_prompt_tokens=4464 server_prompt_tokens=4633
+prefix hit rate | request_id=12_round_000007 planned=0.9586 actual=0.9579 delta=-0.0007 server_cached_prompt_tokens=6432 server_prompt_tokens=6715
+prefix hit rate | request_id=15_round_000005 planned=0.8970 actual=0.8954 delta=-0.0016 server_cached_prompt_tokens=5120 server_prompt_tokens=5718
+sessions 17/48 | steps 124/303 completed=124 submitted=131 active=7 failed=0 | elapsed=30.1s
+prefix hit rate | request_id=19_round_000004 planned=0.8887 actual=0.8852 delta=-0.0034 server_cached_prompt_tokens=2576 server_prompt_tokens=2910
+prefix hit rate | request_id=16_round_000004 planned=0.8125 actual=0.8084 delta=-0.0040 server_cached_prompt_tokens=3216 server_prompt_tokens=3978
+prefix hit rate | request_id=21_round_000002 planned=0.7997 actual=0.7989 delta=-0.0008 server_cached_prompt_tokens=2848 server_prompt_tokens=3565
+prefix hit rate | request_id=18_round_000007 planned=0.9310 actual=0.9308 delta=-0.0002 server_cached_prompt_tokens=4880 server_prompt_tokens=5243
+sessions 18/48 | steps 128/303 completed=128 submitted=136 active=8 failed=0 | elapsed=30.6s
+prefix hit rate | request_id=22_round_000001 planned=0.6201 actual=0.6187 delta=-0.0013 server_cached_prompt_tokens=1376 server_prompt_tokens=2224
+sessions 18/48 | steps 129/303 completed=129 submitted=137 active=8 failed=0 | elapsed=31.1s
+prefix hit rate | request_id=24_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1705
+prefix hit rate | request_id=25_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2051
+prefix hit rate | request_id=16_round_000005 planned=0.8350 actual=0.8329 delta=-0.0021 server_cached_prompt_tokens=4032 server_prompt_tokens=4841
+sessions 18/48 | steps 132/303 completed=132 submitted=137 active=5 failed=0 | elapsed=31.6s
+prefix hit rate | request_id=23_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2227
+prefix hit rate | request_id=17_round_000006 planned=0.9489 actual=0.9476 delta=-0.0012 server_cached_prompt_tokens=4688 server_prompt_tokens=4947
+prefix hit rate | request_id=19_round_000005 planned=0.8812 actual=0.8798 delta=-0.0014 server_cached_prompt_tokens=3200 server_prompt_tokens=3637
+sessions 19/48 | steps 135/303 completed=135 submitted=143 active=8 failed=0 | elapsed=32.1s
+prefix hit rate | request_id=22_round_000002 planned=0.7936 actual=0.7901 delta=-0.0035 server_cached_prompt_tokens=2496 server_prompt_tokens=3159
+sessions 19/48 | steps 136/303 completed=136 submitted=144 active=8 failed=0 | elapsed=32.6s
+prefix hit rate | request_id=21_round_000003 planned=0.9421 actual=0.9381 delta=-0.0040 server_cached_prompt_tokens=3744 server_prompt_tokens=3991
+prefix hit rate | request_id=16_round_000006 planned=0.9270 actual=0.9251 delta=-0.0019 server_cached_prompt_tokens=4944 server_prompt_tokens=5344
+prefix hit rate | request_id=26_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1310
+sessions 20/48 | steps 139/303 completed=139 submitted=145 active=6 failed=0 | elapsed=33.1s
+prefix hit rate | request_id=24_round_000001 planned=0.7563 actual=0.7554 delta=-0.0008 server_cached_prompt_tokens=1872 server_prompt_tokens=2478
+prefix hit rate | request_id=25_round_000001 planned=0.7979 actual=0.7964 delta=-0.0015 server_cached_prompt_tokens=2144 server_prompt_tokens=2692
+prefix hit rate | request_id=22_round_000003 planned=0.8554 actual=0.8536 delta=-0.0018 server_cached_prompt_tokens=3312 server_prompt_tokens=3880
+sessions 20/48 | steps 142/303 completed=142 submitted=148 active=6 failed=0 | elapsed=33.6s
+sessions 20/48 | steps 142/303 completed=142 submitted=150 active=8 failed=0 | elapsed=34.1s
+prefix hit rate | request_id=23_round_000001 planned=0.8853 actual=0.8831 delta=-0.0022 server_cached_prompt_tokens=2432 server_prompt_tokens=2754
+prefix hit rate | request_id=17_round_000007 planned=0.8540 actual=0.8532 delta=-0.0008 server_cached_prompt_tokens=5136 server_prompt_tokens=6020
+sessions 21/48 | steps 144/303 completed=144 submitted=151 active=7 failed=0 | elapsed=34.6s
+prefix hit rate | request_id=21_round_000004 planned=0.8315 actual=0.8313 delta=-0.0002 server_cached_prompt_tokens=4272 server_prompt_tokens=5139
+sessions 21/48 | steps 145/303 completed=145 submitted=152 active=7 failed=0 | elapsed=35.1s
+prefix hit rate | request_id=24_round_000002 planned=0.8649 actual=0.8596 delta=-0.0053 server_cached_prompt_tokens=2608 server_prompt_tokens=3034
+prefix hit rate | request_id=27_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2392
+prefix hit rate | request_id=22_round_000004 planned=0.8398 actual=0.8384 delta=-0.0015 server_cached_prompt_tokens=3968 server_prompt_tokens=4733
+sessions 21/48 | steps 148/303 completed=148 submitted=155 active=7 failed=0 | elapsed=35.6s
+prefix hit rate | request_id=23_round_000002 planned=0.7884 actual=0.7871 delta=-0.0013 server_cached_prompt_tokens=3024 server_prompt_tokens=3842
+prefix hit rate | request_id=25_round_000002 planned=0.8200 actual=0.8191 delta=-0.0009 server_cached_prompt_tokens=2848 server_prompt_tokens=3477
+prefix hit rate | request_id=26_round_000001 planned=0.8483 actual=0.8436 delta=-0.0047 server_cached_prompt_tokens=1424 server_prompt_tokens=1688
+sessions 21/48 | steps 151/303 completed=151 submitted=156 active=5 failed=0 | elapsed=36.1s
+prefix hit rate | request_id=21_round_000005 planned=0.8787 actual=0.8762 delta=-0.0025 server_cached_prompt_tokens=5344 server_prompt_tokens=6099
+sessions 22/48 | steps 152/303 completed=152 submitted=160 active=8 failed=0 | elapsed=36.6s
+prefix hit rate | request_id=28_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1223
+prefix hit rate | request_id=23_round_000003 planned=0.8818 actual=0.8802 delta=-0.0015 server_cached_prompt_tokens=3984 server_prompt_tokens=4526
+prefix hit rate | request_id=25_round_000003 planned=0.9325 actual=0.9292 delta=-0.0032 server_cached_prompt_tokens=3728 server_prompt_tokens=4012
+prefix hit rate | request_id=24_round_000003 planned=0.7860 actual=0.7857 delta=-0.0002 server_cached_prompt_tokens=3264 server_prompt_tokens=4154
+sessions 22/48 | steps 156/303 completed=156 submitted=162 active=6 failed=0 | elapsed=37.1s
+prefix hit rate | request_id=22_round_000005 planned=0.8525 actual=0.8509 delta=-0.0015 server_cached_prompt_tokens=4944 server_prompt_tokens=5810
+sessions 22/48 | steps 157/303 completed=157 submitted=164 active=7 failed=0 | elapsed=37.6s
+prefix hit rate | request_id=28_round_000001 planned=0.6760 actual=0.6715 delta=-0.0045 server_cached_prompt_tokens=1488 server_prompt_tokens=2216
+prefix hit rate | request_id=27_round_000001 planned=0.8707 actual=0.8668 delta=-0.0039 server_cached_prompt_tokens=2688 server_prompt_tokens=3101
+sessions 22/48 | steps 159/303 completed=159 submitted=167 active=8 failed=0 | elapsed=38.1s
+prefix hit rate | request_id=25_round_000004 planned=0.8801 actual=0.8779 delta=-0.0022 server_cached_prompt_tokens=4064 server_prompt_tokens=4629
+prefix hit rate | request_id=26_round_000002 planned=0.7415 actual=0.7411 delta=-0.0004 server_cached_prompt_tokens=1984 server_prompt_tokens=2677
+prefix hit rate | request_id=23_round_000004 planned=0.9174 actual=0.9154 delta=-0.0020 server_cached_prompt_tokens=4576 server_prompt_tokens=4999
+prefix hit rate | request_id=24_round_000004 planned=0.9253 actual=0.9223 delta=-0.0030 server_cached_prompt_tokens=4320 server_prompt_tokens=4684
+prefix hit rate | request_id=29_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2343
+sessions 22/48 | steps 164/303 completed=164 submitted=167 active=3 failed=0 | elapsed=38.6s
+prefix hit rate | request_id=28_round_000002 planned=0.7899 actual=0.7851 delta=-0.0048 server_cached_prompt_tokens=2272 server_prompt_tokens=2894
+sessions 23/48 | steps 165/303 completed=165 submitted=173 active=8 failed=0 | elapsed=39.1s
+prefix hit rate | request_id=24_round_000005 planned=0.9709 actual=0.9683 delta=-0.0026 server_cached_prompt_tokens=4832 server_prompt_tokens=4990
+sessions 24/48 | steps 166/303 completed=166 submitted=174 active=8 failed=0 | elapsed=39.6s
+prefix hit rate | request_id=30_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1757
+prefix hit rate | request_id=27_round_000002 planned=0.7993 actual=0.7970 delta=-0.0024 server_cached_prompt_tokens=3376 server_prompt_tokens=4236
+sessions 24/48 | steps 168/303 completed=168 submitted=174 active=6 failed=0 | elapsed=40.1s
+prefix hit rate | request_id=31_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1904
+prefix hit rate | request_id=22_round_000006 planned=0.9325 actual=0.9314 delta=-0.0011 server_cached_prompt_tokens=6016 server_prompt_tokens=6459
+prefix hit rate | request_id=29_round_000001 planned=0.7950 actual=0.7919 delta=-0.0031 server_cached_prompt_tokens=2592 server_prompt_tokens=3273
+sessions 25/48 | steps 171/303 completed=171 submitted=177 active=6 failed=0 | elapsed=40.6s
+prefix hit rate | request_id=23_round_000005 planned=0.8787 actual=0.8763 delta=-0.0024 server_cached_prompt_tokens=5152 server_prompt_tokens=5879
+prefix hit rate | request_id=32_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1021
+sessions 26/48 | steps 173/303 completed=173 submitted=180 active=7 failed=0 | elapsed=41.1s
+prefix hit rate | request_id=25_round_000005 planned=0.8523 actual=0.8521 delta=-0.0002 server_cached_prompt_tokens=4800 server_prompt_tokens=5633
+prefix hit rate | request_id=31_round_000001 planned=0.8508 actual=0.8482 delta=-0.0026 server_cached_prompt_tokens=1984 server_prompt_tokens=2339
+sessions 27/48 | steps 175/303 completed=175 submitted=183 active=8 failed=0 | elapsed=41.6s
+prefix hit rate | request_id=26_round_000003 planned=0.7951 actual=0.7943 delta=-0.0008 server_cached_prompt_tokens=2896 server_prompt_tokens=3646
+prefix hit rate | request_id=33_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1959
+prefix hit rate | request_id=27_round_000003 planned=0.9178 actual=0.9157 delta=-0.0021 server_cached_prompt_tokens=4432 server_prompt_tokens=4840
+sessions 27/48 | steps 178/303 completed=178 submitted=184 active=6 failed=0 | elapsed=42.1s
+prefix hit rate | request_id=31_round_000002 planned=0.7318 actual=0.7312 delta=-0.0006 server_cached_prompt_tokens=2432 server_prompt_tokens=3326
+prefix hit rate | request_id=30_round_000001 planned=0.9276 actual=0.9226 delta=-0.0049 server_cached_prompt_tokens=1872 server_prompt_tokens=2029
+sessions 27/48 | steps 180/303 completed=180 submitted=188 active=8 failed=0 | elapsed=42.6s
+prefix hit rate | request_id=34_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2544
+prefix hit rate | request_id=29_round_000002 planned=0.9092 actual=0.9079 delta=-0.0013 server_cached_prompt_tokens=3440 server_prompt_tokens=3789
+prefix hit rate | request_id=31_round_000003 planned=0.9130 actual=0.9106 delta=-0.0024 server_cached_prompt_tokens=3392 server_prompt_tokens=3725
+sessions 27/48 | steps 183/303 completed=183 submitted=189 active=6 failed=0 | elapsed=43.1s
+prefix hit rate | request_id=27_round_000004 planned=0.8828 actual=0.8802 delta=-0.0026 server_cached_prompt_tokens=5056 server_prompt_tokens=5744
+prefix hit rate | request_id=32_round_000001 planned=0.6068 actual=0.6034 delta=-0.0033 server_cached_prompt_tokens=1088 server_prompt_tokens=1803
+sessions 27/48 | steps 185/303 completed=185 submitted=192 active=7 failed=0 | elapsed=43.6s
+prefix hit rate | request_id=29_round_000003 planned=0.8660 actual=0.8651 delta=-0.0009 server_cached_prompt_tokens=3984 server_prompt_tokens=4605
+sessions 27/48 | steps 186/303 completed=186 submitted=193 active=7 failed=0 | elapsed=44.1s
+prefix hit rate | request_id=31_round_000004 planned=0.9125 actual=0.9118 delta=-0.0007 server_cached_prompt_tokens=3792 server_prompt_tokens=4159
+prefix hit rate | request_id=33_round_000001 planned=0.7542 actual=0.7512 delta=-0.0030 server_cached_prompt_tokens=2032 server_prompt_tokens=2705
+prefix hit rate | request_id=26_round_000004 planned=0.8534 actual=0.8508 delta=-0.0026 server_cached_prompt_tokens=3952 server_prompt_tokens=4645
+sessions 27/48 | steps 189/303 completed=189 submitted=194 active=5 failed=0 | elapsed=44.6s
+prefix hit rate | request_id=30_round_000002 planned=0.9178 actual=0.9170 delta=-0.0008 server_cached_prompt_tokens=2288 server_prompt_tokens=2495
+prefix hit rate | request_id=27_round_000005 planned=0.9552 actual=0.9544 delta=-0.0008 server_cached_prompt_tokens=5840 server_prompt_tokens=6119
+sessions 27/48 | steps 191/303 completed=191 submitted=198 active=7 failed=0 | elapsed=45.1s
+prefix hit rate | request_id=32_round_000002 planned=0.7069 actual=0.7045 delta=-0.0024 server_cached_prompt_tokens=2048 server_prompt_tokens=2907
+prefix hit rate | request_id=34_round_000001 planned=0.8708 actual=0.8679 delta=-0.0029 server_cached_prompt_tokens=2720 server_prompt_tokens=3134
+sessions 27/48 | steps 193/303 completed=193 submitted=201 active=8 failed=0 | elapsed=45.6s
+prefix hit rate | request_id=31_round_000005 planned=0.8418 actual=0.8396 delta=-0.0022 server_cached_prompt_tokens=4272 server_prompt_tokens=5088
+sessions 27/48 | steps 194/303 completed=194 submitted=201 active=7 failed=0 | elapsed=46.1s
+prefix hit rate | request_id=30_round_000003 planned=0.8241 actual=0.8223 delta=-0.0018 server_cached_prompt_tokens=2768 server_prompt_tokens=3366
+prefix hit rate | request_id=29_round_000004 planned=0.9098 actual=0.9084 delta=-0.0014 server_cached_prompt_tokens=4672 server_prompt_tokens=5143
+prefix hit rate | request_id=27_round_000006 planned=0.8835 actual=0.8823 delta=-0.0013 server_cached_prompt_tokens=6288 server_prompt_tokens=7127
+sessions 28/48 | steps 197/303 completed=197 submitted=204 active=7 failed=0 | elapsed=46.6s
+prefix hit rate | request_id=32_round_000003 planned=0.8086 actual=0.8055 delta=-0.0032 server_cached_prompt_tokens=3056 server_prompt_tokens=3794
+sessions 28/48 | steps 198/303 completed=198 submitted=206 active=8 failed=0 | elapsed=47.1s
+prefix hit rate | request_id=26_round_000005 planned=0.8485 actual=0.8476 delta=-0.0009 server_cached_prompt_tokens=4928 server_prompt_tokens=5814
+prefix hit rate | request_id=33_round_000002 planned=0.9401 actual=0.9376 delta=-0.0025 server_cached_prompt_tokens=2976 server_prompt_tokens=3174
+sessions 28/48 | steps 200/303 completed=200 submitted=206 active=6 failed=0 | elapsed=47.6s
+prefix hit rate | request_id=31_round_000006 planned=0.8973 actual=0.8962 delta=-0.0010 server_cached_prompt_tokens=5200 server_prompt_tokens=5802
+prefix hit rate | request_id=34_round_000002 planned=0.7941 actual=0.7904 delta=-0.0037 server_cached_prompt_tokens=3408 server_prompt_tokens=4312
+sessions 28/48 | steps 202/303 completed=202 submitted=208 active=6 failed=0 | elapsed=48.1s
+prefix hit rate | request_id=35_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1526
+prefix hit rate | request_id=30_round_000004 planned=0.9012 actual=0.8973 delta=-0.0038 server_cached_prompt_tokens=3504 server_prompt_tokens=3905
+sessions 28/48 | steps 204/303 completed=204 submitted=211 active=7 failed=0 | elapsed=48.6s
+prefix hit rate | request_id=32_round_000004 planned=0.8269 actual=0.8248 delta=-0.0021 server_cached_prompt_tokens=3968 server_prompt_tokens=4811
+sessions 29/48 | steps 205/303 completed=205 submitted=213 active=8 failed=0 | elapsed=49.1s
+prefix hit rate | request_id=34_round_000003 planned=0.9085 actual=0.9083 delta=-0.0002 server_cached_prompt_tokens=4608 server_prompt_tokens=5073
+prefix hit rate | request_id=27_round_000007 planned=0.9752 actual=0.9750 delta=-0.0001 server_cached_prompt_tokens=7264 server_prompt_tokens=7450
+prefix hit rate | request_id=31_round_000007 planned=0.9537 actual=0.9523 delta=-0.0014 server_cached_prompt_tokens=5984 server_prompt_tokens=6284
+prefix hit rate | request_id=26_round_000006 planned=0.9408 actual=0.9400 delta=-0.0008 server_cached_prompt_tokens=6112 server_prompt_tokens=6502
+sessions 31/48 | steps 209/303 completed=209 submitted=215 active=6 failed=0 | elapsed=49.6s
+sessions 31/48 | steps 209/303 completed=209 submitted=217 active=8 failed=0 | elapsed=50.1s
+prefix hit rate | request_id=33_round_000003 planned=0.9636 actual=0.9622 delta=-0.0014 server_cached_prompt_tokens=3488 server_prompt_tokens=3625
+prefix hit rate | request_id=35_round_000001 planned=0.8089 actual=0.8060 delta=-0.0028 server_cached_prompt_tokens=1712 server_prompt_tokens=2124
+prefix hit rate | request_id=38_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2250
+prefix hit rate | request_id=36_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2352
+sessions 31/48 | steps 213/303 completed=213 submitted=218 active=5 failed=0 | elapsed=50.6s
+prefix hit rate | request_id=37_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1729
+prefix hit rate | request_id=34_round_000004 planned=0.9193 actual=0.9173 delta=-0.0020 server_cached_prompt_tokens=5136 server_prompt_tokens=5599
+sessions 32/48 | steps 215/303 completed=215 submitted=222 active=7 failed=0 | elapsed=51.1s
+prefix hit rate | request_id=30_round_000005 planned=0.9253 actual=0.9219 delta=-0.0033 server_cached_prompt_tokens=4144 server_prompt_tokens=4495
+prefix hit rate | request_id=39_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2587
+prefix hit rate | request_id=38_round_000001 planned=0.9346 actual=0.9323 delta=-0.0024 server_cached_prompt_tokens=2368 server_prompt_tokens=2540
+sessions 32/48 | steps 218/303 completed=218 submitted=223 active=5 failed=0 | elapsed=51.6s
+prefix hit rate | request_id=35_round_000002 planned=0.7818 actual=0.7801 delta=-0.0017 server_cached_prompt_tokens=2320 server_prompt_tokens=2974
+sessions 32/48 | steps 219/303 completed=219 submitted=227 active=8 failed=0 | elapsed=52.1s
+prefix hit rate | request_id=27_round_000008 planned=0.9440 actual=0.9428 delta=-0.0012 server_cached_prompt_tokens=7712 server_prompt_tokens=8180
+sessions 33/48 | steps 220/303 completed=220 submitted=228 active=8 failed=0 | elapsed=52.6s
+prefix hit rate | request_id=37_round_000001 planned=0.8364 actual=0.8333 delta=-0.0030 server_cached_prompt_tokens=1920 server_prompt_tokens=2304
+prefix hit rate | request_id=38_round_000002 planned=0.7590 actual=0.7582 delta=-0.0009 server_cached_prompt_tokens=2624 server_prompt_tokens=3461
+sessions 34/48 | steps 222/303 completed=222 submitted=230 active=8 failed=0 | elapsed=53.1s
+prefix hit rate | request_id=33_round_000004 planned=0.9448 actual=0.9419 delta=-0.0029 server_cached_prompt_tokens=3888 server_prompt_tokens=4128
+sessions 34/48 | steps 223/303 completed=223 submitted=230 active=7 failed=0 | elapsed=53.6s
+prefix hit rate | request_id=36_round_000001 planned=0.7645 actual=0.7624 delta=-0.0021 server_cached_prompt_tokens=2528 server_prompt_tokens=3316
+prefix hit rate | request_id=30_round_000006 planned=0.9115 actual=0.9109 delta=-0.0006 server_cached_prompt_tokens=4784 server_prompt_tokens=5252
+prefix hit rate | request_id=35_round_000003 planned=0.8951 actual=0.8919 delta=-0.0031 server_cached_prompt_tokens=3120 server_prompt_tokens=3498
+sessions 35/48 | steps 226/303 completed=226 submitted=232 active=6 failed=0 | elapsed=54.1s
+prefix hit rate | request_id=37_round_000002 planned=0.7431 actual=0.7425 delta=-0.0006 server_cached_prompt_tokens=2480 server_prompt_tokens=3340
+prefix hit rate | request_id=41_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1652
+prefix hit rate | request_id=39_round_000001 planned=0.8156 actual=0.8116 delta=-0.0040 server_cached_prompt_tokens=2640 server_prompt_tokens=3253
+sessions 35/48 | steps 229/303 completed=229 submitted=234 active=5 failed=0 | elapsed=54.6s
+prefix hit rate | request_id=40_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2564
+prefix hit rate | request_id=36_round_000002 planned=0.9636 actual=0.9607 delta=-0.0029 server_cached_prompt_tokens=3616 server_prompt_tokens=3764
+sessions 35/48 | steps 231/303 completed=231 submitted=238 active=7 failed=0 | elapsed=55.1s
+sessions 35/48 | steps 231/303 completed=231 submitted=239 active=8 failed=0 | elapsed=55.6s
+prefix hit rate | request_id=42_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1274
+prefix hit rate | request_id=37_round_000003 planned=0.9353 actual=0.9326 delta=-0.0027 server_cached_prompt_tokens=3488 server_prompt_tokens=3740
+prefix hit rate | request_id=33_round_000005 planned=0.8513 actual=0.8496 delta=-0.0017 server_cached_prompt_tokens=4400 server_prompt_tokens=5179
+sessions 35/48 | steps 234/303 completed=234 submitted=239 active=5 failed=0 | elapsed=56.1s
+prefix hit rate | request_id=39_round_000002 planned=0.8838 actual=0.8823 delta=-0.0015 server_cached_prompt_tokens=3552 server_prompt_tokens=4026
+sessions 36/48 | steps 235/303 completed=235 submitted=243 active=8 failed=0 | elapsed=56.6s
+prefix hit rate | request_id=30_round_000007 planned=0.8609 actual=0.8605 delta=-0.0003 server_cached_prompt_tokens=5504 server_prompt_tokens=6396
+prefix hit rate | request_id=40_round_000001 planned=0.9391 actual=0.9378 delta=-0.0013 server_cached_prompt_tokens=2864 server_prompt_tokens=3054
+sessions 36/48 | steps 237/303 completed=237 submitted=244 active=7 failed=0 | elapsed=57.1s
+prefix hit rate | request_id=41_round_000001 planned=0.7821 actual=0.7808 delta=-0.0013 server_cached_prompt_tokens=1824 server_prompt_tokens=2336
+prefix hit rate | request_id=33_round_000006 planned=0.9064 actual=0.9061 delta=-0.0003 server_cached_prompt_tokens=5472 server_prompt_tokens=6039
+prefix hit rate | request_id=36_round_000003 planned=0.9180 actual=0.9144 delta=-0.0036 server_cached_prompt_tokens=3856 server_prompt_tokens=4217
+prefix hit rate | request_id=43_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=2420
+sessions 36/48 | steps 241/303 completed=241 submitted=245 active=4 failed=0 | elapsed=57.6s
+sessions 36/48 | steps 241/303 completed=241 submitted=249 active=8 failed=0 | elapsed=58.1s
+prefix hit rate | request_id=40_round_000002 planned=0.9445 actual=0.9425 delta=-0.0020 server_cached_prompt_tokens=3312 server_prompt_tokens=3514
+prefix hit rate | request_id=42_round_000001 planned=0.6384 actual=0.6345 delta=-0.0039 server_cached_prompt_tokens=1472 server_prompt_tokens=2320
+sessions 36/48 | steps 243/303 completed=243 submitted=250 active=7 failed=0 | elapsed=58.6s
+prefix hit rate | request_id=37_round_000004 planned=0.9195 actual=0.9181 delta=-0.0014 server_cached_prompt_tokens=3888 server_prompt_tokens=4235
+sessions 36/48 | steps 244/303 completed=244 submitted=252 active=8 failed=0 | elapsed=59.1s
+prefix hit rate | request_id=30_round_000008 planned=0.9705 actual=0.9683 delta=-0.0022 server_cached_prompt_tokens=6656 server_prompt_tokens=6874
+prefix hit rate | request_id=43_round_000001 planned=0.9159 actual=0.9141 delta=-0.0018 server_cached_prompt_tokens=2576 server_prompt_tokens=2818
+sessions 37/48 | steps 246/303 completed=246 submitted=253 active=7 failed=0 | elapsed=59.6s
+prefix hit rate | request_id=33_round_000007 planned=0.8873 actual=0.8854 delta=-0.0019 server_cached_prompt_tokens=6176 server_prompt_tokens=6975
+prefix hit rate | request_id=36_round_000004 planned=0.9119 actual=0.9111 delta=-0.0008 server_cached_prompt_tokens=4480 server_prompt_tokens=4917
+sessions 37/48 | steps 248/303 completed=248 submitted=254 active=6 failed=0 | elapsed=60.1s
+prefix hit rate | request_id=42_round_000002 planned=0.7604 actual=0.7592 delta=-0.0012 server_cached_prompt_tokens=2608 server_prompt_tokens=3435
+prefix hit rate | request_id=41_round_000002 planned=0.8610 actual=0.8603 delta=-0.0007 server_cached_prompt_tokens=2624 server_prompt_tokens=3050
+prefix hit rate | request_id=40_round_000003 planned=0.9298 actual=0.9295 delta=-0.0003 server_cached_prompt_tokens=3600 server_prompt_tokens=3873
+sessions 38/48 | steps 251/303 completed=251 submitted=258 active=7 failed=0 | elapsed=60.6s
+prefix hit rate | request_id=37_round_000005 planned=0.8406 actual=0.8381 delta=-0.0026 server_cached_prompt_tokens=4528 server_prompt_tokens=5403
+prefix hit rate | request_id=43_round_000002 planned=0.8842 actual=0.8839 delta=-0.0003 server_cached_prompt_tokens=2992 server_prompt_tokens=3385
+prefix hit rate | request_id=44_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1460
+sessions 38/48 | steps 254/303 completed=254 submitted=262 active=8 failed=0 | elapsed=61.1s
+prefix hit rate | request_id=45_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1014
+prefix hit rate | request_id=41_round_000003 planned=0.8258 actual=0.8256 delta=-0.0002 server_cached_prompt_tokens=3328 server_prompt_tokens=4031
+prefix hit rate | request_id=40_round_000004 planned=0.9162 actual=0.9144 delta=-0.0018 server_cached_prompt_tokens=4080 server_prompt_tokens=4462
+sessions 39/48 | steps 257/303 completed=257 submitted=264 active=7 failed=0 | elapsed=61.6s
+sessions 39/48 | steps 257/303 completed=257 submitted=265 active=8 failed=0 | elapsed=62.1s
+prefix hit rate | request_id=46_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1705
+prefix hit rate | request_id=43_round_000003 planned=0.9511 actual=0.9475 delta=-0.0035 server_cached_prompt_tokens=3504 server_prompt_tokens=3698
+prefix hit rate | request_id=36_round_000005 planned=0.8828 actual=0.8805 delta=-0.0022 server_cached_prompt_tokens=5152 server_prompt_tokens=5851
+prefix hit rate | request_id=44_round_000001 planned=0.8855 actual=0.8769 delta=-0.0086 server_cached_prompt_tokens=1632 server_prompt_tokens=1861
+sessions 39/48 | steps 261/303 completed=261 submitted=266 active=5 failed=0 | elapsed=62.6s
+prefix hit rate | request_id=37_round_000006 planned=0.9463 actual=0.9451 delta=-0.0012 server_cached_prompt_tokens=5600 server_prompt_tokens=5925
+prefix hit rate | request_id=33_round_000008 planned=0.9233 actual=0.9226 delta=-0.0006 server_cached_prompt_tokens=7168 server_prompt_tokens=7769
+prefix hit rate | request_id=41_round_000004 planned=0.9254 actual=0.9234 delta=-0.0020 server_cached_prompt_tokens=4112 server_prompt_tokens=4453
+sessions 40/48 | steps 264/303 completed=264 submitted=271 active=7 failed=0 | elapsed=63.1s
+prefix hit rate | request_id=46_round_000001 planned=0.8201 actual=0.8132 delta=-0.0069 server_cached_prompt_tokens=1776 server_prompt_tokens=2184
+sessions 40/48 | steps 265/303 completed=265 submitted=272 active=7 failed=0 | elapsed=63.6s
+sessions 40/48 | steps 265/303 completed=265 submitted=273 active=8 failed=0 | elapsed=64.1s
+prefix hit rate | request_id=41_round_000005 planned=0.8531 actual=0.8507 delta=-0.0024 server_cached_prompt_tokens=4608 server_prompt_tokens=5417
+prefix hit rate | request_id=37_round_000007 planned=0.9262 actual=0.9250 delta=-0.0012 server_cached_prompt_tokens=6128 server_prompt_tokens=6625
+prefix hit rate | request_id=44_round_000002 planned=0.7161 actual=0.7140 delta=-0.0021 server_cached_prompt_tokens=2032 server_prompt_tokens=2846
+prefix hit rate | request_id=43_round_000004 planned=0.8405 actual=0.8401 delta=-0.0004 server_cached_prompt_tokens=3840 server_prompt_tokens=4571
+prefix hit rate | request_id=45_round_000001 planned=0.6812 actual=0.6788 delta=-0.0024 server_cached_prompt_tokens=1152 server_prompt_tokens=1697
+sessions 41/48 | steps 270/303 completed=270 submitted=275 active=5 failed=0 | elapsed=64.6s
+prefix hit rate | request_id=36_round_000006 planned=0.8733 actual=0.8723 delta=-0.0010 server_cached_prompt_tokens=6080 server_prompt_tokens=6970
+prefix hit rate | request_id=47_round_000000 planned=0.0000 actual=0.0000 delta=+0.0000 server_cached_prompt_tokens=0 server_prompt_tokens=1359
+sessions 42/48 | steps 272/303 completed=272 submitted=277 active=5 failed=0 | elapsed=65.1s
+prefix hit rate | request_id=44_round_000003 planned=0.7729 actual=0.7722 delta=-0.0008 server_cached_prompt_tokens=3040 server_prompt_tokens=3937
+prefix hit rate | request_id=41_round_000006 planned=0.9380 actual=0.9356 delta=-0.0024 server_cached_prompt_tokens=5504 server_prompt_tokens=5883
+sessions 42/48 | steps 274/303 completed=274 submitted=278 active=4 failed=0 | elapsed=65.6s
+sessions 42/48 | steps 274/303 completed=274 submitted=280 active=6 failed=0 | elapsed=66.1s
+prefix hit rate | request_id=41_round_000007 planned=0.9556 actual=0.9533 delta=-0.0024 server_cached_prompt_tokens=6016 server_prompt_tokens=6311
+prefix hit rate | request_id=46_round_000002 planned=0.8027 actual=0.8003 delta=-0.0024 server_cached_prompt_tokens=2304 server_prompt_tokens=2879
+sessions 42/48 | steps 276/303 completed=276 submitted=281 active=5 failed=0 | elapsed=66.6s
+prefix hit rate | request_id=45_round_000002 planned=0.7158 actual=0.7123 delta=-0.0036 server_cached_prompt_tokens=2000 server_prompt_tokens=2808
+prefix hit rate | request_id=47_round_000001 planned=0.7301 actual=0.7234 delta=-0.0067 server_cached_prompt_tokens=1616 server_prompt_tokens=2234
+sessions 42/48 | steps 278/303 completed=278 submitted=283 active=5 failed=0 | elapsed=67.1s
+prefix hit rate | request_id=43_round_000005 planned=0.9508 actual=0.9489 delta=-0.0020 server_cached_prompt_tokens=4768 server_prompt_tokens=5025
+sessions 42/48 | steps 279/303 completed=279 submitted=285 active=6 failed=0 | elapsed=67.6s
+prefix hit rate | request_id=45_round_000003 planned=0.8401 actual=0.8398 delta=-0.0003 server_cached_prompt_tokens=3072 server_prompt_tokens=3658
+prefix hit rate | request_id=46_round_000003 planned=0.9553 actual=0.9544 delta=-0.0009 server_cached_prompt_tokens=3184 server_prompt_tokens=3336
+sessions 42/48 | steps 281/303 completed=281 submitted=286 active=5 failed=0 | elapsed=68.1s
+prefix hit rate | request_id=44_round_000004 planned=0.8626 actual=0.8613 delta=-0.0013 server_cached_prompt_tokens=4080 server_prompt_tokens=4737
+prefix hit rate | request_id=47_round_000002 planned=0.7795 actual=0.7789 delta=-0.0006 server_cached_prompt_tokens=2416 server_prompt_tokens=3102
+sessions 42/48 | steps 283/303 completed=283 submitted=287 active=4 failed=0 | elapsed=68.7s
+prefix hit rate | request_id=46_round_000004 planned=0.8893 actual=0.8857 delta=-0.0035 server_cached_prompt_tokens=3504 server_prompt_tokens=3956
+prefix hit rate | request_id=41_round_000008 planned=0.9164 actual=0.9159 delta=-0.0006 server_cached_prompt_tokens=6368 server_prompt_tokens=6953
+sessions 43/48 | steps 285/303 completed=285 submitted=289 active=4 failed=0 | elapsed=69.2s
+prefix hit rate | request_id=43_round_000006 planned=0.8643 actual=0.8623 delta=-0.0019 server_cached_prompt_tokens=5312 server_prompt_tokens=6160
+sessions 43/48 | steps 286/303 completed=286 submitted=290 active=4 failed=0 | elapsed=69.7s
+prefix hit rate | request_id=45_round_000004 planned=0.9087 actual=0.9080 delta=-0.0007 server_cached_prompt_tokens=3760 server_prompt_tokens=4141
+sessions 43/48 | steps 287/303 completed=287 submitted=292 active=5 failed=0 | elapsed=70.2s
+prefix hit rate | request_id=45_round_000005 planned=0.8912 actual=0.8883 delta=-0.0029 server_cached_prompt_tokens=4352 server_prompt_tokens=4899
+prefix hit rate | request_id=46_round_000005 planned=0.9493 actual=0.9476 delta=-0.0017 server_cached_prompt_tokens=4016 server_prompt_tokens=4238
+sessions 43/48 | steps 289/303 completed=289 submitted=292 active=3 failed=0 | elapsed=70.7s
+prefix hit rate | request_id=44_round_000005 planned=0.9428 actual=0.9399 delta=-0.0028 server_cached_prompt_tokens=5008 server_prompt_tokens=5328
+sessions 43/48 | steps 290/303 completed=290 submitted=294 active=4 failed=0 | elapsed=71.2s
+prefix hit rate | request_id=47_round_000003 planned=0.9113 actual=0.9102 delta=-0.0011 server_cached_prompt_tokens=3232 server_prompt_tokens=3551
+sessions 43/48 | steps 291/303 completed=291 submitted=295 active=4 failed=0 | elapsed=71.7s
+prefix hit rate | request_id=46_round_000006 planned=0.8817 actual=0.8791 delta=-0.0026 server_cached_prompt_tokens=4400 server_prompt_tokens=5005
+prefix hit rate | request_id=45_round_000006 planned=0.9013 actual=0.8986 delta=-0.0027 server_cached_prompt_tokens=4944 server_prompt_tokens=5502
+sessions 43/48 | steps 293/303 completed=293 submitted=298 active=5 failed=0 | elapsed=72.2s
+prefix hit rate | request_id=43_round_000007 planned=0.9105 actual=0.9090 delta=-0.0014 server_cached_prompt_tokens=6416 server_prompt_tokens=7058
+sessions 43/48 | steps 294/303 completed=294 submitted=298 active=4 failed=0 | elapsed=72.7s
+sessions 43/48 | steps 294/303 completed=294 submitted=299 active=5 failed=0 | elapsed=73.2s
+prefix hit rate | request_id=47_round_000004 planned=0.9530 actual=0.9493 delta=-0.0037 server_cached_prompt_tokens=3856 server_prompt_tokens=4062
+prefix hit rate | request_id=46_round_000007 planned=0.8905 actual=0.8897 delta=-0.0009 server_cached_prompt_tokens=5120 server_prompt_tokens=5755
+prefix hit rate | request_id=43_round_000008 planned=0.9733 actual=0.9720 delta=-0.0013 server_cached_prompt_tokens=7360 server_prompt_tokens=7572
+sessions 45/48 | steps 297/303 completed=297 submitted=299 active=2 failed=0 | elapsed=73.7s
+prefix hit rate | request_id=44_round_000006 planned=0.9634 actual=0.9615 delta=-0.0019 server_cached_prompt_tokens=5600 server_prompt_tokens=5824
+prefix hit rate | request_id=45_round_000007 planned=0.8958 actual=0.8950 delta=-0.0008 server_cached_prompt_tokens=5584 server_prompt_tokens=6239
+sessions 46/48 | steps 299/303 completed=299 submitted=300 active=1 failed=0 | elapsed=74.2s
+sessions 46/48 | steps 299/303 completed=299 submitted=301 active=2 failed=0 | elapsed=74.7s
+sessions 46/48 | steps 299/303 completed=299 submitted=301 active=2 failed=0 | elapsed=75.2s
+sessions 46/48 | steps 299/303 completed=299 submitted=301 active=2 failed=0 | elapsed=75.7s
+prefix hit rate | request_id=44_round_000007 planned=0.9192 actual=0.9174 delta=-0.0018 server_cached_prompt_tokens=6112 server_prompt_tokens=6662
+prefix hit rate | request_id=47_round_000005 planned=0.9011 actual=0.8996 delta=-0.0015 server_cached_prompt_tokens=4256 server_prompt_tokens=4731
+sessions 47/48 | steps 301/303 completed=301 submitted=301 active=0 failed=0 | elapsed=76.2s
+sessions 47/48 | steps 301/303 completed=301 submitted=302 active=1 failed=0 | elapsed=76.7s
+sessions 47/48 | steps 301/303 completed=301 submitted=302 active=1 failed=0 | elapsed=77.2s
+prefix hit rate | request_id=47_round_000006 planned=0.9764 actual=0.9745 delta=-0.0019 server_cached_prompt_tokens=5040 server_prompt_tokens=5172
+sessions 47/48 | steps 302/303 completed=302 submitted=302 active=0 failed=0 | elapsed=77.7s
+sessions 47/48 | steps 302/303 completed=302 submitted=303 active=1 failed=0 | elapsed=78.2s
+sessions 47/48 | steps 302/303 completed=302 submitted=303 active=1 failed=0 | elapsed=78.7s
+sessions 47/48 | steps 302/303 completed=302 submitted=303 active=1 failed=0 | elapsed=79.2s
+sessions 47/48 | steps 302/303 completed=302 submitted=303 active=1 failed=0 | elapsed=79.7s
+prefix hit rate | request_id=47_round_000007 planned=0.8817 actual=0.8791 delta=-0.0026 server_cached_prompt_tokens=5360 server_prompt_tokens=6097
+prefix hit rate summary | measured_steps=303 planned=0.8166 actual=0.8147 delta=-0.0019 server_cached_prompt_tokens=937232 server_prompt_tokens=1150397

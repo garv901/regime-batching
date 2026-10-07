@@ -16,6 +16,7 @@ os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("VLLM_HAS_FLASHINFER_CUBIN", "1")
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "third_party/vllm/benchmarks/attention_benchmarks"))
 
 import numpy as np
@@ -102,6 +103,66 @@ def build_specs():
     # F5 single long sequence
     for L in [4096, 16384, 32768, 65536]:
         specs.append((f"single_1q1s{L}", "F5_single", [(1, L)]))
+    # F6 long-prefix append: decodes first, then prefill (q new tokens on P cached)
+    for P in [0, 8192, 32768, 131072]:
+        for q in F6_Q:
+            for dn, nl, Ll in F6_DEC:
+                dec = [(1, Ll)] * nl
+                name = f"app_P{P}_q{q}_{dn}"
+                specs.append((name, "F6_append", dec + [(q, P + q)]))
+                SPEC_META[name] = dict(P=P, q=q, n_long=nl, L_long=Ll, dec_set=dn,
+                                       tiles=NKV * math.ceil(q / 32))
+    for dn, nl, Ll in F6_DEC:  # decodes alone (straggler reference)
+        if nl:
+            name = f"app_decalone_{dn}"
+            specs.append((name, "F6_append", [(1, Ll)] * nl))
+            SPEC_META[name] = dict(P=None, q=0, n_long=nl, L_long=Ll, dec_set=dn, tiles=0)
+    return specs
+
+
+F6_Q = [417, 448, 512, 513, 544, 640, 768, 1024, 1056, 1057, 1088, 1536, 1584, 1585, 2048, 2112, 2113, 8192]
+F6_DEC = [("none", 0, 0), ("1x32k", 1, 32768), ("3x32k", 3, 32768), ("1x128k", 1, 131072), ("3x128k", 3, 131072)]
+SPEC_META = {}
+MAX_LEN = 70000
+
+
+def replay_specs(paths, n):
+    import glob
+    files = []
+    for p in paths.split(","):
+        files += sorted(glob.glob(p))
+    rng = random.Random(0)
+    pools = {}
+    for f in files:
+        for l in open(f):
+            if '"kind":"step"' not in l[:20] and '"kind": "step"' not in l[:20]:
+                continue
+            r = json.loads(l)
+            if r["T"] <= 512 or not r.get("reqs") or r["maxL"] < 16384 or r["reqs"][0][0].startswith("_warmup"):
+                continue
+            pools.setdefault((r["regime"] == "X", f), []).append(r)
+    chosen, seen = [], set()
+    for want_x in (True, False):
+        lists = [v for (x, f), v in sorted(pools.items(), key=lambda kv: kv[0][1]) if x == want_x]
+        for v in lists:
+            rng.shuffle(v)
+        i = 0
+        while len(chosen) < n and any(i < len(v) for v in lists):
+            for fi, v in enumerate(lists):
+                if i < len(v) and len(chosen) < n:
+                    r = v[i]
+                    sig = tuple(sorted((a[1], a[2]) for a in r["reqs"]))
+                    if sig not in seen:
+                        seen.add(sig); chosen.append((r, fi))
+            i += 1
+    specs = []
+    for k, (r, fi) in enumerate(chosen):
+        dec = [(a[1], a[2]) for a in r["reqs"] if a[1] == 1]
+        pre = [(a[1], a[2]) for a in r["reqs"] if a[1] > 1]
+        name = f"replay{k:02d}_s{r['step']}"
+        specs.append((name, "replay", dec + pre))
+        SPEC_META[name] = dict(regime=r["regime"], src_step=r["step"], T=r["T"],
+                               logged_fa3_splits=r.get("fa3_splits"), gpu_ms=r.get("gpu_ms"))
     return specs
 
 
@@ -120,7 +181,8 @@ def spec_stats(reqs):
 
 # ---------------------------------------------------------------- engines
 
-def make_vllm_config(num_blocks, use_trtllm=None, max_len=70000, cg=False):
+def make_vllm_config(num_blocks, use_trtllm=None, max_len=None, cg=False):
+    max_len = max_len or MAX_LEN
     mc = ModelConfig(model=MODEL, tokenizer=MODEL, trust_remote_code=False, dtype="auto",
                      seed=0, max_model_len=max_len)
     assert mc.dtype == DT, mc.dtype
@@ -384,9 +446,11 @@ def main():
     ap.add_argument("--eager-families", default="F2_skew,F3_mixed,F5_single")
     ap.add_argument("--warm-families", default="F5_single")
     ap.add_argument("--resume", action="store_true")
+    ap.add_argument("--replay-steps", default="", help="telemetry steps jsonl file(s) or glob (comma sep)")
+    ap.add_argument("--replay-n", type=int, default=40)
     args = ap.parse_args()
 
-    specs = build_specs()
+    specs = replay_specs(args.replay_steps, args.replay_n) if args.replay_steps else build_specs()
     if args.families:
         fams = args.families.split(",")
         specs = [s for s in specs if s[1] in fams]
@@ -404,6 +468,8 @@ def main():
             r = json.loads(l); done.add((r["spec"], r["config"]))
     fout = open(args.out, "a")
 
+    global MAX_LEN
+    MAX_LEN = max(MAX_LEN, max(kv for sp in specs for _, kv in sp[2]) + 1024)
     nb_total = max(sum((kv + BS - 1) // BS for _, kv in s[2]) for s in specs) + 8
     print(f"specs={len(specs)} configs={configs} nb_total={nb_total} "
           f"({nb_total * BS * KV_BYTES_PER_TOKEN / 1e9:.1f} GB per cache)", flush=True)
@@ -428,6 +494,7 @@ def main():
     perm = torch.randperm(nb_total, generator=torch.Generator().manual_seed(7), dtype=torch.int64).to(torch.int32)
     print("flush us (subtracted):", measure_flush(), flush=True)
 
+    auto_info = {}
     t_start = time.time()
     for si, (name, fam, reqs) in enumerate(specs):
         stats = spec_stats(reqs)
@@ -442,7 +509,7 @@ def main():
         if "fa3_auto" not in todo and "fa3_auto" in configs:
             pass
         for cname in order:
-            row = dict(spec=name, family=fam, config=cname, **stats)
+            row = dict(spec=name, family=fam, config=cname, **stats, **SPEC_META.get(name, {}))
             eng = engines[engine_of(cname)]
             try:
                 batch.out.zero_()
@@ -475,6 +542,16 @@ def main():
                     row["eager_time_us"] = eager_time(fn)
                 row["bw_GBps"] = stats["kv_tokens_total"] * KV_BYTES_PER_TOKEN / (med * 1e-6) / 1e9
                 row["notes"] = ";".join(notes)
+                if fam in ("F6_append", "replay"):
+                    from regime_batching.features import fa3_static_splits
+                    mq = max(r[0] for r in reqs); mk = max(r[1] for r in reqs)
+                    row["default_splits"] = fa3_static_splits(mq, mk, stats["num_actual_tokens"], 4, NKV, HD, BS,
+                                                              full_cg=False)[0]
+                    if fam == "replay":
+                        row["tiles"] = NKV * math.ceil(mq * 4 / (64 if mq * 4 <= 64 else 128))
+                    if cname == "fa3_auto":
+                        auto_info[name] = notes[0] if notes else ""
+                    row["default_split_info"] = auto_info.get(name, "")
             except Exception as e:
                 row["notes"] = f"ERROR:{type(e).__name__}:{str(e)[:200]}"
                 print("ERR", name, cname, row["notes"], flush=True)
