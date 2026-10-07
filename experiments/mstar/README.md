@@ -1,7 +1,7 @@
 # mstar harness (BAGEL text-to-text)
 
 GPU-side harness for benchmarking mstar (in-house serving engine) with BAGEL-7B-MoT, text-to-text only.
-Baselines run from the pristine worktree `mstar-worktrees/bench-main` (`origin/main`, venv at `.venv`).
+Baselines run from the pristine worktree `mstar-worktrees/regime-batching/bench-main` (`origin/main`, venv at `.venv`).
 
 ## Files
 
@@ -31,7 +31,7 @@ In your own job script:
 
 ```bash
 source /data/mstar/env-laude.sh; export HF_HOME=/data/garv901-55613a/hf
-PORT=...; MSTAR_DIR=/shared/home/garv901-55613a/mstar-worktrees/<worktree>     # needs its own .venv
+PORT=...; MSTAR_DIR=/shared/home/garv901-55613a/mstar-worktrees/regime-batching/<worktree>     # needs its own .venv
 EXTRA_ENV="MSTAR_STEP_TELEMETRY_DIR=$D/telemetry MSTAR_KV_ADMISSION_FIT=1 MSTAR_KV_ADMISSION_ORDER=lpt"   # server only
 source experiments/mstar/lib_mstar.sh
 start_server "$D" [extra mstar serve args]       # waits for /health; sets SRV and SERVER_STARTUP_S

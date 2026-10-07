@@ -30,7 +30,7 @@ cd "${SLURM_SUBMIT_DIR:-/shared/home/garv901-55613a/regime-batching/regime-batch
 S5=experiments/mstar/s5
 source /data/mstar/env-laude.sh
 export HF_HOME=/data/garv901-55613a/hf
-export MSTAR_DIR=${MSTAR_DIR:-/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline}
+export MSTAR_DIR=${MSTAR_DIR:-/shared/home/garv901-55613a/mstar-worktrees/regime-batching/s5-stage-deadline}
 # The server runs this worktree's code in the cu129 venv: it has flash-attn (the Qwen3-Omni vision encoder needs it; the
 # worktree's own .venv does not, and is cu132 against the node's CUDA 12.9 toolkit). PYTHONPATH (set per arm below) makes
 # `import mstar` resolve to $MSTAR_DIR instead of the venv's editable install of another worktree.

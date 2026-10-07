@@ -28,7 +28,7 @@ export HF_HOME="${HF_HOME:-/data/garv901-55613a/hf}"
 export PYTHONUNBUFFERED=1
 # The server runs with HF_HUB_OFFLINE=1 (weights are cached). The client does NOT: transformers 4.57 AutoTokenizer
 # (trust_remote_code) calls the hub API even for a cached repo and fails offline, which only costs the per-token ITL.
-: "${MSTAR_DIR:=/shared/home/garv901-55613a/mstar-worktrees/bench-main}"
+: "${MSTAR_DIR:=/shared/home/garv901-55613a/mstar-worktrees/regime-batching/bench-main}"
 : "${MSTAR_MODEL:=bagel}" "${MSTAR_CONFIG:=configs/bagel_single_gpu.yaml}" "${TENSOR_PROTO:=SHM}"
 : "${HEALTH_TIMEOUT:=1500}" "${EXTRA_ENV:=}" "${LOG_STATS:=0}" "${MSTAR_VENV:=$MSTAR_DIR/.venv}"
 

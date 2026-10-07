@@ -62,7 +62,7 @@ Each server ran one throwaway warm-up (audio conc 8 + text conc 8), then 2 reps 
 
 ## What was built
 
-mstar worktree `/shared/home/garv901-55613a/mstar-worktrees/s5-stage-deadline`, branch `garv/s5-stage-deadline`:
+mstar worktree `/shared/home/garv901-55613a/mstar-worktrees/regime-batching/s5-stage-deadline`, branch `garv/s5-stage-deadline`:
 
 * `NodeSubmodule.walk_priority(walk)` and `walk_deadline_slack(walk, rid, info, now)`: model hints, default None.
 * `SchedulingType.DEADLINE`, chosen by `MSTAR_SCHED_POLICY=deadline` (default `round_robin`). Pick order over the walks with a ready

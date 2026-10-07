@@ -12,7 +12,7 @@
 # /tmp/probe_guest_<job>.out on the node and its one-line summary is put in the job comment (`sacct -j <id> -o Comment%400`);
 # PROBE_HOLD=<s> keeps the job alive that long at the end, so `srun --jobid <id> --overlap cat /tmp/probe_guest_<id>.out` works.
 # If Slurm cannot open the -o file (job fails at once), resubmit with -o /tmp/probe_guest_%j.out.
-PY=/shared/home/garv901-55613a/mstar-worktrees/bench-peak-fast/.venv/bin/python
+PY=/shared/home/garv901-55613a/mstar-worktrees/regime-batching/bench-peak-fast/.venv/bin/python
 HF=/data/garv901-55613a/hf
 RES=/data/garv901-55613a/results/mstar
 exec > >(tee "/tmp/probe_guest_${SLURM_JOB_ID:-$$}.out") 2>&1
