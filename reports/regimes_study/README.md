@@ -17,7 +17,7 @@ observed, H1-H5 verdicts, optimization areas, caveats.
 | Stage | Report | Status |
 |---|---|---|
 | 1 | [Foundations: regimes in a vLLM step and what each costs](01_foundations.md) | done, reviewed |
-| 1b | Regime census: every kind of step, whole-step cost, best reachable alternative | in progress |
+| 1b | [Regime census: every kind of step, whole-step cost, best reachable alternative](01b_regime_census.md) | done |
 | 2 | Chat baseline (Azure conversation lengths) | not started |
 | 3 | Coding agents (TraceLab replay on H100) | not started |
 | 4 | MoE (ServingStudio simulation) | not started |
@@ -31,6 +31,7 @@ Regimes describe what a step *is*:
 |---|---|---|
 | X | prefill + long decode, T > 512, FA3 at 1 split, and the default split costs >= 1.2x the best split bound (tile model) | `features.attn_step_model` |
 | A | a prefill chunk appended to >= 16k cached tokens (an agent round) | new in this study |
+| A+L | A with a decode >= 16k in the same attention launch; FA3 gives the decode 1 split even at split bound 32 | new in Stage 1b |
 | P / M | other prefill-bearing steps, prefill-heavy / mixed | `features.classify` |
 | Dc, Dl, Ds, Dk, Dw | decode-only: GEMM ridge, low-occupancy long, skewed, KV-bound, weight-bound | `features.classify` |
 
@@ -49,13 +50,13 @@ Hypotheses describe what can go wrong:
 
 ## Verdict matrix
 
-| | Stage 1 (kernel level) | Stage 2 chat | Stage 3 agents | Stage 4 MoE sim |
-|---|---|---|---|---|
-| H1 | confirmed, prefix-dependent: 2.3-7.7x at prefix <= 8k, 1.2-1.9x at 32k, none at 128k ([01](01_foundations.md#h1-h5-verdicts)) | | | n/a (MLA/DSA) |
-| H2 | not tested at kernel level (CPU launch cost) | | | |
-| H3 | shape-level evidence only (ServingStudio) | | | |
-| H4 | confirmed: cold short-prefix chunks are X steps; 8k cold chunks lose 1.15-1.41x vs separate launches | | | |
-| H5 | confirmed: 55-62% efficiency at 513-544-token appends on 8k-128k; no split bound helps | | | n/a (MLA/DSA) |
+| | Stage 1 (kernel level) | Stage 1b (whole step, designed grid; evidence, not verdicts) | Stage 2 chat | Stage 3 agents | Stage 4 MoE sim |
+|---|---|---|---|---|---|
+| H1 | confirmed, prefix-dependent: 2.3-7.7x at prefix <= 8k, 1.2-1.9x at 32k, none at 128k ([01](01_foundations.md#h1-h5-verdicts)) | whole step up to 3.36x (<= 2,048 tokens; capture 2048 fixes) and 1.78x (> 2,048); at 120k prefixes up to 1.48x, fixed only by separate launches (A+L) | | | n/a (MLA/DSA) |
+| H2 | not tested at kernel level (CPU launch cost) | launch cost median 0.3 ms at load 86-173; the 512 boundary costs through the split bound (H1) and the wave edge (H5) | | | |
+| H3 | shape-level evidence only (ServingStudio) | an 8,192-token step: 211 ms fresh, 1,110 ms on a 120k prefix; co-scheduled decodes wait it out | | | |
+| H4 | confirmed: cold short-prefix chunks are X steps; 8k cold chunks lose 1.15-1.41x vs separate launches | 1.6-3.4x for 512-1,057-token chunks at prefix 0-8k next to 120k decodes | | | |
+| H5 | confirmed: 55-62% efficiency at 513-544-token appends on 8k-128k; no split bound helps | revised kernel-level clause met: same tokens 1.14-1.53x faster as aligned chunk + remainder (8 of 9 shapes >= 1.15x); trace-weighted clause pending Stage 3 | | | n/a (MLA/DSA) |
 
 ## Kill / support criteria
 

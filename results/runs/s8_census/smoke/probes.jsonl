@@ -1,0 +1,18 @@
+{"kind": "meta", "config": "default", "engine_kw": {"model": "meta-llama/Llama-3.1-8B-Instruct", "max_model_len": "262144", "enable_prefix_caching": "True", "gpu_memory_utilization": "0.92", "seed": "0", "max_num_batched_tokens": "8192", "max_num_seqs": "1024"}, "loadavg": [100.701171875, 136.80078125, 139.685546875], "t": 1791361159.51971}
+{"rid": "warm|none|A", "n_prompt": 122880, "t_add": 1791361159.593695, "kind": "warm", "scen": "none", "P": 122880}
+{"rid": "warm|none|B", "n_prompt": 122880, "t_add": 1791361159.6115868, "kind": "warm", "scen": "none", "P": 122880}
+{"kind": "mark", "scen": "none", "what": "decode_only_start", "step": 31}
+{"kind": "mark", "scen": "none", "what": "probes_start", "step": 39}
+{"rid": "probe|none|P0|q16|r0", "n_prompt": 16, "t_add": 1791361178.2834592, "kind": "probe", "scen": "none", "P": 0, "q": 16, "rep": 0}
+{"rid": "probe|none|P8192|q416|r0", "n_prompt": 8608, "t_add": 1791361178.2938967, "kind": "probe", "scen": "none", "P": 8192, "q": 416, "rep": 0}
+{"rid": "probe|none|P32768|q1024|r0", "n_prompt": 33792, "t_add": 1791361178.3181622, "kind": "probe", "scen": "none", "P": 32768, "q": 1024, "rep": 0}
+{"rid": "pair|none|512+512|a|r0", "n_prompt": 123392, "t_add": 1791361178.3883338, "kind": "pair", "scen": "none", "P": 122880, "q": 512, "rep": 0, "pair": [512, 512]}
+{"rid": "pair|none|512+512|b|r0", "n_prompt": 123392, "t_add": 1791361178.4032466, "kind": "pair", "scen": "none", "P": 122880, "q": 512, "rep": 0, "pair": [512, 512]}
+{"rid": "dec|1x120k|0", "n_prompt": 122880, "t_add": 1791361178.579303, "kind": "dec", "scen": "1x120k", "L": 122880}
+{"rid": "warm|1x120k|A", "n_prompt": 32768, "t_add": 1791361178.5835497, "kind": "warm", "scen": "1x120k", "P": 32768}
+{"kind": "mark", "scen": "1x120k", "what": "decode_only_start", "step": 64}
+{"kind": "mark", "scen": "1x120k", "what": "probes_start", "step": 72}
+{"rid": "probe|1x120k|P0|q32|r0", "n_prompt": 32, "t_add": 1791361188.0689585, "kind": "probe", "scen": "1x120k", "P": 0, "q": 32, "rep": 0}
+{"rid": "probe|1x120k|P8192|q417|r0", "n_prompt": 8609, "t_add": 1791361188.0940108, "kind": "probe", "scen": "1x120k", "P": 8192, "q": 417, "rep": 0}
+{"rid": "probe|1x120k|P32768|q1024|r0", "n_prompt": 33792, "t_add": 1791361188.1291933, "kind": "probe", "scen": "1x120k", "P": 32768, "q": 1024, "rep": 0}
+{"kind": "end", "loadavg": [106.64111328125, 135.6796875, 139.27294921875], "t": 1791361188.21887}

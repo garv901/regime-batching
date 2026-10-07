@@ -188,7 +188,8 @@ def main():
         rl, bound_kind = roofline_ms(reqs)
         a = att.get(f7_name(scen, kind, P, q, list(pair) if pair else None), {})
         alts = {}
-        if c:
+        cap_differs = c and 512 < T <= 2048  # elsewhere capture 2048 runs the same path (measured: ratio 1.000)
+        if cap_differs:
             alts["cap2048"] = c["gpu"]
         def_att_cfg = "fa3_cg" if T <= 512 else "fa3_auto"
         cap_att_cfg = "fa3_cg" if T <= 2048 else "fa3_auto"
@@ -201,7 +202,7 @@ def main():
             if oth:
                 alts["kernel"] = d["gpu"] - NL * (a[def_att_cfg] - min(oth))
             best_all = min(v for k_, v in a.items())
-            if c and a.get(cap_att_cfg):
+            if cap_differs and a.get(cap_att_cfg):
                 alts["cap2048+att"] = c["gpu"] - NL * (a[cap_att_cfg] - best_all)
         realign_marginal = None
         if scen == "none" and kind == "probe" and q in (513, 544, 1057):
@@ -231,6 +232,129 @@ def main():
         table.append(row)
         groups[src].append(row)
 
+    # where the time goes: attention (F7, 32 layers), eager excess (default - cap2048, net of the attention change),
+    # the rest is GEMMs and other non-attention kernels
+    for r in table:
+        a = att.get(f7_name(r["scen"], r["kind"], r["P"], r["q"], list(r["pair"]) if r["pair"] else None), {})
+        eager = None
+        if r["mode"] == "NONE" and r["mode_cap"] and r["mode_cap"] != "NONE":
+            d_att = NL * (a["fa3_auto"] - a["fa3_cg"]) if a.get("fa3_auto") and a.get("fa3_cg") else 0.0
+            eager = max(0.0, r["gpu_def"] - r["gpu_cap"] - d_att)
+        r["eager_ms"] = eager
+        r["nonatt_ms"] = r["gpu_def"] - r["att_def"] - (eager or 0) if r["att_def"] is not None else None
+        r["label"] = r.get("regime2") or r["regime_old"]
+        if r["label"] == "A" and max(DEC[r["scen"]], default=0) >= RegimeConfig().x_struct_min_L:
+            r["label"] = "A+L"  # long-prefix append sharing the launch with a long decode (census refinement)
+        r["size"] = "<=512" if r["T"] <= 512 else ("513-2048" if r["T"] <= 2048 else ">2048")
+        r["kernel_move"] = (NL * (a["fa3_cg"] - min(a.values())) / r["gpu_def"]
+                            if r["kind"] == "dec" and a.get("fa3_cg") else None)
+    regimes = collections.defaultdict(list)
+    for r in table:
+        regimes[(r["label"], r["size"])].append(r)
+    md_reg = ["", "## Regimes: where the time goes and what recovers it", "",
+              "Shares are medians over the shapes in the row, of the default-config step. eager = default minus "
+              "capture-2048 time for the same step, net of the attention change (measured only for 513-2048 "
+              "tokens). fix: the alternative that recovers the most, by count of shapes with loss >= 1.05.", "",
+              "| regime | step tokens | shapes | scenarios | attention | eager | non-attention | eff (median) | "
+              "loss median (max) | fix |", "|---|---|---|---|---|---|---|---|---|---|"]
+    for (lab, size), v in sorted(regimes.items(), key=lambda kv: (kv[0][0], ["<=512", "513-2048", ">2048"].index(kv[0][1]))):
+        sh = lambda key: med([x[key] / x["gpu_def"] for x in v if x.get(key) is not None])
+        fixes = collections.Counter(x["src"] for x in v if x["src"] != "none")
+        fx = ", ".join(f"{k} ({n})" for k, n in fixes.most_common()) or "none"
+        f_att, f_eag, f_non = sh("att_def"), sh("eager_ms"), sh("nonatt_ms")
+        md_reg.append(f"| {lab} | {size} | {len(v)} | {', '.join(sorted({x['scen'] for x in v}))} | "
+                      f"{'' if np.isnan(f_att) else f'{f_att:.0%}'} | {'' if np.isnan(f_eag) else f'{f_eag:.0%}'} | "
+                      f"{'' if np.isnan(f_non) else f'{f_non:.0%}'} | {med([x['eff'] for x in v]):.0%} | "
+                      f"{med([x['loss'] for x in v]):.2f} ({max(x['loss'] for x in v):.2f}) | {fx} |")
+
+    bk = ["<1.05", "1.05-1.15", "1.15-1.5", ">=1.5"]
+    bucket = lambda x: bk[0] if x < 1.05 else bk[1] if x < 1.15 else bk[2] if x < 1.5 else bk[3]
+    md_reg += ["", "Regime label vs measured loss (shapes):", "", "| label | " + " | ".join(bk) + " |",
+               "|---|" + "---|" * len(bk)]
+    for lab in sorted({r["label"] for r in table}):
+        cnt = collections.Counter(bucket(r["loss"]) for r in table if r["label"] == lab)
+        md_reg.append(f"| {lab} | " + " | ".join(str(cnt.get(b, 0)) for b in bk) + " |")
+
+    # decode-only: cost per token is the lever
+    md_dec = ["", "## Decode-only steps", "",
+              "| decode set | B | KV tokens | step ms | ms per token | roofline ms | eff | attention share | "
+              "best attention kernel vs FA3 (whole step) |", "|---|---|---|---|---|---|---|---|---|"]
+    for r in table:
+        if r["kind"] != "dec":
+            continue
+        B, kv = len(DEC[r["scen"]]), sum(DEC[r["scen"]])
+        md_dec.append(f"| {r['scen']} | {B} | {kv:,} | {r['gpu_def']:.1f} | {r['gpu_def'] / B:.3f} | {r['roofline']:.1f} | "
+                      f"{r['eff']:.0%} | {'' if r['att_def'] is None else f'{r['att_def'] / r['gpu_def']:.0%}'} | "
+                      f"{'' if r['kernel_move'] is None else f'-{r['kernel_move']:.1%}'} |")
+    md_dec += ["", "Long-context decode-only attention per layer (kernel level, no in-engine counterpart):", "",
+               "| spec | FA3 (graph, bound 32) ms | best config | best ms | FA3 / best |", "|---|---|---|---|---|"]
+    for spec in sorted((s for s in att if s.startswith("c_dec_")), key=lambda s: (int(s.split("_")[2].split("x")[1][:-1]), int(s.split("_")[2].split("x")[0]))):
+        a = att[spec]
+        if a.get("fa3_cg"):
+            bk = min(a, key=a.get)
+            md_dec.append(f"| {spec} | {a['fa3_cg']:.3f} | {bk} | {a[bk]:.3f} | {a['fa3_cg'] / a[bk]:.2f} |")
+
+    # H5, revised criterion: same tokens, total attention time, measured (F7); plus the in-engine whole step
+    LONGP = max(P for _, _, pr, _ in scenarios() for P, _ in pr)
+    md_h5 = ["", "## H5: the aligned chunk now and the remainder later (revised criterion, attention time, measured)", "",
+             "now = the chunk in one step (default config: split bound 32 if the step is <= 512 tokens, else FA3's own "
+             "choice); later = the aligned chunk plus the remainder (rounded up to the measured grid) in a step of <= 512 "
+             "tokens. SM efficiency from the tile model. Whole step: in-engine default config, remainder as its own step "
+             "(conservative) or riding in a step that runs anyway (marginal).", "",
+             "| P | q | aligned + remainder | SM eff (now) | attention now ms/layer | attention later ms/layer | gain | "
+             "whole step now ms | realign (own step) ms | realign (marginal) ms |", "|---|---|---|---|---|---|---|---|---|---|"]
+    h5_rows = []
+    for P in [8192, 32768, LONGP]:
+        for q, al in [(513, 512), (544, 512), (1057, 1056)]:
+            remq = min(x for x in (16, 32, 64, 96, 128) if x >= q - al)
+            a_q, a_al, a_rm = (att.get(f"c_none_P{P}_q{x}", {}) for x in (q, al, remq))
+            c_q, c_al = ("fa3_cg" if x <= 512 else "fa3_auto" for x in (q, al))
+            if not (a_q.get(c_q) and a_al.get(c_al) and a_rm.get("fa3_cg")):
+                continue
+            now, later = a_q[c_q], a_al[c_al] + a_rm["fa3_cg"]
+            eff = attn_step_model(np.array([q]), np.array([P + q]), GEOM, RegimeConfig(), full_cg=True)["sm_eff"]
+            tr = next((x for x in table if (x["scen"], x["kind"], x["P"], x["q"]) == ("none", "probe", P, q)), None)
+            h5_rows.append(dict(P=P, q=q, al=al, remq=remq, eff=eff, now=now, later=later, gain=now / later))
+            md_h5.append(f"| {P} | {q} | {al} + {remq} | {eff:.0%} | {now:.3f} | {later:.3f} | {now / later:.2f} | "
+                         f"{tr['gpu_def']:.1f} | {tr['alts'].get('realign', float('nan')):.1f} | "
+                         f"{tr['realign_marginal'] or float('nan'):.1f} |" if tr else
+                         f"| {P} | {q} | {al} + {remq} | {eff:.0%} | {now:.3f} | {later:.3f} | {now / later:.2f} | | | |")
+    md_h5 += ["", "Other work filling the idle wave: two appends in one launch vs each in its own launch (kernel level).", "",
+              "| pair | P | tiles | together ms/layer | apart ms/layer | apart / together |", "|---|---|---|---|---|---|"]
+    for P in [32768, LONGP]:
+        for q1, q2 in [(512, 512), (544, 512), (513, 513), (528, 528), (1056, 32)]:
+            a_p = att.get(f"c_none_pair{q1}+{q2}_P{P}", {})
+            parts = [att.get(f"c_none_P{P}_q{x}", {}).get("fa3_cg" if x <= 512 else "fa3_auto") for x in (q1, q2)]
+            if a_p.get("fa3_auto") and all(parts):
+                tiles = 8 * (-(-q1 // 32) + -(-q2 // 32))
+                md_h5.append(f"| {q1}+{q2} | {P} | {tiles} | {a_p['fa3_auto']:.3f} | {sum(parts):.3f} | "
+                             f"{sum(parts) / a_p['fa3_auto']:.2f} |")
+
+    # the four qualitative predictions, checked
+    md_pc = ["", "## Qualitative predictions, checked", ""]
+    km = [r["kernel_move"] for r in table if r["kernel_move"] is not None]
+    if km:
+        md_pc.append(f"1. Decode-only: the best attention kernel moves the whole step by at most {max(km):.1%} "
+                     f"(median {med(km):.1%}, {len(km)} decode sets); predicted <= 5%.")
+    ec = [(r["gpu_def"] / r["gpu_cap"], r) for r in table if r["size"] == "513-2048" and r["gpu_cap"]]
+    if ec:
+        md_pc.append(f"2. Steps of 513-2048 tokens: capture 2048 is faster by {min(e for e, _ in ec):.2f}-"
+                     f"{max(e for e, _ in ec):.2f}x (median {med([e for e, _ in ec]):.2f}x, {len(ec)} shapes); "
+                     f"eager excess median {med([r['eager_ms'] for _, r in ec if r['eager_ms'] is not None]):.1f} ms.")
+    xs = [r for r in table if r["label"] == "X"]
+    if xs:
+        xc = [r for r in xs if r["size"] != ">2048" and r["gpu_cap"]]
+        md_pc.append(f"3. X steps: {len(xs)} shapes, loss median {med([r['loss'] for r in xs]):.2f}; "
+                     + (f"of the {len(xc)} at <= 2,048 tokens, capture 2048 alone reaches the best alternative "
+                        f"within 5% for {sum(r['gpu_cap'] <= 1.05 * r['best'] for r in xc)}; best-alternative kinds: "
+                        f"{dict(collections.Counter(r['src'] for r in xs))}." if xc else ""))
+    rem = [att.get(f"c_none_P{LONGP}_q{x}", {}).get("fa3_cg") for x in (16, 32, 64)]
+    if all(rem):
+        md_pc.append(f"4. Remainder on a {LONGP:,}-token prefix in a step of <= 512 tokens: 16 / 32 / 64 tokens cost "
+                     f"{rem[0]:.3f} / {rem[1]:.3f} / {rem[2]:.3f} ms of attention per layer (predicted <= 0.25 ms); "
+                     + (f"H5 gain (attention, same tokens) {min(h['gain'] for h in h5_rows):.2f}-"
+                        f"{max(h['gain'] for h in h5_rows):.2f}x over {len(h5_rows)} shapes." if h5_rows else ""))
+
     md = ["# Stage 1b regime census tables", "",
           "Whole step = one engine step of Llama-3.1-8B on one H100 (GPU time from CUDA events around the step, "
           "median of 3 repeats). Attention alternatives are swapped in from the F7 kernel census (32 layers). "
@@ -248,6 +372,7 @@ def main():
             pe[r["mode"]].append(abs(r["pred_def"] / r["gpu_def"] - 1))
     md.append("- pre-registered whole-step model, mean abs error (default config): " +
               ", ".join(f"{k} {np.mean(v):.1%} (n={len(v)})" for k, v in pe.items()))
+    md += md_pc + md_reg + md_dec + md_h5
     md += ["", "## Every census step", "",
            "| scenario | kind | P | q | T | mode | regime | default ms | cap2048 ms | attention ms | roofline ms (bound) | eff | best alternative | loss |",
            "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
