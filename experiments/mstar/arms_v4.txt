@@ -1,0 +1,14 @@
+# v4: declared max_tokens above the generated output (data/workloads/<base>_mtx2 and <base>_mt2048, make_bagel_workloads_v4.sh).
+# The four arms of the cost-of-not-knowing comparison, on bench-next like Phase 1c (arms_phase1c.txt). Every toggle is set
+# explicitly, so a later change of a default cannot move an arm.
+#   main             origin/main (no admission control)
+#   ac               Gaurav's AC: summed reservation prompt + max_tokens, strict FIFO
+#   ac_park          the same with parked waiters
+#   peak_bf_pc_park  ours: future-peak fit + EASY backfill + plan cache + parked waiters
+# Run each oracle base under the same arms for the variant/base ratios of analysis/mstar_declared.py; a base and its variants
+# can share a server (the variants' hash_ids are offset, so they cannot hit the base's prefix cache):
+#   REPS=3 WORKLOADS="bagel_burst_v2 bagel_burst_v2_mtx2 bagel_burst_v2_mt2048 ..." ./experiments/mstar/submit_matrix.sh -f experiments/mstar/arms_v4.txt
+main            main
+ac              next MSTAR_KV_ADMISSION_FIT=sum  MSTAR_KV_ADMISSION_ORDER=fifo     MSTAR_KV_PLAN_CACHE=0 MSTAR_SCHED_PARK=0 MSTAR_KV_RELEASE_AT_COMPLETION=0
+ac_park         next MSTAR_KV_ADMISSION_FIT=sum  MSTAR_KV_ADMISSION_ORDER=fifo     MSTAR_KV_PLAN_CACHE=0 MSTAR_SCHED_PARK=1 MSTAR_KV_RELEASE_AT_COMPLETION=0
+peak_bf_pc_park next MSTAR_KV_ADMISSION_FIT=peak MSTAR_KV_ADMISSION_ORDER=backfill MSTAR_KV_PLAN_CACHE=1 MSTAR_SCHED_PARK=1 MSTAR_KV_RELEASE_AT_COMPLETION=0

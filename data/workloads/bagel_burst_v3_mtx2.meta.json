@@ -1,0 +1,55 @@
+{
+ "path": "data/workloads/bagel_burst_v3_mtx2.jsonl",
+ "n": 2700,
+ "duration": 304.858932,
+ "rate": 8.856555332943305,
+ "in_p50": 734.0,
+ "out_p50": 41.0,
+ "out_mean": 71.63481481481482,
+ "out_max": 1966,
+ "cls_counts": {
+  "short": 2610,
+  "long": 90
+ },
+ "total_out_tokens": 193414,
+ "total_in_tokens": 2113969,
+ "kv": {
+  "pool_tokens": 262144,
+  "template_overhead": 20,
+  "max_seq_len": 32768,
+  "max_request_kv": 5302,
+  "per_class": {
+   "short": {
+    "n": 2610,
+    "final_kv_tokens": 2046477,
+    "declared_final_kv_tokens": 2150502,
+    "ratio_to_pool": 7.807,
+    "declared_ratio_to_pool": 8.204,
+    "decl_kv_ratio": 1.051
+   },
+   "long": {
+    "n": 90,
+    "final_kv_tokens": 314906,
+    "declared_final_kv_tokens": 370733,
+    "ratio_to_pool": 1.201,
+    "declared_ratio_to_pool": 1.414,
+    "decl_kv_ratio": 1.177
+   }
+  },
+  "total_final_kv_tokens": 2361383,
+  "total_ratio_to_pool": 9.008,
+  "declared_total_final_kv_tokens": 2521235,
+  "declared_total_ratio_to_pool": 9.618,
+  "decl_kv_ratio": 1.068,
+  "decl_ratio_mean": 1.992,
+  "peak_inflight_kv_ratio_itl20ms": 0.975,
+  "peak_declared_inflight_kv_ratio_itl20ms": 1.102,
+  "peak_reserved_inflight_kv_ratio_itl20ms": 1.449
+ },
+ "declared": {
+  "base": "bagel_burst_v3",
+  "mode": "x2",
+  "cap": 2048,
+  "id_offset": 1000000000
+ }
+}
