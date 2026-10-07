@@ -37,22 +37,24 @@
 cd "${SLURM_SUBMIT_DIR:-/shared/home/garv901-55613a/regime-batching/regime-batching}"
 source /data/mstar/env-laude.sh
 export HF_HOME=/data/garv901-55613a/hf
-WT=/shared/home/garv901-55613a/mstar-worktrees
+WT=/shared/home/garv901-55613a/mstar-worktrees/regime-batching   # the regime-batching worktrees
+# bench-next and regime-harness (the v4 matrix runs from them) move under $WT after that matrix; until then they are here:
+WT_OLD=/shared/home/garv901-55613a/mstar-worktrees
 : "${CONFIG:?set CONFIG}"
 : "${WORKLOADS:=bagel_control bagel_burst bagel_stag_r1 bagel_stag_r1.5 bagel_stag_r2 bagel_burst}"
 : "${REQ_TIMEOUT:=900}" "${RUN_LIMIT:=2400}" "${WARMUP=bagel_burst_v2}"   # no colon: WARMUP= (empty) turns the warmup off
 case $CONFIG in
-    main)      MSTAR_DIR=$WT/regime-harness; ADM_ENV= ;;
+    main)      MSTAR_DIR=$WT_OLD/regime-harness; ADM_ENV= ;;
     ac)        MSTAR_DIR=$WT/bench-ac;       ADM_ENV= ;;
     sum_bf)    MSTAR_DIR=$WT/bench-peak;     ADM_ENV="MSTAR_KV_ADMISSION_FIT=sum MSTAR_KV_ADMISSION_ORDER=backfill" ;;
     peak_fifo) MSTAR_DIR=$WT/bench-peak;     ADM_ENV="MSTAR_KV_ADMISSION_FIT=peak MSTAR_KV_ADMISSION_ORDER=fifo" ;;
     peak_bf)   MSTAR_DIR=$WT/bench-peak;     ADM_ENV="MSTAR_KV_ADMISSION_FIT=peak MSTAR_KV_ADMISSION_ORDER=backfill" ;;
     ac_fast)   MSTAR_DIR=$WT/bench-ac-fast;  ADM_ENV= ;;
     peak_bf_fast) MSTAR_DIR=$WT/bench-peak-fast; ADM_ENV="MSTAR_KV_ADMISSION_FIT=peak MSTAR_KV_ADMISSION_ORDER=backfill" ;;
-    next)      MSTAR_DIR=$WT/bench-next;     ADM_ENV= ;;
+    next)      MSTAR_DIR=$WT_OLD/bench-next; ADM_ENV= ;;
     *) echo "unknown CONFIG=$CONFIG"; exit 2 ;;
 esac
-CLIENT_DIR=$WT/regime-harness
+CLIENT_DIR=$WT_OLD/regime-harness
 EXTRA_ENV="$ADM_ENV ${EXTRA_ENV:-}"
 PORT=$((20000 + SLURM_JOB_ID % 10000))
 # LABEL names the arm in the results dir and meta.txt (default CONFIG); set it when only EXTRA_ENV differs
@@ -66,9 +68,29 @@ for need in /data/mstar/env-laude.sh "$(dirname "$OUT")" "$HF_HOME/hub/models--B
     [ -e "$need" ] || { echo "preflight: $need missing on $(hostname); this node cannot run the matrix"; exit 3; }
 done
 source experiments/mstar/lib_mstar.sh
+# POOL_PIN=1 (set by pool_sbatch.sh): the tasks of a gpu_pool.sbatch job share the pool's CPUs, so a busy arm (hundreds of
+# waiters) takes CPU time from the arms on the other GPUs; in the v4 smoke that delayed a server's request intake by 17-24 s.
+# Pin this task, the server and client it starts included, to one core (both hyperthreads) of the pool, picked by the GPU index:
+# the 2 CPUs a job of its own gets (cpu=2), never shared. No pin if the pool has fewer cores than that index.
+CPUS=
+if [ "${POOL_PIN:-0}" = 1 ]; then
+    cores=() seen=" "
+    for r in $(sed -n 's/^Cpus_allowed_list:[[:space:]]*//p' /proc/self/status | tr ',' ' '); do
+        for ((c = ${r%-*}; c <= ${r#*-}; c++)); do
+            g=$(cat /sys/devices/system/cpu/cpu$c/topology/thread_siblings_list)
+            [[ $seen == *" $g "* ]] || { seen+="$g "; cores+=("$g"); }
+        done
+    done
+    slot=${CUDA_VISIBLE_DEVICES:-0}
+    if [[ $slot =~ ^[0-9]+$ ]] && [ "$slot" -lt ${#cores[@]} ]; then
+        CPUS=${cores[$slot]}
+        taskset -acp "$CPUS" $$ > /dev/null || CPUS=
+    fi
+    [ -n "$CPUS" ] || echo "POOL_PIN: no core for GPU slot $slot among ${#cores[@]} cores; not pinned"
+fi
 mkdir -p "$OUT"
 {
-    echo "job=$SLURM_JOB_ID host=$(hostname) gpu=${CUDA_VISIBLE_DEVICES:-?} config=$LABEL"
+    echo "job=$SLURM_JOB_ID host=$(hostname) gpu=${CUDA_VISIBLE_DEVICES:-?} config=$LABEL cpus=${CPUS:-job}"
     echo "server=$MSTAR_DIR @ $(git -C "$MSTAR_DIR" rev-parse --short HEAD) ($(git -C "$MSTAR_DIR" rev-parse --abbrev-ref HEAD))"
     echo "client=$CLIENT_DIR @ $(git -C "$CLIENT_DIR" rev-parse --short HEAD)"
     echo "extra_env=$EXTRA_ENV workloads=$WORKLOADS warmup=${WARMUP:-none} req_timeout=$REQ_TIMEOUT restart=$RQ"
@@ -80,8 +102,10 @@ nvidia-smi --query-gpu=index,name,memory.used,memory.total --format=csv
 # Telemetry and server.log live in $OUT/server_<k>/ and are symlinked into each case dir; the analysis restricts
 # telemetry to each run's trace window.
 server_ok() { kill -0 "$SRV" 2>/dev/null && curl -sf -m 10 "http://127.0.0.1:$PORT/health" > /dev/null; }
-run_timed_out() {  # <bench.json>: any request that failed with a timeout or the client's empty "request failed"
-    python3 -c "import json,sys; b=json.load(open(sys.argv[1])); sys.exit(0 if any(e and ('request failed' in e or 'imeout' in e) for e in b['errors']) else 1)" "$1" 2>/dev/null
+run_timed_out() {  # <bench.json>: any request that failed. A stalled server also fails requests with "Response payload is not
+    # completed" (its 600 s abort) and "HTTP 500: result delivery timed out", which the old timeout-only test missed: the
+    # next workload then ran on the broken server (every main stall in Phase 1c, the v4 calibration's Azure runs).
+    python3 -c "import json,sys; b=json.load(open(sys.argv[1])); sys.exit(0 if any(b['errors']) else 1)" "$1" 2>/dev/null
 }
 run_trace() {  # <workload> <case_dir> <trace_run_id>: replay data/workloads/<workload>.jsonl; the same call for warmup and measured runs
     timeout "$RUN_LIMIT" env -C "$CLIENT_DIR" HF_HUB_OFFLINE=1 "$CLIENT_DIR/.venv/bin/python" -m benchmark.runner \
@@ -119,7 +143,7 @@ for wl in $WORKLOADS; do
     echo "=== [$(date +%T)] $LABEL $wl rep $rep -> $case_dir (server $nsrv)"
     run_trace "$wl" "$case_dir" "${LABEL}-${wl}-r$rep"
     if run_timed_out "$case_dir/bench.json"; then
-        echo "run had timed-out requests; restarting the server before the next workload"
+        echo "run had failed requests; restarting the server before the next workload"
         stop_server $SRV; SRV=
     fi
     sleep 15   # let completed requests' REMOVE_REQUESTs drain before the next trace
