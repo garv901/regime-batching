@@ -18,7 +18,7 @@ os.environ.setdefault("HF_HUB_OFFLINE", "1")
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from census_shapes import MAX_BATCHED, scenarios  # noqa: E402
+from census_shapes import MAX_BATCHED, PAIR_P, scenarios  # noqa: E402
 
 MODEL = "meta-llama/Llama-3.1-8B-Instruct"
 K = 1024
@@ -107,13 +107,13 @@ def main():
         for i, L in enumerate(dec):
             d.add(dec_ids[i], toks(seed_of(f"{scen}|{i}"), L), 4000, kind="dec", scen=scen, L=L)
         warm = []
-        pmax = max([P for P, _ in probes] + ([128 * K] if pairs else []), default=0)
+        pmax = max([P for P, _ in probes] + ([PAIR_P] if pairs else []), default=0)
         if pmax:
             warm.append(f"warm|{scen}|A")
             d.add(warm[-1], prefix["A"][:pmax], 1, kind="warm", scen=scen, P=pmax)
         if pairs:
             warm.append(f"warm|{scen}|B")
-            d.add(warm[-1], prefix["B"], 1, kind="warm", scen=scen, P=128 * K)
+            d.add(warm[-1], prefix["B"][:PAIR_P], 1, kind="warm", scen=scen, P=PAIR_P)
         d.run_until(lambda: all(d.ntok.get(r, 0) >= 1 for r in dec_ids) and all(w in d.done for w in warm),
                     5000, f"{scen} setup")
         log.write(json.dumps(dict(kind="mark", scen=scen, what="decode_only_start", step=d.nsteps)) + "\n")
@@ -127,9 +127,9 @@ def main():
                 d.run_until(lambda: rid in d.done, 50, rid)
             for q1, q2 in pairs:
                 r1, r2 = f"pair|{scen}|{q1}+{q2}|a|r{rep}", f"pair|{scen}|{q1}+{q2}|b|r{rep}"
-                d.add(r1, prefix["A"] + toks(seed_of(r1), q1), 1, kind="pair", scen=scen, P=128 * K, q=q1, rep=rep,
+                d.add(r1, prefix["A"][:PAIR_P] + toks(seed_of(r1), q1), 1, kind="pair", scen=scen, P=PAIR_P, q=q1, rep=rep,
                       pair=[q1, q2])
-                d.add(r2, prefix["B"] + toks(seed_of(r2), q2), 1, kind="pair", scen=scen, P=128 * K, q=q2, rep=rep,
+                d.add(r2, prefix["B"][:PAIR_P] + toks(seed_of(r2), q2), 1, kind="pair", scen=scen, P=PAIR_P, q=q2, rep=rep,
                       pair=[q1, q2])
                 d.run_until(lambda: r1 in d.done and r2 in d.done, 50, r1)
         if dec_ids:

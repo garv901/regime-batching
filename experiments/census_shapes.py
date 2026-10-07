@@ -6,25 +6,28 @@ cached tokens (P comes from a shared, prefix-cached token sequence), or a pair o
 Decodes come first in a step (vLLM schedules running requests before waiting ones).
 """
 K = 1024
+LONG = 120 * 1024  # longest context: Llama-3.1's RoPE table in vLLM has max_position_embeddings = 131,072
+                   # entries; positions past it assert (job 1448 smoke), so 120k + an 8k chunk is the ceiling
 KV_BUDGET = 420_000  # tokens; vLLM holds 443,184 for Llama-3.1-8B at max-model-len 262144, util 0.92 (job 1442)
 MAX_BATCHED = 8192   # vLLM default max_num_batched_tokens (server meta)
 
 # name -> list of (count, KV length)
 DECODE_SETS = {
     "none": [],
-    "1x128k": [(1, 128 * K)],
-    "3x128k": [(3, 128 * K)],
+    "1x120k": [(1, LONG)],
+    "3x120k": [(3, LONG)],
     "4x24k": [(4, 24 * K)],
-    "31x1k+1x128k": [(31, 1 * K), (1, 128 * K)],
+    "31x1k+1x120k": [(31, 1 * K), (1, LONG)],
     "32x1k": [(32, 1 * K)],
     "8x8k": [(8, 8 * K)],
     "128x2k": [(128, 2 * K)],
     "256x1k": [(256, 1 * K)],
 }
-PREFIXES = [0, 8 * K, 32 * K, 128 * K]
+PREFIXES = [0, 8 * K, 32 * K, LONG]
 Q_BASE = [32, 256, 416, 417, 1024, 1057, 2048, 4096]
 Q_NONE_EXTRA = [16, 64, 128, 544, 1056]  # H5 remainders and wave edges, prefill alone
-PAIRS = [(512, 512), (544, 512), (513, 513), (528, 528), (1056, 32)]  # two appends on two 128k prefixes
+PAIRS = [(512, 512), (544, 512), (513, 513), (528, 528), (1056, 32)]  # two appends on two LONG prefixes
+PAIR_P = LONG
 
 
 def decode_lens(name):
@@ -43,7 +46,7 @@ def q_list(name):
 
 def prefix_list(name):
     dec = sum(decode_lens(name))
-    growth = 150 * len(decode_lens(name))  # decodes grow ~1 token per step over a scenario
+    growth = 350 * len(decode_lens(name))  # decodes grow 1 token per step; a scenario runs up to ~350 steps
     return [P for P in PREFIXES if dec + growth + P + MAX_BATCHED <= KV_BUDGET]
 
 
@@ -72,18 +75,18 @@ def kernel_specs():
         for P, q in probes:
             add(f"c_{scen}_P{P}_q{q}", d + [(q, P + q)], scen=scen, P=P, q=q)
         for q1, q2 in pairs:
-            P = 128 * K
+            P = PAIR_P
             add(f"c_{scen}_pair{q1}+{q2}_P{P}", d + [(q1, P + q1), (q2, P + q2)], scen=scen, P=P, q=q1 + q2,
                 pair=[q1, q2])
     # gaps from Stage 1: small appends on long prefixes (the H5 remainder), pairs at 32k, long-context decode-only
-    for P in [8 * K, 32 * K, 128 * K]:
+    for P in [8 * K, 32 * K, LONG]:
         for q in [16, 32, 64, 96, 128, 192, 256, 320, 384]:
             add(f"c_none_P{P}_q{q}", [(q, P + q)], scen="none", P=P, q=q)
     for q1, q2 in PAIRS:
         P = 32 * K
         add(f"c_none_pair{q1}+{q2}_P{P}", [(q1, P + q1), (q2, P + q2)], scen="none", P=P, q=q1 + q2, pair=[q1, q2])
     for B in [1, 2, 4, 8, 16]:
-        for L in [64 * K, 128 * K]:
+        for L in [64 * K, LONG]:
             add(f"c_dec_{B}x{L // K}k", [(1, L)] * B, scen=f"dec_{B}x{L // K}k", P=None, q=0)
     return specs
 

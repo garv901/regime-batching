@@ -18,7 +18,7 @@ from scipy.optimize import least_squares
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "experiments"))
-from census_shapes import kernel_specs, scenarios  # noqa: E402
+from census_shapes import PAIR_P, kernel_specs, scenarios  # noqa: E402
 from regime_batching.features import GEOMS, RegimeConfig, attn_step_model, fa3_static_splits, fa3_tile_time  # noqa: E402
 
 GEOM = GEOMS["meta-llama/Llama-3.1-8B-Instruct"]
@@ -86,7 +86,7 @@ def main():
             d = [(1, L) for L in dec]
             items = [("dec", None, 0, d)] if d else []
             items += [("probe", P, q, d + [(q, P + q)]) for P, q in probes]
-            items += [("pair", 128 * 1024, q1 + q2, d + [(q1, 128 * 1024 + q1), (q2, 128 * 1024 + q2)])
+            items += [("pair", PAIR_P, q1 + q2, d + [(q1, PAIR_P + q1), (q2, PAIR_P + q2)])
                       for q1, q2 in pairs]
             for kind, P, q, reqs in items:
                 T = sum(a for a, _ in reqs)
