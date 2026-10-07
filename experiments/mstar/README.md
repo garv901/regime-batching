@@ -18,6 +18,7 @@ Baselines run from the pristine worktree `mstar-worktrees/bench-main` (`origin/m
 | `make_bagel_workloads_v4.sh`, `declare_max_tokens.py`, `arms_v4.txt` | The v4 workloads (below): copies of four Phase 1c traces with a declared `max_tokens` above the generated output, and the four arms to run them under |
 | `admission_matrix.sbatch`, `submit_matrix.sh` | One admission config per job (one server, every workload); `submit_matrix.sh` submits REPS jobs per arm, interleaved, and logs them in `manifest.tsv` (section "Admission matrix") |
 | `probe_guest.sbatch` | CPU-only check of what a guest node (node2, node4, node5) sees; result in section "Admission matrix" |
+| `fetch_public_traces.sh`, `convert_public_trace.py`, `make_public_workloads.sh`, `public_trace_report.py` | Download (SHA-256 checked) and convert the Mooncake and Azure production traces into `data/workloads/pub_*` files, characterise them and run the admission simulator on them (section "Public traces") |
 
 ## How to run
 
@@ -372,3 +373,243 @@ public traces (each base followed by its variants), then anything else.
 metrics), marks a ratio row "within noise" when the min-max ranges of the two configs overlap (a range-overlap rule, not a
 significance test; the rule is in the header of `compare.md`), takes `--exclude GLOB` (repeatable, on case names), and reports host
 ms per decode step overall and by waiting depth [0, 50), [50, 200), [200, 400), [400, inf) in `compare.md` and `summary.json`.
+
+## Public traces (Mooncake conversation, Azure conversation 2023)
+
+Two public production traces, replayed through the same harness as the synthetic workloads. Raw data is downloaded, never committed;
+the converted `data/workloads/pub_*` files are derived and committed (184 MB, 33 MB gzipped, largest file 16.3 MB).
+
+### Provenance
+
+`bash experiments/mstar/fetch_public_traces.sh` downloads both files into `data/public_traces/` (in `.gitignore`), pinned to the
+commit that added each file, and checks the SHA-256 (the same bytes as the `main` / `master` branch URLs of the brief). The files are only parsed.
+
+| Trace | File | Rows, span | SHA-256 | License |
+|---|---|---|---|---|
+| Mooncake (Kimi) FAST'25 conversation, `kvcache-ai/Mooncake` `FAST25-release/traces/conversation_trace.jsonl` @ `3cca71d` (2025-02-21) | `mooncake_conversation.jsonl` | 12,031 requests, 3,537 s | `b8cbb061a85206d729d91cdc2981f43c9e0d99209dce588d3af5f7934408b9df` | Mooncake repository: Apache-2.0 (`LICENSE-APACHE`); `FAST25-release/` states no separate data license |
+| Azure LLM inference trace 2023, conversation, `Azure/AzurePublicDataset` `data/AzureLLMInferenceTrace_conv.csv` @ `7909210` (2024-03-24); description `AzureLLMInferenceDataset2023.md` | `azure_conv_2023.csv` | 19,366 requests, 3,502 s | `2f1e5b666d4e3055fdbba98598ce2ec307767b9064e03e2fa46676dbcc7d0bf8` | CC-BY 4.0 (repository `LICENSE`; the dataset page: "CC-BY Attribution License"). Cite Patel et al., "Splitwise", ISCA 2024 |
+
+Mooncake fields: `timestamp` in ms, `input_length`, `output_length`, `hash_ids`. **The block size is 512 tokens** (`FAST25-release/README.md`:
+"Remapped prefix block hashes. The block size is 512 tokens. Identical hash IDs indicate reusable prefix KV cache blocks"), checked on the data:
+every row has `ceil(input_length / 512)` ids (the last block is partial), 288,500 id references over 182,790 distinct ids (36.6% repeats), the
+output is at most 2,000. Azure fields: `TIMESTAMP` (date and time with 7 fraction digits), `ContextTokens`, `GeneratedTokens` (no prefix information).
+Citation for Mooncake: Qin et al., "Mooncake: Trading More Storage for Less Computation", USENIX FAST 2025.
+
+### Conversion (`convert_public_trace.py`, `--help` has the full rules)
+
+```bash
+python3 experiments/mstar/convert_public_trace.py mooncake --start 1350 --span 600 --rate 0.5 --out data/workloads/pub_mooncake_conv_r0.5.jsonl
+bash experiments/mstar/make_public_workloads.sh      # all files below: convert, kv_report.py, variants, meta
+python3 experiments/mstar/public_trace_report.py data/workloads/pub_*_r?*.jsonl   # characterisation table (also --sim, --pick-window)
+```
+
+- **Window and rate.** Original time `t` is seconds since the first request of the source file. The window is `[start, start + D)` of the ORIGINAL trace
+  and a request in it gets the output timestamp `(t - start) / r`: **r multiplies the request rate** (r = 0.5: half the rate, twice the span). With
+  `--span S` the window is `D = S * r` original seconds, so every output spans S = 600 s (the last request arrives 0-6 s before 600 s); with
+  `--duration D` the window is D seconds as given. Only arrival times are scaled; lengths and prefixes are untouched.
+- **Clamps** (BAGEL limits; counted per file in the `.meta.json` and printed): `output_length <= 2000`, and `input_length <= 32768 - 20 - output_length`
+  (so `input + 20 + output <= 32768`). No Mooncake output exceeds 2,000, so only the input clamp acts: the Mooncake windows lose 37-139 rows (7%) to it, 1.0-3.3M
+  tokens in all (those inputs reach 126k tokens; clamped they carry 32,748 minus their output). Azure needs no clamp (input max 14,050, output max 1,000).
+  Azure has 22-76 rows per file with `input_length <= 20`; the replay client pads those to a 1-token user prompt (server-side 21 tokens) and counts them
+  in `n_clamped_inputs` (the last column of the characterisation table).
+- **hash_ids** (16 tokens per id). Mooncake: block id `b` becomes the 32 ids `b * 32 + j + offset` (j = 0..31), truncated to `ceil(clamped input / 16)`; rows sharing their
+  first k blocks share their first 32k ids. Azure has no prefix information, so every request gets its own ids (`offset + 10^8 + 2048 * source row + j`): no sharing, and
+  `declare_max_tokens.py --id-offset` can separate a variant from its base (rows without `hash_ids` would build the same tokens from the row index in every file). `--id-offset`
+  defaults to 3,000,000,000; Mooncake ids end near 3.003e9, Azure ids start at 3.1e9, the variants add 1e9 (`_mtx2`) and 2e9 (`_mt2048`):
+  the six ranges are disjoint (checked), and all are far above the small ids (< 1e6) of the synthetic traces.
+- **cls**, per output file on the final KV `input + 20 + output`: `short` if <= the file's p50, `long` if >= its p90, else `mid` (50% / 40% / 10% of the rows).
+  The simulator's "long" mask is `cls == long`; `public_trace_report.py --sim` calls it with `cls != short` to get the short class, and with an empty mask for all requests.
+- Rows are sorted by timestamp (stable) and validated like `load_trace` in `benchmark/trace_replay.py` (timestamp >= 0, input >= 1, output >= 1; an invalid source row is an error);
+  all 24 files were also loaded with the harness's own `load_trace` (rows, `hash_ids` long enough for `ceil((input - 20) / 16)` blocks).
+- The `.meta.json` keeps `make_workload.py`'s keys plus `source` (file, SHA-256), `window`, `clamps`, `cls_rule` (the p50 / p90 values), `hash_ids` (in-file prefix reuse) and
+  `kv` (from `kv_report.py --pool 262144 --overhead 20 --max-seq-len 32768`, ITL 15 then 20 ms: the file keeps the 20 ms value). A variant's `kv` is its base's (it counts generated
+  tokens; arrivals and lengths are identical); its `declared` block has the declared KV.
+
+### Window choice
+
+Both traces drift over their hour, so the first minutes are not typical (Mooncake: fewer, longer requests at the start, 2.7 req/s and 11.4k mean input in minute 0 against ~3.5-4 req/s and ~9-10k mean input
+from minute 25 on; Azure: 3.2 req/s in minute 0, 7-8 req/s with p50 input ~420 in minutes 27-36). A window is scored by the RMS of the relative deviations of eight statistics from the whole-trace value (request rate,
+input mean / p50 / p90, output mean / p50, final-KV mean, final-KV demand in tokens/s, all after the clamps), and the windows of one source are nested around one centre C
+(`--pick-window`; window `[C - 300 r, C + 300 r)` for r in the source's rates), so the files of a source differ mostly in rate. Mooncake C = **1500 s** (mean score 0.014 over r = 0.5 / 0.75 / 1; the best of
+294 centres on a 10-s grid, tied with 1530 and 1620; the r = 0.25 control is added at the same centre), Azure C = **2550 s** (mean score 0.081 over r = 1 / 1.25 / 2 / 3, best of 171 centres). Statistics of the chosen
+windows beside the whole trace (percentile rank among all windows of that length on a 10-s grid in brackets):
+
+| Source | r | window (orig. s) | rate req/s | input mean | input p50 | input p90 | output mean | output p50 | final KV mean | KV demand tok/s | score |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Mooncake | whole | 0-3,537 | 3.40 | 10,296 | 6,909 | 27,367 | 342.6 | 350 | 10,658 | 36,253 | 0 |
+| | 0.25 | [1425, 1575) | 3.49 (p51) | 9,612 (p15) | 5,851 (p3) | 26,241 (p37) | 344.3 (p61) | 348 (p40) | 9,977 (p15) | 34,852 (p23) | 0.067 |
+| | 0.5 | [1350, 1650) | 3.45 (p46) | 10,361 (p60) | 6,811 (p54) | 28,256 (p58) | 344.3 (p54) | 354 (p63) | 10,725 (p60) | 37,038 (p69) | 0.016 |
+| | 0.75 | [1275, 1725) | 3.41 (p37) | 10,274 (p57) | 6,895 (p56) | 28,138 (p58) | 339.1 (p28) | 347 (p32) | 10,633 (p57) | 36,272 (p50) | 0.011 |
+| | 1 | [1200, 1800) | 3.44 (p42) | 10,344 (p61) | 7,113 (p65) | 27,936 (p59) | 340.8 (p33) | 350 (p38) | 10,705 (p61) | 36,771 (p67) | 0.014 |
+| Azure conv | whole | 0-3,502 | 5.53 | 1,155 | 1,020 | 2,735 | 211.1 | 129 | 1,386 | 7,664 | 0 |
+| | 1 | [2250, 2850) | 5.55 (p50) | 1,069 (p24) | 1,009 (p37) | 2,261 (p25) | 208.3 (p44) | 126 (p44) | 1,298 (p22) | 7,202 (p35) | 0.074 |
+| | 1.25 | [2175, 2925) | 5.47 (p45) | 1,038 (p15) | 1,001 (p39) | 2,179 (p18) | 206.3 (p46) | 127 (p47) | 1,265 (p16) | 6,922 (p21) | 0.093 |
+| | 2 | [1950, 3150) | 5.57 (p33) | 1,018 (p10) | 984 (p44) | 2,144 (p15) | 202.8 (p59) | 125 (p62) | 1,240 (p6) | 6,911 (p15) | 0.103 |
+| | 3 | [1650, 3450) | 5.72 (p5) | 1,101 (p3) | 986 (p51) | 2,584 (p2) | 194.8 (p77) | 118 (p89) | 1,315 (p3) | 7,522 (p3) | 0.054 |
+
+Mooncake is stationary enough that every window is within 2% (RMS) of the whole trace (r = 0.25: a 150-s window, noisier). Azure is not (rate 4.1-7.6 req/s over 10-min windows, a code-like phase in the
+middle): the windows have the whole trace's request rate (5.5-5.7 req/s, p33-p50 except r = 3) and the median output length, but their inputs are 5-12% shorter than the whole trace (the whole-trace
+p90 is raised by the middle phase), and the r = 3 window (half the trace) has little room to move.
+
+### Candidate files
+
+`data/workloads/pub_mooncake_conv_r{0.25,0.5,0.75,1}` and `pub_azure_conv_r{1,1.25,2,3}`, each with `_mtx2` and `_mt2048` (below) and a `.meta.json`. The three brief rates are
+there; r = 0.25 (Mooncake, the no-pressure control: 0.5 already presses on the pool) and r = 1.25 (Azure, the highest rate with decode at the 70% line) were added after the simulator runs.
+Demand is over the 600-s span: decode = output tokens / s against ~2,000 tok/s (batch 64); prefill = (input + 20) tokens / s against the assumed 20-40k (the % is of 30k, the
+simulator's value). Fluid peak is `kv_report.py` (every request admitted on arrival, a fixed ITL, no queueing and no prefill time): 15 ms / 20 ms. Prefix reuse is inside the file (tokens whose leading
+ids an earlier row already has, in 128-token pages: the first row of a prefix always misses, and the server's prefix cache would also have been warm from earlier traffic).
+
+| File | Requests | req/s | Input p50 / p90 / max | Output p50 / p90 / max | Final KV mean / p50 / p90 / max | Prefix reuse | Clamped rows out / in; input <= 20 | Decode tok/s (% of 2k) | Prefill tok/s (% of 30k) | Fluid peak / P (15 / 20 ms) | Total final KV / P |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| `pub_mooncake_conv_r0.25` | 524 | 0.87 | 5,850 / 26,241 / 32,747 | 348 / 619 / 2,000 | 9,977 / 6,254 / 26,732 / 32,768 | 11.6% | 0 / 37; 0 | 301 (15%) | 8,412 (28%) | 0.80 / 0.81 | 19.9 |
+| `pub_mooncake_conv_r0.5` | 1,036 | 1.73 | 6,810 / 28,256 / 32,747 | 354 / 611 / 2,000 | 10,725 / 7,286 / 28,695 / 32,768 | 21.6% | 0 / 74; 0 | 595 (30%) | 17,924 (60%) | 1.50 / 1.77 | 42.4 |
+| `pub_mooncake_conv_r0.75` | 1,535 | 2.56 | 6,895 / 28,138 / 32,747 | 347 / 610 / 2,000 | 10,633 / 7,305 / 28,331 / 32,768 | 25.3% | 0 / 110; 0 | 867 (43%) | 26,336 (88%) | 1.94 / 2.03 | 62.3 |
+| `pub_mooncake_conv_r1` | 2,061 | 3.44 | 7,113 / 27,936 / 32,747 | 350 / 609 / 2,000 | 10,705 / 7,502 / 28,147 / 32,768 | 28.4% | 0 / 139; 0 | 1,171 (59%) | 35,600 (119%) | 2.03 / 2.37 | 84.2 |
+| `pub_azure_conv_r1` | 3,330 | 5.55 | 1,009 / 2,260 / 7,219 | 126 / 420 / 1,000 | 1,298 / 1,407 / 2,377 / 7,300 | 0 | 0 / 0; 22 | 1,156 (58%) | 6,046 (20%) | 0.18 / 0.23 | 16.5 |
+| `pub_azure_conv_r1.25` | 4,105 | 6.84 | 1,001 / 2,179 / 7,219 | 127 / 420 / 1,000 | 1,265 / 1,385 / 2,286 / 7,300 | 0 | 0 / 0; 34 | 1,411 (71%) | 7,241 (24%) | 0.22 / 0.30 | 19.8 |
+| `pub_azure_conv_r2` | 6,686 | 11.14 | 984 / 2,144 / 7,219 | 125 / 419 / 1,000 | 1,240 / 1,342 / 2,260 / 7,300 | 0 | 0 / 0; 53 | 2,260 (113%) | 11,562 (39%) | 0.32 / 0.40 | 31.6 |
+| `pub_azure_conv_r3` | 10,293 | 17.16 | 986 / 2,584 / 7,219 | 118 / 417 / 1,000 | 1,315 / 1,331 / 2,710 / 7,300 | 0 | 0 / 0; 76 | 3,342 (167%) | 19,224 (64%) | 0.43 / 0.52 | 51.7 |
+
+(Input and output are after the clamps. The Mooncake input max 32,747 is the clamp. Mooncake's whole-trace block reuse is 37%; a 150-600 s window sees 12-28% because the history before the window is missing, so a
+replay that starts cold has the same limit; a warm server that served earlier traffic would hit more.)
+
+Over-declared variants (`declare_max_tokens.py`, which this section did not change; the server declares `max_tokens` for admission and stops each request after `output_length` tokens):
+`<name>_mtx2` (`--mode x2 --id-offset 1000000000`: `max_tokens = min(2048, ceil(2 * output))`) and `<name>_mt2048` (`--mode fixed --id-offset 2000000000`: 2,048 for every row).
+They have their base's arrivals, lengths and cls; the prompts are the same tokens shifted to other ids (no prefix-cache hits across a base and its variants on one server).
+Declared KV = sum of `input + 20 + max_tokens`; ratio to the generated KV (`input + 20 + output`):
+
+| base | MB base / mtx2 / mt2048 | declared / generated KV, mtx2 | mt2048 | mean max_tokens / mean output (mtx2, mt2048) |
+|---|---|---|---|---|
+| pub_mooncake_conv_r0.25 | 3.5 / 3.8 / 3.9 | 1.034 | 1.171 | 1.98, 5.95 |
+| pub_mooncake_conv_r0.5 | 7.5 / 8.2 / 8.2 | 1.031 | 1.159 | 1.97, 5.95 |
+| pub_mooncake_conv_r0.75 | 11.0 / 12.0 / 12.0 | 1.031 | 1.161 | 1.97, 6.04 |
+| pub_mooncake_conv_r1 | 14.9 / 16.3 / 16.3 | 1.031 | 1.159 | 1.97, 6.01 |
+| pub_azure_conv_r1 | 2.8 / 3.1 / 3.2 | 1.161 | 2.418 | 2.00, 9.83 |
+| pub_azure_conv_r1.25 | 3.4 / 3.8 / 3.8 | 1.163 | 2.456 | 2.00, 9.93 |
+| pub_azure_conv_r2 | 5.4 / 6.1 / 6.1 | 1.163 | 2.488 | 2.00, 10.10 |
+| pub_azure_conv_r3 | 9.0 / 10.0 / 10.0 | 1.148 | 2.409 | 2.00, 10.51 |
+
+Mooncake's requests are prompt-dominated (a 10.7k final KV is ~96% prompt), so even a 2,048 bound on every request over-books by only 16%; Azure's are short, and `mt2048` over-books 2.4-2.5x.
+
+### Simulator
+
+`analysis/admit_sim_bagel.py` through `public_trace_report.py --sim` (oracle files only: the simulator in this tree reads `max_tokens` as the output length, so the `_mtx2` / `_mt2048` variants are not
+simulated; policies as in "Workloads v2"; pool 2,047 pages x 128; prefill 30k tok/s, 8,192 tokens per step; decode step cost from the smoke ITLs, decode in chunks of 64). "short" is `cls == short` (final KV <= the
+file's p50), "all" is every request; seconds, mean (p99); out tok/s over the makespan; peak KV / P is the simulated in-flight KV (`open`: the demand a pool would have to carry, with decode slowed by the batch):
+
+| file | policy | unfin / >600 s | short E2E mean (p99) | all E2E mean (p99) | out tok/s | makespan s | peak KV / P |
+|---|---|---|---|---|---|---|---|
+| pub_mooncake_conv_r0.25 | sum_fifo | 0 / 0 | 6.14 (14.6) | 6.62 (17.8) | 298 | 605 | 0.80 |
+| pub_mooncake_conv_r0.25 | sum_bf | 0 / 0 | 6.14 (14.6) | 6.62 (17.8) | 298 | 605 | 0.80 |
+| pub_mooncake_conv_r0.25 | peak_fifo | 0 / 0 | 6.14 (14.6) | 6.62 (17.8) | 298 | 605 | 0.80 |
+| pub_mooncake_conv_r0.25 | peak_bf | 0 / 0 | 6.14 (14.6) | 6.62 (17.8) | 298 | 605 | 0.80 |
+| pub_mooncake_conv_r0.25 | open | 0 / 0 | 6.14 (14.6) | 6.62 (17.8) | 298 | 605 | 0.80 |
+| pub_mooncake_conv_r0.5 | sum_fifo | 0 / 0 | 33.83 (63.4) | 34.29 (65.0) | 556 | 642 | 0.99 |
+| pub_mooncake_conv_r0.5 | sum_bf | 0 / 0 | 16.16 (47.8) | 24.95 (90.7) | 553 | 645 | 0.99 |
+| pub_mooncake_conv_r0.5 | peak_fifo | 0 / 0 | 33.75 (63.1) | 34.26 (66.9) | 556 | 641 | 1.00 |
+| pub_mooncake_conv_r0.5 | peak_bf | 0 / 0 | 16.21 (44.3) | 24.93 (96.4) | 554 | 643 | 1.00 |
+| pub_mooncake_conv_r0.5 | open | 0 / 0 | 46.07 (137.1) | 47.98 (150.6) | 565 | 631 | 6.16 |
+| pub_mooncake_conv_r0.75 | sum_fifo | 0 / 0 | 183.39 (342.1) | 182.00 (341.8) | 555 | 938 | 0.99 |
+| pub_mooncake_conv_r0.75 | sum_bf | 0 / 0 | 22.82 (69.9) | 98.32 (518.9) | 550 | 947 | 0.99 |
+| pub_mooncake_conv_r0.75 | peak_fifo | 0 / 0 | 183.27 (342.5) | 181.89 (341.3) | 555 | 938 | 1.00 |
+| pub_mooncake_conv_r0.75 | peak_bf | 0 / 0 | 24.42 (73.7) | 100.86 (537.2) | 550 | 946 | 1.00 |
+| pub_mooncake_conv_r0.75 | open | 0 / 1 | 246.56 (481.8) | 248.78 (514.0) | 570 | 913 | 11.24 |
+| pub_mooncake_conv_r1 | sum_fifo | 0 / 223 | 351.45 (666.9) | 348.02 (666.5) | 556 | 1263 | 0.99 |
+| pub_mooncake_conv_r1 | sum_bf | 0 / 267 | 48.84 (224.1) | 202.44 (777.9) | 551 | 1276 | 1.00 |
+| pub_mooncake_conv_r1 | peak_fifo | 0 / 221 | 351.23 (666.6) | 347.81 (666.3) | 556 | 1262 | 1.00 |
+| pub_mooncake_conv_r1 | peak_bf | 0 / 284 | 51.27 (198.6) | 203.48 (790.0) | 551 | 1275 | 1.00 |
+| pub_mooncake_conv_r1 | open | 0 / 448 | 414.09 (738.2) | 414.15 (738.6) | 572 | 1229 | 11.39 |
+| pub_azure_conv_r1 | sum_fifo | 0 / 0 | 1.81 (7.7) | 3.10 (13.6) | 1150 | 603 | 0.30 |
+| pub_azure_conv_r1 | sum_bf | 0 / 0 | 1.81 (7.7) | 3.10 (13.6) | 1150 | 603 | 0.30 |
+| pub_azure_conv_r1 | peak_fifo | 0 / 0 | 1.81 (7.7) | 3.10 (13.6) | 1150 | 603 | 0.30 |
+| pub_azure_conv_r1 | peak_bf | 0 / 0 | 1.81 (7.7) | 3.10 (13.6) | 1150 | 603 | 0.30 |
+| pub_azure_conv_r1 | open | 0 / 0 | 1.81 (7.7) | 3.10 (13.6) | 1150 | 603 | 0.30 |
+| pub_azure_conv_r1.25 | sum_fifo | 0 / 0 | 7.43 (43.9) | 13.38 (57.6) | 1387 | 610 | 0.91 |
+| pub_azure_conv_r1.25 | sum_bf | 0 / 0 | 7.30 (44.4) | 13.40 (58.2) | 1387 | 610 | 0.91 |
+| pub_azure_conv_r1.25 | peak_fifo | 0 / 0 | 7.46 (44.8) | 13.55 (61.1) | 1387 | 610 | 1.00 |
+| pub_azure_conv_r1.25 | peak_bf | 0 / 0 | 7.43 (44.9) | 13.57 (61.8) | 1387 | 610 | 1.00 |
+| pub_azure_conv_r1.25 | open | 0 / 0 | 7.52 (44.9) | 13.65 (64.1) | 1387 | 610 | 1.23 |
+| pub_azure_conv_r2 | sum_fifo | 0 / 0 | 145.24 (341.7) | 173.71 (363.5) | 1429 | 949 | 0.92 |
+| pub_azure_conv_r2 | sum_bf | 0 / 0 | 106.05 (255.4) | 160.17 (367.2) | 1427 | 950 | 0.92 |
+| pub_azure_conv_r2 | peak_fifo | 0 / 0 | 144.37 (341.7) | 174.31 (365.0) | 1429 | 949 | 1.00 |
+| pub_azure_conv_r2 | peak_bf | 0 / 0 | 108.12 (307.3) | 161.97 (367.6) | 1430 | 948 | 1.00 |
+| pub_azure_conv_r2 | open | 0 / 8 | 142.38 (360.2) | 221.07 (505.0) | 1439 | 942 | 6.49 |
+| pub_azure_conv_r3 | sum_fifo | 0 / 2666 | 355.41 (827.2) | 405.61 (847.7) | 1388 | 1444 | 0.94 |
+| pub_azure_conv_r3 | sum_bf | 0 / 2238 | 290.55 (642.3) | 383.62 (852.7) | 1385 | 1448 | 0.94 |
+| pub_azure_conv_r3 | peak_fifo | 0 / 2688 | 356.27 (828.9) | 407.87 (851.1) | 1386 | 1447 | 1.00 |
+| pub_azure_conv_r3 | peak_bf | 0 / 2238 | 245.66 (682.8) | 370.92 (850.2) | 1388 | 1445 | 1.00 |
+| pub_azure_conv_r3 | open | 0 / 3425 | 354.28 (799.0) | 455.87 (928.5) | 1397 | 1435 | 7.91 |
+
+Reading it:
+- **Mooncake r = 0.25** is the no-pressure control: the five policies give identical results (short E2E 6.1 s, all 6.6 s; nothing queues for KV); `open` peaks at 0.80 P.
+- **Mooncake r = 0.5** is the highest rate the simulator finishes in time (makespan 645 s for a 594-s trace) and the pool binds: `open` would hold 6.2 P, the sum / peak policies sit at 0.99-1.00 P, and
+  strict FIFO makes the shorts wait twice as long as backfill (short E2E 33.8 vs 16.2 s). At r = 0.5 peak and sum are within 1% of each other (outputs are only ~3% of a request's final KV, so the summed reservation over-books by little and an
+  oracle does not buy peak much; the over-declared variants are where sum and peak can separate).
+  The prefill load is the limit: 60% of 30k tok/s (45-90% over 40-20k) on top of decode, which is why r = 0.75 (88%) takes 938-947 s and r = 1 (119%) 1,263-1,276 s, with 221-284 requests past the 600-s server timeout (448 for `open`).
+- **Azure r = 1** is the no-pressure control: identical results for all policies (short E2E 1.8 s, all 3.1 s), `open` peaks at 0.30 P.
+  **r = 1.25** touches the pool (`open` 1.23 P; the sum / peak policies 0.91-1.00 P) with decode at 71% of 2k, but the policies differ by under 2% in short E2E (7.3-7.5 s): a mild regime in oracle mode.
+  **r = 2 and r = 3 are decode-overloaded** (113% and 167% of 2k tok/s; the simulated decode saturates near 1,400 tok/s once prefill steps are interleaved with it, so the makespans are 949 and 1,444 s);
+  the pool binds there (0.92-1.00 P) only because the backlog keeps ~190 requests admitted.
+  Azure's KV pool is large against its requests (a 1.3k mean final KV: 200 requests fit): the pool binds only when decode is already at 70-85% load, or through over-declared reservations.
+
+Bracketing runs, not committed (the same converter, centre and simulator; `MC_RATES="0.35 0.6" AZ_RATES="1.5" bash experiments/mstar/make_public_workloads.sh` regenerates them):
+
+| file | policy | unfin / >600 s | short E2E mean (p99) | all E2E mean (p99) | out tok/s | makespan s | peak KV / P |
+|---|---|---|---|---|---|---|---|
+| pub_mooncake_conv_r0.35 | sum_fifo | 0 / 0 | 7.37 (22.2) | 7.91 (22.4) | 398 | 600 | 0.98 |
+| pub_mooncake_conv_r0.35 | sum_bf | 0 / 0 | 7.36 (22.3) | 7.91 (22.5) | 398 | 600 | 0.98 |
+| pub_mooncake_conv_r0.35 | peak_bf | 0 / 0 | 7.37 (22.3) | 7.92 (22.5) | 398 | 600 | 0.99 |
+| pub_mooncake_conv_r0.35 | open | 0 / 0 | 7.41 (23.2) | 7.96 (22.6) | 398 | 600 | 1.23 |
+| pub_mooncake_conv_r0.6 | sum_fifo | 0 / 0 | 99.81 (181.0) | 99.66 (181.5) | 558 | 766 | 0.99 |
+| pub_mooncake_conv_r0.6 | sum_bf | 0 / 0 | 20.69 (52.7) | 59.25 (317.1) | 554 | 772 | 0.99 |
+| pub_mooncake_conv_r0.6 | peak_bf | 0 / 0 | 18.49 (46.4) | 55.91 (362.3) | 555 | 771 | 1.00 |
+| pub_mooncake_conv_r0.6 | open | 0 / 1 | 164.87 (391.5) | 166.70 (410.0) | 574 | 744 | 11.27 |
+| pub_azure_conv_r1.5 | sum_fifo | 0 / 0 | 47.51 (118.6) | 64.56 (144.1) | 1427 | 715 | 0.91 |
+| pub_azure_conv_r1.5 | sum_bf | 0 / 0 | 30.17 (106.2) | 58.58 (150.0) | 1427 | 715 | 0.92 |
+| pub_azure_conv_r1.5 | peak_bf | 0 / 0 | 30.54 (112.0) | 59.78 (156.4) | 1427 | 715 | 1.00 |
+| pub_azure_conv_r1.5 | open | 0 / 0 | 46.68 (176.8) | 88.42 (310.2) | 1436 | 710 | 5.20 |
+
+**Prefix cache.** The simulator has no prefix cache: it prefills every prompt token and holds KV for every one, so for Mooncake it overstates both the prefill load and the KV pool use
+(Azure rows are unique prompts: no bias). `public_trace_report.py --sim --prefix-hits` is the optimistic bound: every prompt is cut by the tokens that an earlier request in the file already holds (whole 128-token pages,
+no eviction, no wait for the earlier prefill). Mooncake, short E2E mean (p99) / all E2E mean, seconds, and makespan, plain simulator -> with every hit:
+
+| file | policy | short E2E, plain -> hits | all E2E, plain -> hits | makespan s, plain -> hits | peak KV / P, plain -> hits |
+|---|---|---|---|---|---|
+| pub_mooncake_conv_r0.25 | sum_fifo | 6.14 (14.6) -> 5.70 (11.8) | 6.62 (17.8) -> 6.14 (16.9) | 605 -> 604 | 0.80 -> 0.77 |
+| pub_mooncake_conv_r0.25 | sum_bf | 6.14 (14.6) -> 5.70 (11.8) | 6.62 (17.8) -> 6.14 (16.9) | 605 -> 604 | 0.80 -> 0.77 |
+| pub_mooncake_conv_r0.25 | peak_bf | 6.14 (14.6) -> 5.70 (11.8) | 6.62 (17.8) -> 6.14 (16.9) | 605 -> 604 | 0.80 -> 0.77 |
+| pub_mooncake_conv_r0.25 | open | 6.14 (14.6) -> 5.70 (11.8) | 6.62 (17.8) -> 6.14 (16.9) | 605 -> 604 | 0.80 -> 0.77 |
+| pub_mooncake_conv_r0.5 | sum_fifo | 33.83 (63.4) -> 14.31 (47.5) | 34.29 (65.0) -> 15.22 (47.7) | 642 -> 609 | 0.99 -> 0.99 |
+| pub_mooncake_conv_r0.5 | sum_bf | 16.16 (47.8) -> 10.85 (34.9) | 24.95 (90.7) -> 13.18 (55.6) | 645 -> 609 | 0.99 -> 0.99 |
+| pub_mooncake_conv_r0.5 | peak_bf | 16.21 (44.3) -> 10.86 (35.8) | 24.93 (96.4) -> 13.18 (63.2) | 643 -> 609 | 1.00 -> 1.00 |
+| pub_mooncake_conv_r0.5 | open | 46.07 (137.1) -> 17.02 (82.3) | 47.98 (150.6) -> 18.59 (87.1) | 631 -> 610 | 6.16 -> 5.00 |
+| pub_mooncake_conv_r0.75 | sum_fifo | 183.39 (342.1) -> 115.11 (186.7) | 182.00 (341.8) -> 114.62 (187.0) | 938 -> 773 | 0.99 -> 0.99 |
+| pub_mooncake_conv_r0.75 | sum_bf | 22.82 (69.9) -> 18.48 (52.0) | 98.32 (518.9) -> 51.72 (440.8) | 947 -> 777 | 0.99 -> 0.99 |
+| pub_mooncake_conv_r0.75 | peak_bf | 24.42 (73.7) -> 18.94 (57.2) | 100.86 (537.2) -> 55.05 (400.1) | 946 -> 775 | 1.00 -> 1.00 |
+| pub_mooncake_conv_r0.75 | open | 246.56 (481.8) -> 176.18 (432.9) | 248.78 (514.0) -> 179.32 (438.1) | 913 -> 754 | 11.24 -> 11.45 |
+| pub_mooncake_conv_r1 | sum_fifo | 351.45 (666.9) -> 243.22 (418.4) | 348.02 (666.5) -> 241.34 (418.7) | 1263 -> 1010 | 0.99 -> 0.99 |
+| pub_mooncake_conv_r1 | sum_bf | 48.84 (224.1) -> 29.66 (105.1) | 202.44 (777.9) -> 109.13 (678.0) | 1276 -> 1014 | 1.00 -> 0.99 |
+| pub_mooncake_conv_r1 | peak_bf | 51.27 (198.6) -> 28.19 (94.2) | 203.48 (790.0) -> 109.79 (670.2) | 1275 -> 1015 | 1.00 -> 1.00 |
+| pub_mooncake_conv_r1 | open | 414.09 (738.2) -> 307.05 (573.1) | 414.15 (738.6) -> 308.78 (598.3) | 1229 -> 985 | 11.39 -> 11.88 |
+
+The truth lies between the two columns. The hits cut the prefill load (r = 0.5: 17.9k -> 14.2k tok/s) and the KV of the shared pages, so the same r pressures less: at r = 0.5 FIFO's short E2E falls from 33.8 to 14.3 s and the backfill gap
+shrinks (16.2 -> 10.9 s); r = 0.75 still takes 773 s (every hit assumed). The in-file reuse is itself a floor, because the replay window starts cold.
+
+### Recommendation
+
+| Source | KV binding, GPU not hopelessly overloaded | No-pressure control | Not usable as a single-GPU load |
+|---|---|---|---|
+| Mooncake conversation | **`pub_mooncake_conv_r0.5`**: prefill 60% of 30k tok/s (decode 30%), the pool binds (sum / peak 0.99-1.00 P, `open` 6.2 P), the run finishes by 645 s; strict FIFO vs backfill separates (short E2E 33.8 vs 16.2 s) | **`pub_mooncake_conv_r0.25`**: all policies identical, `open` peak 0.80 P (a 0.35 bracket run is already at the edge: `open` 1.23 P, policies within 1%) | r = 0.75 and 1: prefill 88% and 119% of 30k tok/s, makespan 1.6x and 2.1x the trace |
+| Azure conversation 2023 | **`pub_azure_conv_r1.25`** (decode 71%, `open` 1.23 P): the pool is touched but the oracle policies are within 2%; expect the effect through `_mt2048` (reserves 2.5x the generated KV) rather than through the oracle file | **`pub_azure_conv_r1`**: all policies identical, `open` 0.30 P, decode 58% | r = 2 and 3: decode 113% and 167% of capacity |
+
+For Azure no rate has both a clear KV effect and decode below 70%: the prompts are too short for a 262k-token pool; if a sharper Azure point is needed, r = 1.5 (decode 85%, sum_fifo short E2E 47.5 s against 30.2 s for
+sum_bf, makespan 715 s; bracketing run above) is the next rung, at the price of a saturated decode. Mooncake is the workload with real pool pressure: its pressure comes from long prompts and prefill, not from
+decode, so the KV and prefill limits arrive together (at r = 0.5 the prefill share is already 60%).
+
+### Caveats
+
+- The simulator's step cost, prefill 30k tok/s and 8,192-token prefill budget are assumptions (see `admit_sim_bagel.py`); for Mooncake prefill steps (0.27 s each) dominate the simulated decode ITL, so its short E2E (6-34 s) mostly reflects
+  prefill queueing. Use the policy ORDER and the saturation points, not the seconds.
+- `input_length` convention: `benchmark/trace_replay.py` builds a prompt whose templated server-side length is `input_length` (user tokens `input_length - 20`), while `kv_report.py`, the simulator and the clamp here count `input_length + 20`. For these
+  files the clamp is therefore 20 tokens conservative and the KV accounting 20 tokens per request above what the server sees (0.2% for Mooncake, 1.5% for Azure).
+- One GPU replays the trace at r times its rate: rate scaling stands in for replica scaling (a production deployment spreads this load over many GPUs), and it keeps each request's length and prefix structure.

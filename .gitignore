@@ -25,3 +25,6 @@ results/runs/**/server.log
 results/runs/**/*.parquet
 results/runs/**/trace.json.gz
 reports/figures/**/trace.json.gz
+
+# public production traces (download with experiments/mstar/fetch_public_traces.sh; see README "Public traces")
+data/public_traces/
