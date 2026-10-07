@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EASY backfill</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 960px; display: block; }
+    .n { font: 600 12px 'Geist', sans-serif; fill: #2d3142; }
+    .s { font: 400 9px 'Geist Mono', monospace; fill: #4f5d75; }
+    .e { font: 500 8px 'Geist Mono', monospace; letter-spacing: 0.14em; fill: #4f5d75; }
+    .c { font: italic 400 14px 'Instrument Serif', 'Noto Serif', serif; fill: #2d3142; }
+    .k { font: 400 9px 'Geist', sans-serif; fill: #4f5d75; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Gantt · Admission policy · Phase 1</p>
+    <h1>Backfill runs the short request in the gap, and the long one still starts on time</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="easy-backfill-title easy-backfill-desc">
+        <title id="easy-backfill-title">EASY backfill versus strict FIFO</title>
+        <desc id="easy-backfill-desc">Gantt chart for the same arrivals: under strict FIFO the short request S waits behind the long head request L until pages free at t1, while under EASY backfill S runs immediately in the gap and finishes before t1, so L's projected start is unchanged.</desc>
+        <defs>
+          <marker id="ebf-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <pattern id="ebf-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#b8bdcb" stroke-width="1.5"/></pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+        <!-- time header -->
+        <text x="200" y="44" class="e">NOW · L, THEN S, ARRIVE</text>
+        <text x="520" y="44" class="e" text-anchor="middle">t1 · PAGES FREE</text>
+        <text x="940" y="44" class="e" text-anchor="end">TIME</text>
+        <line x1="200" y1="64" x2="940" y2="64" stroke="#4f5d75" stroke-width="1" marker-end="url(#ebf-arrow)"/>
+
+        <!-- zones -->
+        <rect x="20" y="116" width="920" height="120" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)"/>
+        <rect x="20" y="252" width="920" height="120" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)"/>
+
+        <!-- now and t1 rules (behind bars) -->
+        <line x1="200" y1="64" x2="200" y2="372" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+        <line x1="520" y1="64" x2="520" y2="372" stroke="#2d3142" stroke-width="1" stroke-dasharray="4,3"/>
+
+        <!-- pool row -->
+        <text x="28" y="88" class="n">Pool pages</text>
+        <text x="28" y="101" class="s">full until t1</text>
+        <rect x="200" y="76" width="320" height="28" rx="4" fill="url(#ebf-hatch)" stroke="#b8bdcb"/>
+        <rect x="288" y="82" width="144" height="16" rx="2" fill="#f5f5f5"/>
+        <text x="360" y="93" class="s" text-anchor="middle" style="fill:#2d3142">no room for L</text>
+
+        <!-- ===== STRICT FIFO ===== -->
+        <text x="32" y="134" class="e" style="fill:#2d3142">STRICT FIFO</text>
+        <text x="112" y="134" class="s">ORDER=fifo</text>
+
+        <text x="28" y="156" class="n">L</text>
+        <text x="28" y="169" class="s">head, long</text>
+        <rect x="200" y="144" width="320" height="28" rx="4" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="360" y="162" class="s" text-anchor="middle">L waits for pages</text>
+        <rect x="520" y="144" width="320" height="28" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="680" y="162" class="n" text-anchor="middle">L runs</text>
+
+        <text x="28" y="200" class="n">S</text>
+        <text x="28" y="213" class="s">short, behind L</text>
+        <rect x="200" y="188" width="320" height="28" rx="4" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="360" y="206" class="s" text-anchor="middle">S waits behind L</text>
+        <rect x="520" y="188" width="140" height="28" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="590" y="206" class="n" text-anchor="middle">S runs</text>
+        <text x="672" y="206" class="s">done after t1</text>
+
+        <!-- ===== EASY BACKFILL ===== -->
+        <text x="32" y="270" class="e" style="fill:#2d3142">EASY BACKFILL</text>
+        <text x="118" y="270" class="s">ORDER=backfill</text>
+
+        <text x="28" y="292" class="n">L</text>
+        <text x="28" y="305" class="s">head, long</text>
+        <rect x="200" y="280" width="320" height="28" rx="4" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="360" y="298" class="s" text-anchor="middle">L waits, projected start t1</text>
+        <rect x="520" y="280" width="320" height="28" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="680" y="298" class="n" text-anchor="middle">L runs, start unchanged</text>
+
+        <text x="28" y="336" class="n">S</text>
+        <text x="28" y="349" class="s">short, behind L</text>
+        <rect x="200" y="324" width="140" height="28" rx="4" fill="rgba(235,108,54,0.12)" stroke="#eb6c36" stroke-width="1.4"/>
+        <text x="270" y="342" class="n" text-anchor="middle">S runs now</text>
+        <text x="352" y="342" class="s">done before t1</text>
+
+        <line x1="552" y1="326" x2="552" y2="358" stroke="rgba(45,49,66,0.40)" stroke-width="1"/>
+        <text x="564" y="338" class="c">window: first K queued;</text>
+        <text x="564" y="354" class="c">refusal cached until KV state changes</text>
+
+        <!-- legend -->
+        <line x1="20" y1="392" x2="940" y2="392" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="20" y="408" class="e">LEGEND</text>
+        <rect x="20" y="418" width="24" height="12" rx="3" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="52" y="428" class="k">Waiting in the queue</text>
+        <rect x="220" y="418" width="24" height="12" rx="3" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="252" y="428" class="k">Running</text>
+        <rect x="360" y="418" width="24" height="12" rx="3" fill="rgba(235,108,54,0.12)" stroke="#eb6c36" stroke-width="1.4"/>
+        <text x="392" y="428" class="k">Backfilled short request</text>
+        <rect x="600" y="418" width="24" height="12" rx="3" fill="url(#ebf-hatch)" stroke="#b8bdcb"/>
+        <text x="632" y="428" class="k">Pool full for the head</text>
+
+        <text x="20" y="456" class="s">Same arrivals in both rows. Backfill starts S only if (a) it fits now and (b) it does not delay the projected start of the head L.</text>
+        <text x="20" y="470" class="s">ORDER is the env toggle MSTAR_KV_ADMISSION_ORDER. Measured on burst_v2, peak fit + backfill vs AC: short-request E2E 15.9 s to 0.88 s.</text>
+        <text x="20" y="484" class="s">Durations in this drawing are illustrative.</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

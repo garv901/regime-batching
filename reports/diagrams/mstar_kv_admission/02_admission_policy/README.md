@@ -1,0 +1,9 @@
+# Phase 1 admission policy: peak fit, EASY backfill, grant guard
+
+Reading order: 01, 02, 03. Phase 1 (branch `garv/admission-peak-backfill`) changes the admission policy on top of Gaurav Shah's admission control (AC). Each pass has an env toggle; with `FIT=sum` and `ORDER=fifo` the branch makes the same decisions as AC. Colors are consistent: the accent (orange) marks the one idea each diagram is about; everything else is ink and slate.
+
+1. `01_sum_vs_peak_fit/sum_vs_peak_fit.html` - Line chart, two panels. The same three illustrative requests: AC (`FIT=sum`) adds every request's own peak as if they peak together, which sits above the pool, so it refuses. Peak fit (`FIT=peak`) adds the page curves over time and tests only the highest point of the sum, which sits below the pool, so it admits. Curves are illustrative, with no numbers.
+2. `02_easy_backfill/easy_backfill.html` - Gantt. Same arrivals in two rows. Strict FIFO: short S waits behind the long head L until pages free at t1. EASY backfill: S runs now in the gap and ends before t1, so L's projected start does not change. Notes the window (first K queued) and the cached refusal. Cites the measured burst_v2 short E2E, 15.9 s to 0.88 s (peak fit + backfill vs AC).
+3. `03_bankers_grant_guard/bankers_grant_guard.html` - Flowchart. Before the pool gives an admitted request one more page, a safe-state (Banker's) test asks whether every admitted request can still reach max_tokens and complete. Yes: grant. No: wait and retry next step. This stops requests from holding pages while waiting for pages.
+
+Each folder holds the source `.html` (open it in a browser), an exported `.svg` (diagram only, without the page header) and a 2x `.png` preview. The PNG was rasterized with `rsvg-convert` on a machine without the Geist and Instrument Serif fonts, so it uses fallback fonts. Use the `.html` or `.svg` for final figures.

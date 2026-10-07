@@ -1,0 +1,9 @@
+# mstar KV admission: ablation results (jobs 13086-13106)
+
+Reading order: 01, 02, 03. Colors are consistent: orange = the focal item (peak fit + backfill arms in 01 and 02, the under-filled second batch in 03); grey/ink = everything else. A difference counts only if the min-max ranges of the 3 reps do not overlap.
+
+1. `01_short_e2e_by_arm/short_e2e_by_arm.html` - Bar chart (small multiples, log axis). Short-request E2E mean for the 7 arms in each of the 4 workloads, with min-max whiskers over 3 reps. `main` is 146-422 s; the `peak_bf*` arms are 0.8-1.2 s on three workloads and about 9-11 s on burst_v3, where they are not separable from `ac`. Caption: `main` had 505-1,884 timeouts per run, all other arms 0; tok/s is equal across non-main arms.
+2. `02_pass_vs_parent/pass_vs_parent.html` - Dumbbell-style ratio chart (log axis, 1.0 = parent arm). One row per pass and workload; filled = outside noise, hollow = inside noise. Peak fit + backfill is 0.06x / 0.13x / 0.62x on short E2E, but 0.94x (inside noise) on burst_v3 short and 1.12x worse on burst_v3 long. D park, C plan cache and E KV release on peak fit stay inside noise.
+3. `03_burst_v3_row_cap/burst_v3_row_cap.html` - Timeline over engine steps. With 90 requests in decode and a 64-row capture cap, step k runs rows 1-64 and step k+1 runs rows 65-90 (26 rows, GPU under-filled), so each request gets 1 token per 2 steps. Peak fit admits all 90 at once: long E2E 79.8 -> 89.5 s (+12%). The CPU simulator had no row cap and predicted a 2.4-3.9x gain. Next: Phase 2 (capture sizes above 64 rows and/or a cap on admitted decode rows).
+
+Each folder holds the source `.html` (open it in a browser), an exported `.svg` (diagram only, without the page header) and a 2x `.png` preview. The PNG was rasterized with `rsvg-convert` on a machine without the Geist and Instrument Serif fonts, so it uses fallback fonts. Use the `.html` or `.svg` for final figures.

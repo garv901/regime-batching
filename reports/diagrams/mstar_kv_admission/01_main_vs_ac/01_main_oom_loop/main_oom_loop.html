@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>main: KV allocation failure loop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+    /* The SVG holds its readable width (min-width == the viewBox width, so the
+       type ramp is never silently scaled down). This wrapper lets a narrow
+       screen scroll the diagram instead of the whole page. */
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 960px; display: block; }
+    /* Paper has no scrollbar, so the local scroller would clip instead of
+       scroll. Let the diagram scale down to the sheet. */
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Flowchart · main · KV allocation failure</p>
+    <h1>On main, a full KV pool sends the worker into a fail-hold-retry loop</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 928" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="main_oom_loop-title main_oom_loop-desc">
+        <title id="main_oom_loop-title">main: KV allocation failure loop</title>
+        <desc id="main_oom_loop-desc">Flowchart of main's path when a step needs a new KV page and the pool is full: eviction cannot help, no offload victim exists, so the worker holds the blamed request for 50 ms and retries, while the held request keeps its pages.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+        <!-- Arrows (drawn first, behind nodes) -->
+        <line x1="360" y1="96" x2="360" y2="128" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="360" y1="232" x2="360" y2="264" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="470" y1="180" x2="600" y2="180" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="360" y1="320" x2="360" y2="352" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="360" y1="456" x2="360" y2="488" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <path d="M470 404 H712 A8 8 0 0 0 720 396 V208" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="360" y1="544" x2="360" y2="576" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <line x1="470" y1="628" x2="600" y2="628" stroke="#4f5d75" stroke-width="1.2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+        <line x1="360" y1="680" x2="360" y2="712" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- Loop-back: hold, then retry the step (focal) -->
+        <path d="M200 744 H148 A8 8 0 0 1 140 736 V76 A8 8 0 0 1 148 68 H240" fill="none" stroke="#eb6c36" stroke-width="1.8" marker-end="url(#arrow-accent)"/>
+        <!-- Arrow labels (masked, 6-10px off the stroke) -->
+        <rect x="368" y="242" width="28" height="12" rx="2" fill="#f5f5f5"/><text x="372" y="251" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">YES</text>
+        <rect x="525" y="160" width="20" height="12" rx="2" fill="#f5f5f5"/><text x="535" y="169" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO</text>
+        <rect x="368" y="466" width="28" height="12" rx="2" fill="#f5f5f5"/><text x="372" y="475" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">YES</text>
+        <rect x="550" y="384" width="20" height="12" rx="2" fill="#f5f5f5"/><text x="560" y="393" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO</text>
+        <rect x="521" y="608" width="28" height="12" rx="2" fill="#f5f5f5"/><text x="535" y="617" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">YES</text>
+        <rect x="368" y="690" width="20" height="12" rx="2" fill="#f5f5f5"/><text x="372" y="699" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">NO</text>
+        <rect x="148" y="396" width="36" height="12" rx="2" fill="#f5f5f5"/><text x="152" y="405" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">RETRY</text>
+        <!-- Nodes -->
+        <rect x="240" y="40" width="240" height="56" rx="20" fill="#f5f5f5"/><rect x="240" y="40" width="240" height="56" rx="20" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <text x="360" y="64" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Step needs a new page</text>
+        <text x="360" y="80" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">admit() reserves this step only</text>
+        <polygon points="360,128 470,180 360,232 250,180" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="360" y="176" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Pool full?</text>
+        <text x="360" y="192" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">no free page left</text>
+        <rect x="240" y="264" width="240" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="360" y="288" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Evict prefix-cache pages</text>
+        <text x="360" y="304" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">only pages nobody owns</text>
+        <polygon points="360,352 470,404 360,456 250,404" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="360" y="400" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Still short?</text>
+        <text x="360" y="416" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">eviction freed too little</text>
+        <rect x="200" y="488" width="320" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="360" y="512" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">AllocationFailed</text>
+        <text x="360" y="528" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">worker pushes the batch back to the queue</text>
+        <polygon points="360,576 470,628 360,680 250,628" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="360" y="618" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Cold request</text>
+        <text x="360" y="632" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">to offload?</text>
+        <text x="360" y="648" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">cpu_offload_pages = 0</text>
+        <rect x="200" y="712" width="320" height="64" rx="6" fill="#f5f5f5"/><rect x="200" y="712" width="320" height="64" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.4"/>
+        <text x="360" y="734" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Hold blamed request 50 ms</text>
+        <text x="360" y="750" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">keeps all its pages</text>
+        <text x="360" y="764" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">then retry a smaller batch</text>
+        <rect x="600" y="152" width="240" height="56" rx="20" fill="#f5f5f5"/><rect x="600" y="152" width="240" height="56" rx="20" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <text x="720" y="176" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Page granted</text>
+        <text x="720" y="192" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">step runs, no failure</text>
+        <rect x="600" y="596" width="240" height="64" rx="6" fill="#f5f5f5"/><rect x="600" y="596" width="240" height="64" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.40)" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="720" y="618" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Offload one cold request</text>
+        <text x="720" y="634" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">needs cpu_offload_pages &gt; 0</text>
+        <text x="720" y="648" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">dead path by default</text>
+        <!-- Callout (neutral aside) -->
+        <text x="600" y="728" fill="#2d3142" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">A held request keeps all its pages,</text><text x="600" y="746" fill="#2d3142" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">so holding frees nothing.</text><text x="600" y="764" fill="#2d3142" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">Only a completing request returns pages.</text>
+        <path d="M592 740 Q560 752 524 746" fill="none" stroke="rgba(45,49,66,0.40)" stroke-width="1" stroke-dasharray="4,3"/><circle cx="522" cy="746" r="2" fill="#2d3142"/>
+        <!-- Notes -->
+        <text x="40" y="812" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="start">Source: mstar/engine/resources/kv/manager.py (admit, _alloc)  /  mstar/worker/worker.py (_handle_allocation_failure)</text>
+        <text x="40" y="828" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="start">Measured on burst_v2: short-request E2E 422 s, 1,744 timed-out requests, 44 output tok/s.</text>
+        <text x="40" y="844" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="start">Worker log: "The working set does not fit; eviction cannot help."</text>
+        <line x1="40" y1="868" x2="920" y2="868" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/><text x="40" y="884" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.18em">LEGEND</text><rect x="40" y="892" width="24" height="12" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/><text x="72" y="902" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" text-anchor="start">Start / end (oval)</text><rect x="212" y="892" width="24" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="244" y="902" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" text-anchor="start">Step (rectangle)</text><polygon points="372,898 384,892 396,898 384,904" fill="#ffffff" stroke="#2d3142" stroke-width="1"/><text x="408" y="902" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" text-anchor="start">Decision (diamond)</text><rect x="540" y="892" width="24" height="12" rx="2" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.40)" stroke-width="1" stroke-dasharray="4,3"/><text x="572" y="902" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" text-anchor="start">Path not taken by default</text><line x1="752" y1="898" x2="780" y2="898" stroke="#eb6c36" stroke-width="1.8" marker-end="url(#arrow-accent)"/><text x="788" y="902" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" text-anchor="start">Fail-hold-retry loop</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

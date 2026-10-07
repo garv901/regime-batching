@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1000 548" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="pool_pages_over_time-title pool_pages_over_time-desc" id="pool_pages_over_time-root">
+        <title id="pool_pages_over_time-title">KV pool pages in use over time: main vs AC</title>
+        <desc id="pool_pages_over_time-desc">Illustrative line chart of KV pages in use over time on a burst: main climbs to the pool ceiling and stays there, while AC admits only what fits and rises in a staircase below the ceiling; measured burst_v2 outcomes are labelled.</desc>
+        <defs>
+      <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;family=Noto+Serif:ital@0;1&amp;family=Noto+Sans+KR:wght@400;500;600&amp;family=Noto+Serif+KR:wght@400&amp;family=Noto+Sans+TC:wght@400;500;600&amp;family=Noto+Serif+TC:wght@400&amp;display=swap');
+      #pool_pages_over_time-root { --color-paper:   #f5f5f5;   
+      --color-ink:     #2d3142;   
+      --color-muted:   #4f5d75;   
+      --color-accent:  #eb6c36;   
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif', 'Noto Serif KR', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace; }
+      #pool_pages_over_time-root { font-family: var(--font-sans); color: var(--color-ink); }
+      #pool_pages_over_time-root .diagram-container { width: 100%; overflow-x: auto; }
+      #pool_pages_over_time-root .diagram-container { overflow-x: visible; }</style>
+          <marker id="pool_pages_over_time-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+          <marker id="pool_pages_over_time-arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+        <!-- Axes -->
+        <line x1="80" y1="40" x2="80" y2="420" stroke="#2d3142" stroke-opacity="0.25" stroke-width="1"/>
+        <line x1="80" y1="420" x2="760" y2="420" stroke="#2d3142" stroke-opacity="0.25" stroke-width="1"/>
+        <text transform="rotate(-90 24 230)" x="24" y="230" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" letter-spacing="0.14em" text-anchor="middle">KV PAGES IN USE</text>
+        <text x="72" y="423" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end">0</text>
+        <text x="80" y="440" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">BURST ARRIVES (t = 30 s)</text>
+        <text x="760" y="440" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="end" letter-spacing="0.06em">TIME</text>
+        <!-- Pool ceiling rule -->
+        <line x1="80" y1="112" x2="760" y2="112" stroke="#4f5d75" stroke-width="1" stroke-dasharray="5,4"/>
+        <text x="84" y="104" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.06em">POOL CEILING: EVERY PAGE IN USE</text>
+        <!-- Series: main (non-focal) then AC (focal) -->
+        <polyline points="80,420 110,332 140,256 180,196 230,154 290,126 340,114 360,112 740,112" fill="none" stroke="#5e7a9b" stroke-width="1.2" stroke-linejoin="round"/>
+        <polygon points="80,420 92,376 160,368 172,328 240,320 252,280 320,272 332,240 400,232 412,204 480,198 492,224 504,194 570,188 582,214 594,184 660,178 672,204 684,174 740,168 740,420 80,420" fill="#eb6c36" fill-opacity="0.06"/>
+        <polyline points="80,420 92,376 160,368 172,328 240,320 252,280 320,272 332,240 400,232 412,204 480,198 492,224 504,194 570,188 582,214 594,184 660,178 672,204 684,174 740,168" fill="none" stroke="#eb6c36" stroke-width="1.8" stroke-linejoin="round"/>
+        <circle cx="740" cy="168" r="4" fill="#eb6c36"/>
+        <circle cx="492" cy="224" r="4" fill="#eb6c36"/>
+        <!-- Callouts -->
+        <text x="420" y="62" fill="#2d3142" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">all 46 long requests admitted: the pool is</text><text x="420" y="80" fill="#2d3142" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">pinned full and the worker spins in fail-hold-retry</text>
+        <path d="M672 90 Q668 102 664 110" fill="none" stroke="#2d3142" stroke-opacity="0.40" stroke-width="1" stroke-dasharray="4,3"/><circle cx="664" cy="112" r="2" fill="#2d3142"/>
+        <text x="528" y="284" fill="#2d3142" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">a completion frees pages;</text><text x="528" y="302" fill="#2d3142" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">the next long request is admitted</text>
+        <path d="M520 276 Q500 256 494 230" fill="none" stroke="#2d3142" stroke-opacity="0.40" stroke-width="1" stroke-dasharray="4,3"/><circle cx="493" cy="228" r="2" fill="#2d3142"/>
+        <!-- Measured outcomes (direct labels) -->
+        <text x="776" y="106" fill="#4f5d75" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">main</text>
+        <text x="776" y="121" fill="#2d3142" font-size="10" font-weight="500" font-family="'Geist Mono', monospace" text-anchor="start">short E2E 422 s</text>
+        <text x="776" y="135" fill="#2d3142" font-size="10" font-weight="500" font-family="'Geist Mono', monospace" text-anchor="start">44 output tok/s</text>
+        <text x="776" y="162" fill="#eb6c36" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">AC</text>
+        <text x="776" y="177" fill="#2d3142" font-size="10" font-weight="500" font-family="'Geist Mono', monospace" text-anchor="start">short E2E 15.9 s</text>
+        <text x="776" y="191" fill="#2d3142" font-size="10" font-weight="500" font-family="'Geist Mono', monospace" text-anchor="start">648 output tok/s</text>
+        <text x="40" y="468" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="start">Illustrative shape, not measured curves. Only the burst_v2 outcomes at right are measured (46 long requests at t = 30 s plus short requests at 9/s).</text>
+        <line x1="40" y1="492" x2="960" y2="492" stroke="#2d3142" stroke-opacity="0.10" stroke-width="0.8"/><text x="40" y="508" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start" letter-spacing="0.18em">LEGEND</text><line x1="40" y1="522" x2="64" y2="522" stroke="#5e7a9b" stroke-width="1.2"/><text x="72" y="526" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" text-anchor="start">main: every request that fits its prompt is admitted</text><line x1="380" y1="522" x2="404" y2="522" stroke="#eb6c36" stroke-width="1.8"/><circle cx="392" cy="522" r="4" fill="#eb6c36"/><text x="412" y="526" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" text-anchor="start">AC: admit only what fits at full reservation</text><line x1="720" y1="522" x2="744" y2="522" stroke="#4f5d75" stroke-width="1" stroke-dasharray="5,4"/><text x="752" y="526" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif" text-anchor="start">Pool ceiling</text>
+      </svg>
