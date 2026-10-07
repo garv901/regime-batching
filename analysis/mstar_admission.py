@@ -32,7 +32,13 @@ Joins (verified in the producers):
       the engine), so admission `rid` is the int `h` of `new_request`, NOT the wire id. Handles are recycled after a
       request is removed and are per worker process, so the join is (pid, h) as-of the row's `ts_mono` against
       `new_request.tm` (admission_<pool>_pid<N>.jsonl pairs with steps_rank*_pid<N>.jsonl).
-Request class: bench `cls`; else intended output length (>= 1024 -> long); else actual output length.
+Request class: bench `cls`; else intended output length (>= 1024 -> long); else actual output length. `cls` is any string:
+short / long feed the per-class metrics, `mid` (the public-trace workloads have short / mid / long) gets its own, and every
+completed request, whatever its class, feeds the all-request metrics (`all_*`).
+Declared output length (the trace's `max_tokens`, see experiments/mstar/declare_max_tokens.py): bench `declared_max_tokens`
+(what the client sent the server; absent in older runs, where the client sent the intended length, so declared = intended) against
+`output_lens` (generated) and `intended_output_lens` (the trace's output_length = where the request should stop):
+decl_ratio_mean, decl_kv_ratio, and the OVERRUN flag (a request generated more than intended; TRUNCATED is fewer).
 """
 from __future__ import annotations
 
@@ -403,6 +409,10 @@ def request_table(b: dict) -> pd.DataFrame:
     timed_out = ~ok & np.array([bool(TIMEOUT_RE.search(e)) or e == EMPTY_MSG_ERROR for e in err], dtype=bool)
     want = b.get("intended_output_lens")  # requested output tokens, same trace order as output_lens (trace_replay.build_bench)
     want = np.asarray(want, dtype=float) if want is not None and len(want) == n else np.full(n, np.nan)
+    # what the client declared as max_tokens (bench `declared_max_tokens`); absent in runs of the oracle client, which sent the
+    # intended length, so declared = intended there (NaN where that is unknown too)
+    decl = b.get("declared_max_tokens")
+    decl = np.asarray(decl, dtype=float) if decl is not None and len(decl) == n else want.copy()
     cls = b.get("cls")
     if cls is not None and len(cls) == n:
         cls = np.array([str(c) for c in cls], dtype=object)
@@ -416,7 +426,8 @@ def request_table(b: dict) -> pd.DataFrame:
     rid = b.get("request_ids")
     rid = list(rid) if rid is not None and len(rid) == n else [str(i) for i in range(n)]
     return pd.DataFrame(dict(
-        rid=rid, cls=cls, inp=b["input_lens"], out=out, want=want, trunc=ok & (out < want), ttft=ttft, lat=lat, ok=ok,
+        rid=rid, cls=cls, inp=b["input_lens"], out=out, want=want, decl=decl, trunc=ok & (out < want), over=ok & (out > want),
+        ttft=ttft, lat=lat, ok=ok,
         timed_out=timed_out, err=err, start_abs=start_abs, start=start_abs - t0, end=np.where(ok, start_abs - t0 + lat, np.nan),
     ))
 
@@ -456,12 +467,30 @@ def _mean(a):
     return float(np.mean(a)) if len(a) else math.nan
 
 
+def declared_metrics(rt: pd.DataFrame, b: dict) -> dict:
+    """How far the declared max_tokens sits above what was generated, over the completed requests that have both.
+
+    decl_ratio_mean = mean of declared / generated per request; decl_kv_ratio = sum(prompt + declared) / sum(prompt + generated)
+    (prompt = bench input_lens, the server-side tokens with the template). overrun = completed requests that generated more
+    than the trace's intended length (TRUNCATED = fewer; NaN when bench.json has no intended_output_lens); overrun_bench = the
+    client's own `n_overrun_outputs` when it writes one.
+    """
+    ok = rt[rt.ok & rt.decl.notna() & (rt.out > 0)]
+    nb = b.get("n_overrun_outputs")
+    return dict(
+        decl_ratio_mean=_mean(ok.decl / ok.out),
+        decl_kv_ratio=float((ok.inp + ok.decl).sum() / (ok.inp + ok.out).sum()) if len(ok) else math.nan,
+        overrun=int(rt.over.sum()) if rt.want.notna().any() else math.nan,
+        overrun_bench=float(nb) if isinstance(nb, (int, float)) and not isinstance(nb, bool) else math.nan,
+    )
+
+
 def bench_metrics(rt: pd.DataFrame, b: dict, stall_s: float) -> dict:
     n = len(rt)
     ok = rt[rt.ok]
     duration = float(b["duration"]) if b.get("duration") is not None else (float(ok.end.max()) if len(ok) else 0.0)
     timeout_s = (b.get("trace") or {}).get("timeout_s")
-    sh, lo = ok[ok.cls == "short"], ok[ok.cls == "long"]
+    sh, mid, lo = ok[ok.cls == "short"], ok[ok.cls == "mid"], ok[ok.cls == "long"]
     bad = rt[~rt.ok]
     ends = np.where(bad.timed_out, bad.start + (timeout_s if timeout_s else duration), bad.start)
     stall, stall_at = max_stall(rt.start.values, ok.end.values, np.minimum(ends, duration), duration)
@@ -473,11 +502,16 @@ def bench_metrics(rt: pd.DataFrame, b: dict, stall_s: float) -> dict:
         out_tok_s=float(ok.out.sum()) / duration if duration > 0 else math.nan,
         short_n=len(sh), short_e2e_mean_s=_mean(sh.lat), short_e2e_p50_s=_pct(sh.lat, 50), short_e2e_p99_s=_pct(sh.lat, 99),
         short_ttft_mean_s=_mean(sh.ttft), short_ttft_p99_s=_pct(sh.ttft, 99),
+        # every completed request, whatever its class (the public-trace workloads have a mid class as well)
+        all_e2e_mean_s=_mean(ok.lat), all_e2e_p50_s=_pct(ok.lat, 50), all_e2e_p99_s=_pct(ok.lat, 99),
+        all_ttft_p50_s=_pct(ok.ttft, 50), all_ttft_p99_s=_pct(ok.ttft, 99),
+        mid_n=len(mid), mid_e2e_mean_s=_mean(mid.lat), mid_e2e_p99_s=_pct(mid.lat, 99),
         long_n=len(lo), long_e2e_mean_s=_mean(lo.lat), long_e2e_max_s=float(lo.lat.max()) if len(lo) else math.nan,
         long_ttft_mean_s=_mean(lo.ttft),
         long_failed=int(((rt.cls == "long") & ~rt.ok).sum()), unknown_class=int((rt.cls == "unknown").sum()),
         max_stall_s=stall, max_stall_at_s=stall_at,
     )
+    m.update(declared_metrics(rt, b))
     m["stalled"] = bool(m["timed_out"] > 0 or stall > stall_s)
     return m
 
@@ -718,6 +752,15 @@ def analyze_case(ref: CaseRef, stall_s: float = STALL_S) -> Case:
                 f"requested (generated {int(tr.out.min())}-{int(tr.out.max())} vs requested {int(tr.want.min())}-"
                 f"{int(tr.want.max())}); the engine stopped them early (BAGEL's decode loop ends at 2,049 tokens), so this "
                 "run's KV pressure is below what the workload plans")
+        if c.m["overrun"] > 0 or c.m["overrun_bench"] > 0:
+            ov = rt[rt.over]
+            c.flags.add("OVERRUN")
+            c.notes.append(
+                f"OVERRUN: {int(c.m['overrun']) if len(ov) else int(c.m['overrun_bench'])} completed request(s) returned more output "
+                "tokens than the trace's intended length (the emulated stop did not hold)"
+                + (f" (generated {int(ov.out.min())}-{int(ov.out.max())} vs intended {int(ov.want.min())}-{int(ov.want.max())})"
+                   if len(ov) else " (from bench `n_overrun_outputs`; bench.json has no usable intended_output_lens)")
+                + ", so this run's KV use is above what the workload plans")
         ok = rt[rt.ok]
         c.series.update(
             arrivals=np.sort(rt.start.values), completions=np.sort(ok.end.values),
@@ -777,6 +820,8 @@ def analyze_case(ref: CaseRef, stall_s: float = STALL_S) -> Case:
 SCALARS = [
     "n_requests", "completed", "failed", "timed_out", "truncated", "duration_s", "out_tok_s", "max_stall_s",
     "short_e2e_mean_s", "short_e2e_p50_s", "short_e2e_p99_s", "short_ttft_mean_s", "short_ttft_p99_s",
+    "all_e2e_mean_s", "all_e2e_p50_s", "all_e2e_p99_s", "all_ttft_p50_s", "all_ttft_p99_s",
+    "mid_n", "mid_e2e_mean_s", "mid_e2e_p99_s", "decl_ratio_mean", "decl_kv_ratio", "overrun",
     "long_e2e_mean_s", "long_e2e_max_s", "long_ttft_mean_s", "holds", "held_requests", "admit_fail_total",
     "grant_deferred_log", "min_free_kv_pages", "gpu_busy_share", "decode_bs_mean", "planner_us_p50", "planner_us_p99",
     "offloads", "startup_s", "gpu_util_mean_pct", "gpu_mem_peak_mib", "adm_wait_mean_short_s", "adm_wait_mean_long_s",
@@ -787,10 +832,16 @@ SCALARS = [
 # (key, column header, decimals) of the spread table: the metrics a decision rests on, each as mean [min-max] over reps
 SPREAD_COLS = [
     ("short_e2e_mean_s", "short E2E mean (s)", 2), ("short_e2e_p50_s", "short E2E p50 (s)", 2), ("short_e2e_p99_s", "short E2E p99 (s)", 2),
-    ("short_ttft_p99_s", "short TTFT p99 (s)", 3), ("long_e2e_mean_s", "long E2E mean (s)", 1), ("out_tok_s", "out tok/s", 1),
+    ("short_ttft_p99_s", "short TTFT p99 (s)", 3),
+    ("all_e2e_mean_s", "all E2E mean (s)", 2), ("all_e2e_p50_s", "all E2E p50 (s)", 2), ("all_e2e_p99_s", "all E2E p99 (s)", 2),
+    ("all_ttft_p50_s", "all TTFT p50 (s)", 3), ("all_ttft_p99_s", "all TTFT p99 (s)", 3),
+    ("long_e2e_mean_s", "long E2E mean (s)", 1), ("out_tok_s", "out tok/s", 1),
     *[(k, f"host ms/step {lab}", 2) for k, lab in HOST_BIN_LABELS.items()],
 ]
-KEY_RATIOS = [("short_e2e_mean_s", "short E2E mean"), ("long_e2e_mean_s", "long E2E mean"), ("out_tok_s", "out tok/s")]
+KEY_RATIOS = [("short_e2e_mean_s", "short E2E mean"), ("all_e2e_mean_s", "all E2E mean"), ("long_e2e_mean_s", "long E2E mean"),
+              ("out_tok_s", "out tok/s")]
+# class columns of the spread table that only appear when some config of the workload has requests of that class
+MID_COLS = [("mid_e2e_mean_s", "mid E2E mean (s)", 2), ("mid_e2e_p99_s", "mid E2E p99 (s)", 2)]
 
 
 def _finite(v) -> bool:
@@ -820,8 +871,34 @@ def config_sort_key(cfg: str):
     return (CONFIG_ORDER.index(cfg), cfg) if cfg in CONFIG_ORDER else (len(CONFIG_ORDER), cfg)
 
 
+VARIANT_SUFFIXES = ["_mtx2", "_mt2048"]  # declared-max_tokens variants of a base workload (make_bagel_workloads_v4.sh)
+PUB_PREFIXES = ["pub_mooncake_conv_", "pub_azure_conv_"]  # public-trace workloads (short / mid / long classes)
+
+
+def split_variant(wl: str) -> tuple[str, str]:
+    """(base workload, variant suffix) of `<base>_mtx2` / `<base>_mt2048`; (wl, "") for anything else."""
+    for suf in VARIANT_SUFFIXES:
+        if wl.endswith(suf) and len(wl) > len(suf):
+            return wl[:-len(suf)], suf
+    return wl, ""
+
+
+def _natural(text: str) -> tuple:
+    """Sort key that reads digit runs as numbers (r1.5 before r10); the parts alternate str, float, str, ..."""
+    return tuple(float(t) if i % 2 else t for i, t in enumerate(re.split(r"(\d+(?:\.\d+)?)", text)))
+
+
 def workload_sort_key(wl: str):
-    return (WORKLOAD_ORDER.index(wl), wl) if wl in WORKLOAD_ORDER else (len(WORKLOAD_ORDER), wl)
+    """The WORKLOAD_ORDER files first, then the declared variants of those (v4: base order, _mtx2 before _mt2048), then the
+    public-trace workloads (pub_mooncake_conv_*, pub_azure_conv_*: each base followed by its variants), then anything else."""
+    base, suf = split_variant(wl)
+    var = VARIANT_SUFFIXES.index(suf) + 1 if suf else 0
+    if base in WORKLOAD_ORDER:
+        return (1 if suf else 0, 0, WORKLOAD_ORDER.index(base), (), var, wl)
+    for i, pre in enumerate(PUB_PREFIXES):
+        if base.startswith(pre):
+            return (2, i, 0, _natural(base[len(pre):]), var, wl)
+    return (3, 0, 0, (), var, wl)
 
 
 def ranges_overlap(a: dict, b: dict) -> bool | None:
@@ -877,7 +954,9 @@ def workload_table(aggs: dict[str, dict], reasons: list[str]) -> str:
     cfgs = sorted(aggs, key=config_sort_key)
     headers = ["config", "n", "flags", "completed", "failed", "timed out", "duration (s)", "out tok/s", "max stall (s)",
                "short E2E mean (s)", "short E2E p50 (s)", "short E2E p99 (s)", "short TTFT mean (s)", "short TTFT p99 (s)",
-               "long E2E mean (s)", "long E2E max (s)", "long TTFT mean (s)", "holds"]
+               "all E2E mean (s)", "all E2E p50 (s)", "all E2E p99 (s)", "all TTFT p50 (s)", "all TTFT p99 (s)",
+               "long E2E mean (s)", "long E2E max (s)", "long TTFT mean (s)", "declared/generated (mean)", "declared/generated KV",
+               "holds"]
     headers += [f"fail: {r}" for r in reasons]
     headers += ["grant_deferred (adm log)", "min free KV pages", "GPU busy", "decode bs", "planner_us p50", "planner_us p99",
                 "KV free lag p50 (ms)", "KV free lag p99 (ms)", "kv_release"]
@@ -890,7 +969,10 @@ def workload_table(aggs: dict[str, dict], reasons: list[str]) -> str:
             f(a["duration_s"], 1), f(a["out_tok_s"], 1), f(a["max_stall_s"], 1),
             f(a["short_e2e_mean_s"], 2), f(a["short_e2e_p50_s"], 2), f(a["short_e2e_p99_s"], 2),
             f(a["short_ttft_mean_s"], 3), f(a["short_ttft_p99_s"], 3),
-            f(a["long_e2e_mean_s"], 1), f(a["long_e2e_max_s"], 1), f(a["long_ttft_mean_s"], 2), f(a["holds"], 0),
+            f(a["all_e2e_mean_s"], 2), f(a["all_e2e_p50_s"], 2), f(a["all_e2e_p99_s"], 2),
+            f(a["all_ttft_p50_s"], 3), f(a["all_ttft_p99_s"], 3),
+            f(a["long_e2e_mean_s"], 1), f(a["long_e2e_max_s"], 1), f(a["long_ttft_mean_s"], 2),
+            f(a["decl_ratio_mean"], 2), f(a["decl_kv_ratio"], 3), f(a["holds"], 0),
             *fails, f(a["grant_deferred_log"], 0), f(a["min_free_kv_pages"], 0), f(a["gpu_busy_share"], pct=True),
             f(a["decode_bs_mean"], 1), f(a["planner_us_p50"], 1), f(a["planner_us_p99"], 1),
             f(a["kv_free_lag_ms_p50"], 1), f(a["kv_free_lag_ms_p99"], 1), f(a["kv_release_n"], 0),
@@ -901,6 +983,7 @@ def workload_table(aggs: dict[str, dict], reasons: list[str]) -> str:
             row = [""] * len(headers)
             row[0], row[1] = f"*{cfg} / {ref}*", ""
             row[col["short E2E mean (s)"]] = ratio_cell(r, "short_e2e_mean_s", 2)
+            row[col["all E2E mean (s)"]] = ratio_cell(r, "all_e2e_mean_s", 2)
             row[col["long E2E mean (s)"]] = ratio_cell(r, "long_e2e_mean_s", 2)
             row[col["out tok/s"]] = ratio_cell(r, "out_tok_s", 2)
             rows.append(row)
@@ -925,8 +1008,9 @@ def spread_cell(a: dict, k: str, nd: int) -> str:
 
 
 def spread_table(aggs: dict[str, dict]) -> str:
-    headers = ["config", "n"] + [h for _, h, _ in SPREAD_COLS]
-    rows = [[cfg, str(aggs[cfg]["n"])] + [spread_cell(aggs[cfg], k, nd) for k, _, nd in SPREAD_COLS]
+    cols = SPREAD_COLS + (MID_COLS if any(a["mid_n"] > 0 for a in aggs.values()) else [])
+    headers = ["config", "n"] + [h for _, h, _ in cols]
+    rows = [[cfg, str(aggs[cfg]["n"])] + [spread_cell(aggs[cfg], k, nd) for k, _, nd in cols]
             for cfg in sorted(aggs, key=config_sort_key)]
     return md_table(headers, rows)
 
@@ -944,6 +1028,13 @@ def render_md(groups: dict, aggs: dict, problems: list[str], figs: dict, exclude
         "- **TRUNCATED**: a completed request returned fewer output tokens than the trace asked for "
         "(`output_lens` < `intended_output_lens`; BAGEL's decode loop stops at 2,049 tokens), so the run's KV pressure is "
         "below the workload's plan; `truncated` in summary.json counts them.",
+        "- **OVERRUN**: a completed request returned MORE output tokens than the trace's intended length "
+        "(`output_lens` > `intended_output_lens`, or the client's `n_overrun_outputs` > 0): the emulated stop of a declared-`max_tokens` "
+        "trace did not hold, so the run used more KV than the workload plans (`overrun` in summary.json counts them).",
+        "- **all E2E / all TTFT**: every completed request, whatever its class (short, mid, long). `mid` (the public-trace workloads) "
+        "gets its own columns in the `reps` table when a config has any. **declared/generated**: mean over completed requests of "
+        "declared `max_tokens` / generated tokens, and (prompt + declared) / (prompt + generated) summed over them; the declared "
+        "length is bench `declared_max_tokens`, else the intended length (the oracle client sent that), so 1.00 = oracle.",
         "- *timed out* = failed with the client's empty-message error (`request failed`) or a timeout message; "
         "*failed* = every other error.",
         "- holds / fail: / min free KV pages / GPU busy / decode bs come from step telemetry in the run's window "

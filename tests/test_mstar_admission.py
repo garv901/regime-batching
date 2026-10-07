@@ -214,13 +214,17 @@ def write_jsonl(path, rows, truncated_tail=False):
 
 
 def make_case(job_dir, workload, rep, *, config, scale=1.0, timeout_idx=None, telemetry=True, admission=False,
-              bench=True, truncated_tail=False, cap_out=None):
+              bench=True, truncated_tail=False, cap_out=None, edit=None):
+    """edit: a function that changes the bench dict before it is written (declared_max_tokens, cls, output_lens, ...)."""
     d = os.path.join(job_dir, f"{workload}_r{rep}")
     os.makedirs(d, exist_ok=True)
     run_id = f"{config}-{workload}-r{rep}"
     open(os.path.join(d, "server.log"), "w").write("INFO server up\n")
     if bench:
-        json.dump(make_bench(run_id, scale, timeout_idx, cap_out=cap_out), open(os.path.join(d, "bench.json"), "w"))
+        b = make_bench(run_id, scale, timeout_idx, cap_out=cap_out)
+        if edit:
+            edit(b)
+        json.dump(b, open(os.path.join(d, "bench.json"), "w"))
         open(os.path.join(d, "client.log"), "w").write("trace replay: ok\nWrote bench.json\n")
         open(os.path.join(d, "startup_s.txt"), "w").write("71.3\n")
         open(os.path.join(d, "gpu_mem.csv"), "w").write(
@@ -988,3 +992,306 @@ def test_step_gains_table():
     assert cells[2 + 4] == "1.05 ≈"                         # out tok/s: ranges overlap
     assert cells[2 + 1] == "-"                              # short E2E p99: neither side has it
     assert "| one / old | 1/3 | 0.50 (1 rep)" in t and "missing" not in t
+
+
+# ------------------------------------------------------------------------------------------------ all-request metrics, mid class
+def one_case(tmp_path, name, edit=None, **kw):
+    """analyze_case of a single bench-only run of the 6-request scenario (job dir `<name>`, e.g. '70_ac')."""
+    job = tmp_path / name
+    make_case(str(job), "bagel_burst", 1, config=name.split("_", 1)[1], telemetry=False, edit=edit, **kw)
+    return ma.analyze_case(ma.discover([str(job)])[0][0])
+
+
+def flags_of(case):  # the data flags, without NO_TELEMETRY (these cases have a bench.json only)
+    return case.flags - {"NO_TELEMETRY"}
+
+
+def table_rows(md_part):
+    return [[c.strip() for c in ln.strip("|").split("|")] for ln in md_part.splitlines() if ln.startswith("| ")]
+
+
+def test_all_request_metrics(result):
+    out, s = result
+    m = rep(s, "bagel_burst", "ac", 0)  # latencies 1, 2, 3, 4 (shorts), 60, 80 (longs); ttfts .1 .2 .3 .4 5 6
+    assert m["all_e2e_mean_s"] == pytest.approx(25.0) and m["all_e2e_p50_s"] == pytest.approx(3.5)
+    assert m["all_e2e_p99_s"] == pytest.approx(np.percentile([1, 2, 3, 4, 60, 80], 99))
+    assert m["all_ttft_p50_s"] == pytest.approx(0.35)
+    assert m["all_ttft_p99_s"] == pytest.approx(np.percentile([0.1, 0.2, 0.3, 0.4, 5, 6], 99))
+    # a timed-out request has no latency: the second ac rep (request 5 timed out) is over the five that completed
+    m2 = rep(s, "bagel_burst", "ac", 1)
+    assert m2["all_e2e_mean_s"] == pytest.approx(70 / 5) and m2["all_e2e_p50_s"] == pytest.approx(3.0)
+    assert cfg(s, "bagel_burst", "ac")["mean"]["all_e2e_mean_s"] == pytest.approx((25.0 + 14.0) / 2)
+    # nothing completed (the bench-less case): NaN, not an error
+    assert cfg(s, "bagel_control", "peak_bf")["mean"]["all_e2e_mean_s"] is None
+    # compare.md: both tables carry them, and the ratio rows carry the all-request mean
+    md = open(os.path.join(out, "compare.md")).read()
+    main_tbl, spread_tbl = md.split("## bagel_burst")[1].split("\n## ")[0].split("**reps: mean [min–max]**")
+    mh, mrows = table_rows(main_tbl)[0], {r[0]: r for r in table_rows(main_tbl)[1:]}
+    sh, srows = table_rows(spread_tbl)[0], {r[0]: r for r in table_rows(spread_tbl)[1:]}
+    for h in ("all E2E mean (s)", "all E2E p50 (s)", "all E2E p99 (s)", "all TTFT p50 (s)", "all TTFT p99 (s)"):
+        assert h in mh and h in sh, h
+    assert mrows["ac"][mh.index("all E2E mean (s)")] == "19.50"
+    assert mrows["*peak_bf / ac*"][mh.index("all E2E mean (s)")] == f"{(0.5 * 25.0) / 19.5:.2f}"
+    assert srows["ac"][sh.index("all E2E mean (s)")] == "19.50 [14.00–25.00]"
+    assert "all E2E / all TTFT" in md.split("## bagel_burst")[0]
+    assert cfg(s, "bagel_burst", "ac")["mean"]["spread"]["all_ttft_p99_s"]["n"] == 2
+    assert s["workloads"]["bagel_burst"]["ratios"]["vs_ac"]["peak_bf"]["all_e2e_mean_s"] == pytest.approx(0.5 * 25.0 / 19.5)
+
+
+def test_mid_class_is_counted_everywhere_but_never_breaks_a_class_metric(tmp_path):
+    def mid(b):  # the public-trace classes: short / mid / long
+        b["cls"] = ["short", "short", "mid", "mid", "long", "long"]
+
+    c = one_case(tmp_path, "70_ac", mid)
+    m = c.m
+    assert (m["short_n"], m["mid_n"], m["long_n"], m["unknown_class"]) == (2, 2, 2, 0)
+    assert m["short_e2e_mean_s"] == pytest.approx(1.5) and m["mid_e2e_mean_s"] == pytest.approx(3.5)
+    assert m["mid_e2e_p99_s"] == pytest.approx(np.percentile([3, 4], 99)) and m["long_e2e_mean_s"] == pytest.approx(70.0)
+    assert m["all_e2e_mean_s"] == pytest.approx(25.0)  # the all-request mean still has every request
+    assert flags_of(c) == set() and not any("class" in n for n in c.notes)
+    # the full run (figures, tables) works, and the mid columns appear only for a workload that has mid requests
+    root = str(tmp_path / "r")
+    os.makedirs(root)
+    make_case(_job(root, "71_ac"), "pub_mooncake_conv_x", 1, config="ac", telemetry=False, edit=mid)
+    make_case(_job(root, "72_ac"), "bagel_burst", 1, config="ac", telemetry=False)
+    out = str(tmp_path / "out")
+    s = ma.run([root], out)
+    assert s["workloads"]["pub_mooncake_conv_x"]["configs"]["ac"]["mean"]["mid_n"] == 2
+    md = open(os.path.join(out, "compare.md")).read()
+    pub_rows = table_rows(md.split("## pub_mooncake_conv_x")[1].split("\n## ")[0].split("**reps: mean [min–max]**")[1])
+    assert pub_rows[0][-2:] == ["mid E2E mean (s)", "mid E2E p99 (s)"] and pub_rows[1][-2] == "3.50"
+    assert "mid E2E mean (s)" not in md.split("## bagel_burst")[1].split("**reps: mean [min–max]**")[1]
+    # a bench with no cls and no intended lengths still has its fallbacks and no mid
+    b = make_bench("x")
+    del b["cls"], b["intended_output_lens"]
+    assert ma.bench_metrics(ma.request_table(b), b, 60.0)["mid_n"] == 0
+
+
+# ------------------------------------------------------------------------------------------------ declared max_tokens
+def test_declared_ratios(tmp_path):
+    # the six requests have 100 prompt tokens (server side) and generate 10 x 4 shorts, 2000 x 2 longs
+    def declare(b):
+        b["declared_max_tokens"] = [20, 20, 20, 20, 2048, 2048]
+
+    m = one_case(tmp_path, "70_ac", declare).m
+    assert m["decl_ratio_mean"] == pytest.approx((4 * 2.0 + 2 * 2048 / 2000) / 6)
+    assert m["decl_kv_ratio"] == pytest.approx((4 * 120 + 2 * 2148) / (4 * 110 + 2 * 2100))
+    # a failed request has no generated length: left out of both (request 5 timed out)
+    m = one_case(tmp_path, "71_ac", declare, timeout_idx=5).m
+    assert m["decl_ratio_mean"] == pytest.approx((4 * 2.0 + 2048 / 2000) / 5)
+    assert m["decl_kv_ratio"] == pytest.approx((4 * 120 + 2148) / (4 * 110 + 2100))
+    # older run (no declared_max_tokens): the oracle client sent the intended length, so the ratio is 1
+    m = one_case(tmp_path, "72_ac").m
+    assert m["decl_ratio_mean"] == pytest.approx(1.0) and m["decl_kv_ratio"] == pytest.approx(1.0)
+    # ... which for a run whose engine stopped the longs early (v1: asked 2000, got 1500) is the over-declaration it was
+    m = one_case(tmp_path, "73_ac", cap_out=1500).m
+    assert m["decl_ratio_mean"] == pytest.approx((4 + 2 * 2000 / 1500) / 6)
+    assert m["decl_kv_ratio"] == pytest.approx((4 * 110 + 2 * 2100) / (4 * 110 + 2 * 1600))
+
+    def nothing(b):
+        del b["intended_output_lens"]
+
+    m = one_case(tmp_path, "74_ac", nothing).m  # neither field: unknown, not 1
+    assert math.isnan(m["decl_ratio_mean"]) and math.isnan(m["decl_kv_ratio"])
+
+    def short_list(b):
+        b["declared_max_tokens"] = [20, 20]  # wrong length: ignored like intended_output_lens of the wrong length
+
+    assert one_case(tmp_path, "75_ac", short_list).m["decl_kv_ratio"] == pytest.approx(1.0)
+    # in compare.md and summary.json
+    root = str(tmp_path / "r")
+    os.makedirs(root)
+    make_case(_job(root, "80_ac"), "bagel_burst", 1, config="ac", telemetry=False, edit=declare)
+    make_case(_job(root, "81_ac"), "bagel_burst", 1, config="ac", telemetry=False)
+    out = str(tmp_path / "out")
+    s = ma.run([root], out)
+    mean = cfg(s, "bagel_burst", "ac")["mean"]
+    assert mean["decl_kv_ratio"] == pytest.approx((1.0 + (4776 / 4640)) / 2)
+    assert mean["spread"]["decl_kv_ratio"] == dict(min=pytest.approx(1.0), max=pytest.approx(4776 / 4640), n=2)
+    md = open(os.path.join(out, "compare.md")).read()
+    head = table_rows(md.split("## bagel_burst")[1])[0]
+    assert "declared/generated KV" in head and "declared/generated (mean)" in head
+
+
+def test_overrun_flag(tmp_path):
+    healthy = one_case(tmp_path, "70_ac")
+    assert healthy.m["overrun"] == 0 and "OVERRUN" not in healthy.flags
+
+    def over(b):  # a short (intended 10) generates 12, a long (intended 2000) 2010
+        b["output_lens"][1], b["output_lens"][4] = 12, 2010
+
+    c = one_case(tmp_path, "71_ac", over)
+    assert c.m["overrun"] == 2 and "OVERRUN" in c.flags and "TRUNCATED" not in c.flags and c.m["truncated"] == 0
+    assert any("OVERRUN: 2 completed" in n and "generated 12-2010 vs intended 10-2000" in n for n in c.notes)
+
+    def both(b):  # one long short of its intended length, one over: both flags, each counting its own request
+        b["output_lens"][4], b["output_lens"][5] = 1999, 2001
+
+    c = one_case(tmp_path, "72_ac", both)
+    assert flags_of(c) == {"OVERRUN", "TRUNCATED"} and (c.m["overrun"], c.m["truncated"]) == (1, 1)
+    # the engine's own stop (v1: BAGEL cuts at 2,049) is TRUNCATED only
+    c = one_case(tmp_path, "73_ac", cap_out=1500)
+    assert flags_of(c) == {"TRUNCATED"} and c.m["overrun"] == 0
+
+    def bench_count(b):  # no intended lengths to compare with, but the client counted overruns itself
+        del b["intended_output_lens"]
+        b["n_overrun_outputs"] = 3
+
+    c = one_case(tmp_path, "74_ac", bench_count)
+    assert "OVERRUN" in c.flags and math.isnan(c.m["overrun"]) and c.m["overrun_bench"] == 3
+    assert any("n_overrun_outputs" in n for n in c.notes)
+
+    def bench_zero(b):
+        b["n_overrun_outputs"] = 0
+
+    c = one_case(tmp_path, "75_ac", bench_zero)
+    assert "OVERRUN" not in c.flags and c.m["overrun_bench"] == 0
+    root = str(tmp_path / "r")
+    os.makedirs(root)
+    make_case(_job(root, "80_ac"), "bagel_burst", 1, config="ac", telemetry=False, edit=over)
+    out = str(tmp_path / "out")
+    s = ma.run([root], out)
+    md = open(os.path.join(out, "compare.md")).read()
+    assert "OVERRUN 1/1" in md and "- **OVERRUN**:" in md and "OVERRUN: 2 completed" in md.split("## Data problems")[1]
+    assert cfg(s, "bagel_burst", "ac")["mean"]["overrun"] == 2 and cfg(s, "bagel_burst", "ac")["mean"]["flags"]["OVERRUN"] == 1
+
+
+# ------------------------------------------------------------------------------------------------ workload order, variants
+def test_workload_order_places_v4_and_public_traces_after_the_rest():
+    names = ["pub_azure_conv_r2", "bagel_stag_v3_r5.5_mt2048", "zzz_other", "pub_mooncake_conv_r10_mtx2", "bagel_burst_v3",
+             "pub_mooncake_conv_r1.5", "bagel_burst_v2_mt2048", "pub_mooncake_conv_r10", "bagel_stag_v2_r3_mtx2", "bagel_burst_v2",
+             "pub_mooncake_conv_r1.5_mt2048", "bagel_burst_v2_mtx2", "bagel_control", "pub_mooncake_conv_r1.5_mtx2",
+             "pub_azure_conv_r2_mtx2", "bagel_stag_v3_r5.5", "bagel_stag_v2_r3", "calib_mc_r1.0"]
+    got = sorted(names, key=ma.workload_sort_key)
+    assert got == [
+        "bagel_control", "bagel_burst_v2", "bagel_stag_v2_r3", "bagel_burst_v3", "bagel_stag_v3_r5.5",   # as before
+        "bagel_burst_v2_mtx2", "bagel_burst_v2_mt2048", "bagel_stag_v2_r3_mtx2",                          # v4: base order,
+        "bagel_stag_v3_r5.5_mt2048",                                                                       # _mtx2 before _mt2048
+        "pub_mooncake_conv_r1.5", "pub_mooncake_conv_r1.5_mtx2", "pub_mooncake_conv_r1.5_mt2048",          # public: each base
+        "pub_mooncake_conv_r10", "pub_mooncake_conv_r10_mtx2",                                             # with its variants,
+        "pub_azure_conv_r2", "pub_azure_conv_r2_mtx2",                                                     # r1.5 before r10
+        "calib_mc_r1.0", "zzz_other"]
+    # the old files keep their old relative order
+    assert sorted(ma.WORKLOAD_ORDER[::-1], key=ma.workload_sort_key) == ma.WORKLOAD_ORDER
+    assert ma.split_variant("bagel_stag_v2_r3_mt2048") == ("bagel_stag_v2_r3", "_mt2048")
+    assert ma.split_variant("_mtx2") == ("_mtx2", "") and ma.split_variant("bagel_burst_v2") == ("bagel_burst_v2", "")
+    # case dirs of a variant parse like any other: the last _r<N> is the repetition
+    assert ma.CASE_RE.match("bagel_stag_v2_r3_mtx2_r1").groups() == ("bagel_stag_v2_r3_mtx2", "1")
+
+
+def synth_cfg(vals, n=3, decl=None):  # vals: {metric: (mean, min, max)}
+    mean = {k: v[0] for k, v in vals.items()}
+    mean["spread"] = {k: dict(min=v[1], max=v[2], n=n) for k, v in vals.items()}
+    if decl is not None:
+        mean["decl_kv_ratio"] = decl
+    return dict(mean=mean, reps=[{}] * n)
+
+
+def test_step_gains_all_request_columns_and_workload_filter():
+    import mstar_step_gains as sg
+
+    s = {"workloads": {
+        "bagel_burst_v2": {"configs": {
+            "ac": synth_cfg({"all_e2e_mean_s": (4.0, 3.8, 4.2), "all_e2e_p99_s": (40.0, 38.0, 42.0)}),
+            "main": synth_cfg({"all_e2e_mean_s": (8.0, 7.0, 9.0), "all_e2e_p99_s": (40.0, 30.0, 50.0)})}},
+        "bagel_burst_v2_mtx2": {"configs": {
+            "ac": synth_cfg({"all_e2e_mean_s": (6.0, 5.8, 6.2)}), "main": synth_cfg({"all_e2e_mean_s": (8.0, 7.0, 9.0)})}},
+        "pub_mooncake_conv_x": {"configs": {
+            "ac": synth_cfg({"all_e2e_mean_s": (1.0, 1.0, 1.0)}), "main": synth_cfg({"all_e2e_mean_s": (2.0, 2.0, 2.0)})}},
+    }}
+    for h in ("all E2E mean", "all E2E p50", "all E2E p99", "all TTFT p50", "all TTFT p99"):
+        assert h in sg.tables(s, [("ac", "main")])
+    t = sg.tables(s, [("ac", "main")], ["*_mtx2"])
+    assert "### bagel_burst_v2_mtx2" in t and "### bagel_burst_v2\n" not in t and "pub_mooncake" not in t
+    first = sg.tables(s, [("ac", "main")], ["bagel_burst_v2"])
+    head, row = (table_rows(first)[0], table_rows(first)[1])
+    assert row[0] == "ac / main" and row[head.index("all E2E mean")] == "0.50" and row[head.index("all E2E p99")] == "1.00 ≈"
+    # sections in workload order: oracle, its variant, then the public trace
+    heads = [ln for ln in sg.tables(s, [("ac", "main")]).splitlines() if ln.startswith("### ")]
+    assert heads == ["### bagel_burst_v2", "### bagel_burst_v2_mtx2", "### pub_mooncake_conv_x"]
+
+
+def test_declared_cost_table():
+    import mstar_declared as md_
+
+    def c(short, allm, tok, decl=None, n=3):
+        return synth_cfg({"short_e2e_mean_s": short, "short_e2e_p99_s": (short[0] * 5, short[1] * 5, short[2] * 5),
+                          "all_e2e_mean_s": allm, "out_tok_s": tok}, n=n, decl=decl)
+
+    s = {"workloads": {
+        "bagel_burst_v2": {"configs": {"main": c((400, 390, 410), (300, 290, 310), (44, 40, 48)),
+                                       "ac": c((16.0, 14.0, 18.0), (5.0, 4.5, 5.5), (648, 640, 650)),
+                                       "peak_bf_pc_park": c((0.8, 0.77, 0.85), (1.0, 0.9, 1.1), (648, 647, 649))}},
+        "bagel_burst_v2_mtx2": {"configs": {"ac": c((16.5, 15.0, 17.5), (5.2, 5.0, 5.4), (645, 640, 650), 1.04),  # inside ac's ranges
+                                            "peak_bf_pc_park": c((0.75, 0.7, 0.8), (1.0, 0.9, 1.1), (648, 647, 649), 1.04)}},
+        "bagel_burst_v2_mt2048": {"configs": {"ac": c((16.0, 15.0, 17.0), (5.0, 4.8, 5.2), (648, 646, 650), 3.16),
+                                              "peak_bf_pc_park": c((7.2, 7.0, 7.6), (6.0, 5.8, 6.2), (648, 647, 649), 3.16, n=1),
+                                              "ac_park": c((9.0, 8.0, 10.0), (4.0, 3.0, 5.0), (648, 640, 650), 3.16)}},
+        "pub_mooncake_conv_x": {"configs": {"ac": c((2.0, 1.8, 2.2), (1.0, 0.9, 1.1), (100, 99, 101))}},
+        "pub_mooncake_conv_x_mtx2": {"configs": {"ac": c((4.0, 3.8, 4.2), (2.0, 1.9, 2.1), (90, 89, 91), 2.5)}},
+        "bagel_stag_v2_r3_mtx2": {"configs": {"ac": c((1.0, 1.0, 1.0), (1.0, 1.0, 1.0), (1.0, 1.0, 1.0), 1.1)}},  # no base run
+    }}
+    t = md_.tables(s)
+    rows = lambda txt: [[x.strip() for x in ln.strip("|").split("|")] for ln in txt.splitlines() if ln.startswith("| ")]  # noqa: E731
+    assert t.index("### bagel_burst_v2") < t.index("### pub_mooncake_conv_x")  # workload order
+    v2 = rows(t.split("### bagel_burst_v2")[1].split("### pub_mooncake")[0])
+    head, body = v2[0], v2[1:]
+    assert head[:3] == ["arm", "variant", "reps (var/base)"] and head[-1] == "declared/generated KV"
+    for h in ("short E2E mean", "short E2E p99", "all E2E mean", "all E2E p99", "short TTFT p99", "all TTFT p99", "long E2E mean", "out tok/s"):
+        assert f"{h} (var/base)" in head, h
+    # arms present on both sides only (main and ac_park have no variant resp. no base run); variants in _mtx2, _mt2048 order
+    assert [(r[0], r[1]) for r in body] == [("ac", "_mtx2"), ("peak_bf_pc_park", "_mtx2"), ("ac", "_mt2048"), ("peak_bf_pc_park", "_mt2048")]
+    cell = lambda r, h: r[head.index(h)]  # noqa: E731
+    ac_x2, pk_x2, ac_f, pk_f = body
+    assert cell(ac_x2, "short E2E mean (var/base)") == "1.03 ≈"           # 16.5/16.0, ranges overlap
+    assert cell(pk_x2, "short E2E mean (var/base)") == "0.94 ≈"           # 0.75/0.8, ranges overlap
+    assert cell(ac_f, "short E2E mean (var/base)") == "1.00 ≈" and cell(ac_x2, "out tok/s (var/base)") == "1.00 ≈"
+    assert cell(pk_f, "short E2E mean (var/base)") == "9.00 (1 rep)"        # one side has a single rep
+    assert cell(pk_f, "all E2E mean (var/base)") == "6.00 (1 rep)"
+    assert cell(ac_x2, "short TTFT p99 (var/base)") == "-" and cell(ac_x2, "long E2E mean (var/base)") == "-"  # not in the summary
+    assert [cell(r, "declared/generated KV") for r in body] == ["1.04", "1.04", "3.16", "3.16"]
+    assert [cell(r, "reps (var/base)") for r in body] == ["3/3", "3/3", "3/3", "1/3"]
+    # a ranges-apart cell has no mark
+    apart = {"workloads": {"w": {"configs": {"ac": c((1.0, 0.9, 1.1), (1, 1, 1), (10, 9, 11))}},
+                           "w_mt2048": {"configs": {"ac": c((3.0, 2.9, 3.1), (1, 1, 1), (10, 9, 11), 2.0)}}}}
+    assert rows(md_.tables(apart))[1][3] == "3.00" and rows(md_.tables(apart))[1][-1] == "2.00"
+    # public traces: the base is the name without the suffix
+    pub = rows(t.split("### pub_mooncake_conv_x")[1])
+    assert pub[1][:3] == ["ac", "_mtx2", "3/3"] and cell(pub[1], "short E2E mean (var/base)") == "2.00" and pub[1][-1] == "2.50"
+    # a variant without its base is named, not tabulated
+    assert "No oracle base run for: `bagel_stag_v2_r3_mtx2`." in t and "### bagel_stag_v2_r3" not in t
+    # --arms and --variants narrow it
+    only = md_.tables(s, ["ac"], ["_mt2048"])
+    assert "peak_bf_pc_park" not in only and "_mtx2" not in only and "_mt2048" in only
+    assert md_.tables({"workloads": {"w": {"configs": {}}}}) == ""
+
+
+def test_declared_cost_table_from_runs_and_cli(tmp_path, capsys):
+    import mstar_declared as md_
+    import mstar_step_gains as sg
+
+    root = str(tmp_path / "r")
+    os.makedirs(root)
+    declare = lambda b: b.__setitem__("declared_max_tokens", [20, 20, 20, 20, 2048, 2048])  # noqa: E731
+    for job, label, scale_base, scale_var in (("90_ac", "ac", 1.0, 3.0), ("91_peak_bf", "peak_bf", 0.5, 0.5)):
+        j = _job(root, job)
+        make_case(j, "bagel_burst", 1, config=label, scale=scale_base, telemetry=False)
+        make_case(j, "bagel_burst_mtx2", 1, config=label, scale=scale_var, telemetry=False, edit=declare)
+        make_case(j, "bagel_burst_mt2048", 1, config=label, scale=scale_var * 2, telemetry=False, edit=declare)
+    s = ma.run([root], str(tmp_path / "o"))
+    path = str(tmp_path / "o" / "summary.json")
+    md_.main([path, "--md", str(tmp_path / "declared.md")])
+    text = capsys.readouterr().out
+    assert text == open(str(tmp_path / "declared.md")).read()  # --md writes what is printed
+    body = [[x.strip() for x in ln.strip("|").split("|")] for ln in text.splitlines() if ln.startswith("| ")]
+    head, rows = body[0], {(r[0], r[1]): r for r in body[1:]}
+    cell = lambda arm, var, h: rows[(arm, var)][head.index(h)]  # noqa: E731
+    assert cell("ac", "_mtx2", "short E2E mean (var/base)") == "3.00 (1 rep)" and cell("ac", "_mt2048", "all E2E mean (var/base)") == "6.00 (1 rep)"
+    assert cell("peak_bf", "_mtx2", "out tok/s (var/base)") == "1.00 (1 rep)" and cell("peak_bf", "_mtx2", "long E2E mean (var/base)") == "1.00 (1 rep)"
+    assert cell("ac", "_mtx2", "declared/generated KV") == f"{4776 / 4640:.2f}" == "1.03"
+    # the arm-vs-arm ratios on the variants only, through the ordinary step-gains code
+    sg.main([path, "peak_bf/ac", "--workloads", "*_mtx2", "*_mt2048"])
+    out = capsys.readouterr().out
+    assert "### bagel_burst_mtx2" in out and "### bagel_burst_mt2048" in out and "### bagel_burst\n" not in out
+    assert "| peak_bf / ac | 1/1 | 0.17 (1 rep)" in out  # (0.5 x 2.5) / (3.0 x 2.5) short E2E mean
+    assert list(s["workloads"]) == ["bagel_burst", "bagel_burst_mtx2", "bagel_burst_mt2048"]  # run() writes them in workload order

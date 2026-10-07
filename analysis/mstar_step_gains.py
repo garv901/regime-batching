@@ -1,6 +1,6 @@
 """Per-step gain table from an mstar_admission.py summary.json: for each pair NEW/OLD, NEW's mean / OLD's mean per metric.
 
-    python analysis/mstar_step_gains.py <out>/summary.json ac_park/ac peak_bf/ac peak_bf_pc/peak_bf ... [--md FILE]
+    python analysis/mstar_step_gains.py <out>/summary.json ac_park/ac peak_bf/ac peak_bf_pc/peak_bf ... [--workloads GLOB ...] [--md FILE]
 
 One table per workload. A cell is the ratio of the two configs' means over their reps (< 1 is better for times, > 1 for
 tok/s), marked ≈ when the two [min–max] rep ranges overlap (mstar_admission.ranges_overlap: rep spread alone could give
@@ -9,6 +9,7 @@ the difference), (1 rep) when either side has one rep, and `-` when either side 
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import math
 import os
@@ -21,7 +22,10 @@ from mstar_admission import md_table, ranges_overlap, workload_sort_key  # noqa:
 METRICS = [
     ("short_e2e_mean_s", "short E2E mean", True), ("short_e2e_p99_s", "short E2E p99", True),
     ("short_ttft_p99_s", "short TTFT p99", True), ("long_e2e_mean_s", "long E2E mean", True),
-    ("out_tok_s", "out tok/s", False), ("host_ms_p50", "host ms/step", True), ("host_ms_w400p", "host ms/step @400+", True),
+    ("out_tok_s", "out tok/s", False),
+    ("all_e2e_mean_s", "all E2E mean", True), ("all_e2e_p50_s", "all E2E p50", True), ("all_e2e_p99_s", "all E2E p99", True),
+    ("all_ttft_p50_s", "all TTFT p50", True), ("all_ttft_p99_s", "all TTFT p99", True),
+    ("host_ms_p50", "host ms/step", True), ("host_ms_w400p", "host ms/step @400+", True),
     ("planner_us_p50", "planner µs p50", True), ("kv_free_lag_ms_p50", "KV free lag p50", True),
     ("kv_free_lag_ms_p99", "KV free lag p99", True),
 ]
@@ -38,9 +42,12 @@ def cell(new: dict, old: dict, k: str) -> str:
     return s + (" ≈" if sa and sb and ranges_overlap(sa, sb) else "")
 
 
-def tables(summary: dict, pairs: list[tuple[str, str]]) -> str:
+def tables(summary: dict, pairs: list[tuple[str, str]], workloads: list[str] = ()) -> str:
+    """One table per workload; `workloads` = fnmatch globs that keep only the matching workloads (default: all)."""
     out = []
     for wl in sorted(summary["workloads"], key=workload_sort_key):
+        if workloads and not any(fnmatch.fnmatchcase(wl, g) for g in workloads):
+            continue
         cfgs = summary["workloads"][wl]["configs"]
         rows = [[f"{n} / {o}", f"{len(cfgs[n]['reps'])}/{len(cfgs[o]['reps'])}"] + [cell(cfgs[n], cfgs[o], k) for k, _, _ in METRICS]
                 for n, o in pairs if n in cfgs and o in cfgs]
@@ -53,6 +60,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("summary", help="summary.json written by analysis/mstar_admission.py")
     ap.add_argument("pairs", nargs="+", metavar="NEW/OLD", help="config labels, e.g. peak_bf_pc/peak_bf")
+    ap.add_argument("--workloads", nargs="+", default=[], metavar="GLOB",
+                    help="only these workloads (fnmatch globs on the workload name), e.g. '*_mtx2' '*_mt2048'")
     ap.add_argument("--md", help="also write the tables to this file")
     a = ap.parse_args(argv)
     pairs = []
@@ -61,7 +70,7 @@ def main(argv=None):
         if not sep or not n or not o:
             ap.error(f"pair '{p}': use NEW/OLD")
         pairs.append((n, o))
-    text = tables(json.load(open(a.summary)), pairs)
+    text = tables(json.load(open(a.summary)), pairs, a.workloads)
     print(text)
     if a.md:
         with open(a.md, "w") as fh:
